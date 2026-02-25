@@ -72,3 +72,53 @@ export const getQuoteById = async (req: Request, res: Response): Promise<void> =
     res.status(500).json({ status: 'error', message: 'Eroare internă la preluarea citatului.' });
   }
 };
+
+export const updateQuote = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { text, author, category } = req.body;
+
+    const updateQuery = `
+      UPDATE quotes 
+      SET text = COALESCE($1, text), 
+          author = COALESCE($2, author), 
+          category = COALESCE($3, category)
+      WHERE id = $4
+      RETURNING *;
+    `;
+    
+    const result = await query(updateQuery, [text, author, category, id]);
+
+    if (result.rows.length === 0) {
+      res.status(404).json({ status: 'error', message: 'Citatul nu a fost găsit pentru actualizare.' });
+      return;
+    }
+
+    res.status(200).json({ status: 'success', data: result.rows[0] });
+  } catch (error) {
+    console.error('[Eroare Controller] Nu s-a putut actualiza citatul:', error);
+    res.status(500).json({ status: 'error', message: 'Eroare internă la actualizarea citatului.' });
+  }
+};
+
+export const deleteQuote = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    
+    const result = await query('DELETE FROM quotes WHERE id = $1 RETURNING *;', [id]);
+
+    if (result.rows.length === 0) {
+      res.status(404).json({ status: 'error', message: 'Citatul nu a fost găsit pentru ștergere.' });
+      return;
+    }
+
+    res.status(200).json({ 
+      status: 'success', 
+      message: 'Citat șters cu succes.',
+      deletedData: result.rows[0] 
+    });
+  } catch (error) {
+    console.error('[Eroare Controller] Nu s-a putut șterge citatul:', error);
+    res.status(500).json({ status: 'error', message: 'Eroare internă la ștergerea citatului.' });
+  }
+};
