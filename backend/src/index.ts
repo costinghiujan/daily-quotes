@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
-import { testConnection } from './config/db';
+import { testConnection, initDB } from './config/db';
+
 import cors from 'cors';
 
 const app = express();
@@ -48,6 +49,8 @@ server.on('error', (error: NodeJS.ErrnoException) => {
 const startServer = async () => {
   try {
     await testConnection();
+
+    await initDB();
 
     const server = app.listen(PORT, () => {
       console.log(`[Server] API-ul rulează pe http://localhost:${PORT}`);

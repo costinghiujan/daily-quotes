@@ -29,3 +29,23 @@ export const testConnection = async () => {
     throw err;
   }
 };
+
+export const initDB = async () => {
+  const createTableQuery = `
+    CREATE TABLE IF NOT EXISTS quotes (
+      id SERIAL PRIMARY KEY,
+      text TEXT NOT NULL,
+      author VARCHAR(255) NOT NULL,
+      category VARCHAR(100),
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    );
+  `;
+
+  try {
+    await pool.query(createTableQuery);
+    console.log('[Bază de Date] Tabela "quotes" este pregătită și validată.');
+  } catch (error) {
+    console.error('[Eroare Bază de Date] Nu s-a putut inițializa tabela "quotes":', error);
+    throw error;
+  }
+};
