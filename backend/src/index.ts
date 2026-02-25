@@ -1,4 +1,5 @@
 import express, { Request, Response } from 'express';
+import { testConnection } from './config/db';
 import cors from 'cors';
 
 const app = express();
@@ -43,3 +44,29 @@ server.on('error', (error: NodeJS.ErrnoException) => {
     throw error;
   }
 });
+
+const startServer = async () => {
+  try {
+    await testConnection();
+
+    const server = app.listen(PORT, () => {
+      console.log(`[Server] API-ul rulează pe http://localhost:${PORT}`);
+    });
+
+    server.on('error', (error: NodeJS.ErrnoException) => {
+      if (error.syscall !== 'listen') throw error;
+      if (error.code === 'EADDRINUSE') {
+        console.error(`[Eroare] Portul ${PORT} este deja folosit.`);
+        process.exit(1);
+      } else {
+        throw error;
+      }
+    });
+
+  } catch (error) {
+    console.error('[Eroare Critică] Serverul nu a putut porni din cauza unei probleme la baza de date.');
+    process.exit(1);
+  }
+};
+
+startServer();
