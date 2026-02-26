@@ -1,5 +1,4 @@
 import { Router } from 'express';
-// Actualizăm importurile pentru a include noile funcții
 import { 
   createQuote, 
   getAllQuotes, 
