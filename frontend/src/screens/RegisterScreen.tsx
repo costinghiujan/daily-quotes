@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  View, Text, TextInput, TouchableOpacity, StyleSheet, 
-  KeyboardAvoidingView, Platform, Keyboard, ScrollView 
+  View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, 
+  Platform, Keyboard, ScrollView, Alert, ActivityIndicator
 } from 'react-native';
+import { authService } from '../api/authService';
 
 export default function RegisterScreen({ navigation }: any) {
   const [username, setUsername] = useState('');
@@ -14,6 +15,8 @@ export default function RegisterScreen({ navigation }: any) {
   const [passwordError, setPasswordError] = useState(false);
 
   const [passwordStrength, setPasswordStrength] = useState(0);
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     let score = 0;
@@ -31,7 +34,7 @@ export default function RegisterScreen({ navigation }: any) {
     return emailRegex.test(emailText);
   };
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     Keyboard.dismiss();
     let isValid = true;
 
@@ -55,7 +58,26 @@ export default function RegisterScreen({ navigation }: any) {
     }
 
     if (isValid) {
-      console.log('Formular valid! Date pregătite pentru backend:', { username, email });
+      try {
+        setIsSubmitting(true);
+        
+        await authService.register({
+          username: username.trim(),
+          email: email.trim(),
+          password: password
+        });
+
+        Alert.alert(
+          'Cont Creat!', 
+          'Te-ai înregistrat cu succes. Te rugăm să te loghezi.',
+          [{ text: 'OK', onPress: () => navigation.navigate('Login') }]
+        );
+
+      } catch (error: any) {
+        Alert.alert('Eroare la înregistrare', error.message);
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -128,8 +150,16 @@ export default function RegisterScreen({ navigation }: any) {
           </View>
           {passwordError && <Text style={styles.errorText}>Parola nu respectă toate regulile.</Text>}
 
-          <TouchableOpacity style={styles.button} onPress={handleRegister}>
-            <Text style={styles.buttonText}>Înregistrare</Text>
+          <TouchableOpacity 
+            style={[styles.button, isSubmitting && { backgroundColor: '#80b0b2' }]} 
+            onPress={handleRegister}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>Înregistrare</Text>
+            )}
           </TouchableOpacity>
 
           <View style={styles.footer}>
