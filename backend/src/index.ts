@@ -1,8 +1,8 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import quoteRoutes from './routes/quoteRoutes';
+import authRoutes from './routes/authRoutes';
 import { testConnection, initDB } from './config/db';
-import { hostname } from 'node:os';
 
 const app = express();
 
@@ -23,6 +23,7 @@ app.get('/api/health', (req: Request, res: Response) => {
 });
 
 app.use('/api/quotes', quoteRoutes);
+app.use('/api/auth', authRoutes);
 
 const startServer = async () => {
   try {
