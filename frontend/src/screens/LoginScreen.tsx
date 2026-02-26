@@ -4,6 +4,7 @@ import {
   KeyboardAvoidingView, Platform, Keyboard, Alert, ActivityIndicator 
 } from 'react-native';
 import { authService } from '../api/authService';
+import { authStyles as styles } from '../theme/appStyles';
 
 export default function LoginScreen({ navigation }: any) {
   const [identifier, setIdentifier] = useState(''); 
@@ -109,18 +110,3 @@ export default function LoginScreen({ navigation }: any) {
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f5f5', justifyContent: 'center' },
-  formContainer: { backgroundColor: '#fff', padding: 24, marginHorizontal: 20, borderRadius: 16, elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 6 },
-  title: { fontSize: 28, fontWeight: 'bold', color: '#333', textAlign: 'center', marginBottom: 8 },
-  subtitle: { fontSize: 16, color: '#666', textAlign: 'center', marginBottom: 32 },
-  input: { backgroundColor: '#f9f9f9', borderWidth: 1, borderColor: '#e0e0e0', borderRadius: 8, paddingHorizontal: 16, paddingVertical: 14, fontSize: 16, marginBottom: 12, color: '#333' },
-  inputError: { borderColor: '#d32f2f', backgroundColor: '#ffebee' },
-  errorText: { color: '#d32f2f', fontSize: 12, marginTop: -8, marginBottom: 12, marginLeft: 4 },
-  button: { backgroundColor: '#006064', paddingVertical: 16, borderRadius: 8, alignItems: 'center', marginTop: 10 },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-  footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 24 },
-  footerText: { color: '#666', fontSize: 14 },
-  link: { color: '#006064', fontSize: 14, fontWeight: 'bold' }
-});

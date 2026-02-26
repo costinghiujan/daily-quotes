@@ -6,6 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { quoteService } from '../api/quoteService';
 import { Quote } from '../types/Quote';
+import { homeStyles as styles } from '../theme/appStyles';
 
 export default function App() {
   const [quotes, setQuotes] = useState<Quote[]>([]);
@@ -216,39 +217,3 @@ export default function App() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f5f5' },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  loadingText: { marginTop: 10, fontSize: 16, color: '#666' },
-  errorText: { color: 'red', fontSize: 16, textAlign: 'center', marginBottom: 10 },
-  headerTitle: { fontSize: 24, fontWeight: 'bold', textAlign: 'center', marginVertical: 20, color: '#333' },
-  
-  formContainer: { backgroundColor: '#fff', padding: 16, marginHorizontal: 16, marginBottom: 16, borderRadius: 12, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 3 },
-  editModeText: { color: '#f57c00', fontWeight: 'bold', marginBottom: 10, textAlign: 'center' },
-  input: { backgroundColor: '#f9f9f9', borderWidth: 1, borderColor: '#eee', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 16, marginBottom: 12 },
-  row: { flexDirection: 'row', justifyContent: 'space-between' },
-  actionButtonsRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  flex1: { flex: 1 },
-  
-  button: { backgroundColor: '#006064', paddingVertical: 14, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  buttonDisabled: { backgroundColor: '#80b0b2' },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-  cancelButton: { backgroundColor: '#eeeeee', paddingVertical: 14, paddingHorizontal: 20, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  cancelButtonText: { color: '#333', fontSize: 16, fontWeight: 'bold' },
-
-  listContainer: { paddingHorizontal: 16, paddingBottom: 20 },
-  card: { backgroundColor: '#fff', padding: 20, borderRadius: 12, marginBottom: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 },
-  quoteText: { fontSize: 18, fontStyle: 'italic', color: '#333', marginBottom: 12, lineHeight: 24 },
-  authorText: { fontSize: 16, fontWeight: 'bold', color: '#555', textAlign: 'right' },
-  
-  cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 },
-  cardActions: { flexDirection: 'row', gap: 8 }, // Adăugat gap pentru a spația butoanele
-  categoryBadge: { backgroundColor: '#e0f7fa', color: '#006064', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 16, fontSize: 12, fontWeight: '600', overflow: 'hidden' },
-  editButton: { backgroundColor: '#fff3e0', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, marginRight: 8 },
-  editButtonText: { color: '#e65100', fontSize: 12, fontWeight: 'bold' },
-  deleteButton: { backgroundColor: '#ffebee', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6 },
-  deleteButtonText: { color: '#c62828', fontSize: 12, fontWeight: 'bold' },
-  
-  emptyText: { textAlign: 'center', color: '#888', marginTop: 40, fontSize: 16 }
-});
