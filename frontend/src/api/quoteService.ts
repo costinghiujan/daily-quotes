@@ -27,5 +27,14 @@ export const quoteService = {
       console.error('[Eroare Frontend] Nu s-a putut crea citatul:', error);
       throw error;
     }
+  },
+
+  delete: async (id: number): Promise<void> => {
+    try {
+      await apiClient.delete(`/quotes/${id}`);
+    } catch (error) {
+      console.error(`[Eroare Frontend] Nu s-a putut șterge citatul cu ID ${id}:`, error);
+      throw error;
+    }
   }
 };
