@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { 
-  StyleSheet, Text, View, FlatList, ActivityIndicator, 
-  SafeAreaView, TextInput, TouchableOpacity, Alert, Keyboard 
+  StyleSheet, Text, View, FlatList, ActivityIndicator,
+   TextInput, TouchableOpacity, Alert, Keyboard 
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { quoteService } from '../api/quoteService';
 import { Quote } from '../types/Quote';
 
