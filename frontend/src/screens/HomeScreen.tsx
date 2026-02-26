@@ -17,7 +17,6 @@ export default function App() {
   const [newCategory, setNewCategory] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   
-  // NOU: Stare pentru a urmări dacă suntem în modul de editare
   const [editingQuoteId, setEditingQuoteId] = useState<number | null>(null);
 
   useEffect(() => {
@@ -37,7 +36,6 @@ export default function App() {
     }
   };
 
-  // NOU: Funcție pentru a reseta formularul la starea inițială
   const resetForm = () => {
     setNewText('');
     setNewAuthor('');
@@ -46,7 +44,6 @@ export default function App() {
     Keyboard.dismiss();
   };
 
-  // NOU: Funcție unificată pentru Trimitere (Create sau Update)
   const handleSubmit = async () => {
     if (!newText.trim() || !newAuthor.trim()) {
       Alert.alert('Eroare de validare', 'Te rugăm să completezi textul și autorul.');
@@ -63,18 +60,11 @@ export default function App() {
       };
 
       if (editingQuoteId) {
-        // ==========================================
-        // Logica de UPDATE
-        // ==========================================
         const updatedQuote = await quoteService.update(editingQuoteId, payload);
         
-        // Immutability: Trecem prin listă și înlocuim doar citatul modificat
         setQuotes(quotes.map(q => (q.id === editingQuoteId ? updatedQuote : q)));
         Alert.alert('Succes', 'Citatul a fost actualizat!');
       } else {
-        // ==========================================
-        // Logica de CREATE (Cea veche)
-        // ==========================================
         const createdQuote = await quoteService.create(payload);
         setQuotes([createdQuote, ...quotes]);
       }
@@ -87,7 +77,6 @@ export default function App() {
     }
   };
 
-  // NOU: Funcție pentru a popula formularul când apăsăm "Editează"
   const handleEditPress = (quote: Quote) => {
     setNewText(quote.text);
     setNewAuthor(quote.author);
@@ -130,9 +119,6 @@ export default function App() {
     <SafeAreaView style={styles.container}>
       <Text style={styles.headerTitle}>Daily Quotes</Text>
       
-      {/* ========================================== */}
-      {/* Formular Dinamic (Adăugare / Editare) */}
-      {/* ========================================== */}
       <View style={styles.formContainer}>
         {editingQuoteId && (
           <Text style={styles.editModeText}>Mod Editare Activ</Text>
@@ -175,7 +161,6 @@ export default function App() {
             )}
           </TouchableOpacity>
 
-          {/* Buton de anulare a editării (vizibil doar în modul editare) */}
           {editingQuoteId && (
             <TouchableOpacity 
               style={[styles.cancelButton, { marginLeft: 8 }]} 
@@ -190,9 +175,6 @@ export default function App() {
 
       {error && <Text style={styles.errorText}>{error}</Text>}
 
-      {/* ========================================== */}
-      {/* Lista de Citate */}
-      {/* ========================================== */}
       <FlatList
         data={quotes}
         keyExtractor={(item) => item.id.toString()}
@@ -236,7 +218,6 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  // ... stilurile anterioare rămân la fel
   container: { flex: 1, backgroundColor: '#f5f5f5' },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   loadingText: { marginTop: 10, fontSize: 16, color: '#666' },
