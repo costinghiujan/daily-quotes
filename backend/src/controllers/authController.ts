@@ -53,3 +53,59 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
     });
   }
 };
+
+export const loginUser = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { identifier, password } = req.body;
+
+    if (!identifier || !password) {
+      res.status(400).json({ 
+        status: 'error', 
+        message: 'Te rugăm să introduci email/username și parola.' 
+      });
+      return;
+    }
+
+    const result = await query(
+      `SELECT id, username, email, password_hash 
+       FROM users 
+       WHERE email = $1 OR username = $1`,
+      [identifier]
+    );
+
+    const user = result.rows[0];
+
+    if (!user) {
+      res.status(401).json({ 
+        status: 'error', 
+        message: 'Credențiale invalide. Verifică datele introduse.' 
+      });
+      return;
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password_hash);
+
+    if (!isPasswordValid) {
+      res.status(401).json({ 
+        status: 'error', 
+        message: 'Credențiale invalide. Verifică datele introduse.' 
+      });
+      return;
+    }
+
+    const { password_hash, ...safeUserData } = user;
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Autentificare reușită!',
+      data: safeUserData
+    });
+
+  } catch (error) {
+    console.error('[Eroare Auth Controller - Login]:', error);
+    res.status(500).json({ 
+      status: 'error', 
+      message: 'Eroare internă a serverului la autentificare.' 
+    });
+  }
+};
