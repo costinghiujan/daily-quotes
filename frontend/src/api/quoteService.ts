@@ -36,5 +36,16 @@ export const quoteService = {
       console.error(`[Eroare Frontend] Nu s-a putut șterge citatul cu ID ${id}:`, error);
       throw error;
     }
+  },
+
+  update: async (id: number, updatedQuote: Partial<Omit<Quote, 'id' | 'created_at'>>): Promise<Quote> => {
+    try {
+      const response = await apiClient.put<ApiResponse>(`/quotes/${id}`, updatedQuote);
+      
+      return response.data.data as Quote;
+    } catch (error) {
+      console.error(`[Eroare Frontend] Nu s-a putut actualiza citatul cu ID ${id}:`, error);
+      throw error;
+    }
   }
 };
