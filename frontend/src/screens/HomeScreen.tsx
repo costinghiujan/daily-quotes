@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { 
   StyleSheet, Text, View, FlatList, ActivityIndicator,
    TextInput, TouchableOpacity, Alert, Keyboard 
@@ -7,8 +7,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { quoteService } from '../api/quoteService';
 import { Quote } from '../types/Quote';
 import { homeStyles as styles } from '../theme/appStyles';
+import { AuthContext } from '../context/AuthContext';
 
 export default function App() {
+  const { logout } = useContext(AuthContext)
+
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -118,7 +121,15 @@ export default function App() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.headerTitle}>Daily Quotes</Text>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 20 }}>
+        <Text style={[styles.headerTitle, { marginVertical: 0 }]}>Daily Quotes</Text>
+        <TouchableOpacity 
+          onPress={logout} 
+          style={{ backgroundColor: '#ffebee', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8 }}
+        >
+          <Text style={{ color: '#d32f2f', fontWeight: 'bold' }}>Ieșire Cont</Text>
+        </TouchableOpacity>
+      </View>
       
       <View style={styles.formContainer}>
         {editingQuoteId && (

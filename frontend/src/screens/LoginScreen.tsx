@@ -1,12 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { 
   View, Text, TextInput, TouchableOpacity, StyleSheet, 
   KeyboardAvoidingView, Platform, Keyboard, Alert, ActivityIndicator 
 } from 'react-native';
 import { authService } from '../api/authService';
 import { authStyles as styles } from '../theme/appStyles';
+import { AuthContext } from '../context/AuthContext';
 
 export default function LoginScreen({ navigation }: any) {
+  const { loginState } = useContext(AuthContext);
+  
   const [identifier, setIdentifier] = useState(''); 
   const [password, setPassword] = useState('');
 
@@ -43,9 +46,7 @@ export default function LoginScreen({ navigation }: any) {
 
         console.log('[Login Reușit] Bine ai venit:', response.data.user.username);
         
-        setPassword('');
-        
-        navigation.navigate('Home');
+        loginState(response.data.token);
 
       } catch (error: any) {
         Alert.alert('Eroare de Autentificare', error.message);
