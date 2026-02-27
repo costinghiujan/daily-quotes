@@ -41,7 +41,7 @@ export default function LoginScreen({ navigation }: any) {
           password: password 
         });
 
-        console.log('[Login Reușit] Bine ai venit:', response.data.username);
+        console.log('[Login Reușit] Bine ai venit:', response.data.user.username);
         
         setPassword('');
         
