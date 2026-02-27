@@ -74,7 +74,7 @@ export default function LoginScreen({ navigation }: any) {
           }}
           autoCapitalize="none"
         />
-        {identifierError && <Text style={styles.errorText}>Acest câmp este obligatoriu.</Text>}
+        {identifierError && <Text style={styles.errorText}>Introduceți un email sau un nume de utilizator.</Text>}
 
         <TextInput
           style={[styles.input, passwordError && styles.inputError]}
@@ -86,7 +86,7 @@ export default function LoginScreen({ navigation }: any) {
           }}
           secureTextEntry
         />
-        {passwordError && <Text style={styles.errorText}>Parola este obligatorie.</Text>}
+        {passwordError && <Text style={styles.errorText}>Introduceți parola.</Text>}
 
         <TouchableOpacity 
           style={[styles.button, isSubmitting && { backgroundColor: '#80b0b2' }]} 

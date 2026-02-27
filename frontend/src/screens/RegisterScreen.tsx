@@ -53,7 +53,7 @@ export default function RegisterScreen({ navigation }: any) {
       isValid = false;
     }
 
-    if (!password.trim() || passwordStrength < 5) {
+    if (!password.trim() || passwordStrength < 3 || password.length < 6) {
       setPasswordError(true);
       isValid = false;
     }
@@ -115,7 +115,7 @@ export default function RegisterScreen({ navigation }: any) {
             onChangeText={(t) => { setUsername(t); if (usernameError) setUsernameError(false); }}
             autoCapitalize="none"
           />
-          {usernameError && <Text style={styles.errorText}>Username-ul este obligatoriu.</Text>}
+          {usernameError && <Text style={styles.errorText}>Introduceți un nume de utilizator.</Text>}
 
           <TextInput
             style={[styles.input, emailError && styles.inputError]}
@@ -135,21 +135,18 @@ export default function RegisterScreen({ navigation }: any) {
             secureTextEntry
           />
 
+          {passwordError && (
+            <Text style={styles.errorText}>
+              Introduceți o parolă ce are minim 6 caractere și o putere cel puțin medie.
+            </Text>
+          )}
+
           <View style={styles.strengthContainer}>
             <View style={styles.strengthBarBackground}>
               <View style={[styles.strengthBarFill, { width: strengthWidth as any, backgroundColor: getStrengthColor() }]} />
             </View>
             <Text style={[styles.strengthLabel, { color: getStrengthColor() }]}>{getStrengthLabel()}</Text>
           </View>
-
-          <View style={styles.rulesContainer}>
-            <Text style={password.length >= 6 ? styles.ruleMet : styles.ruleUnmet}>• Minim 6 caractere</Text>
-            <Text style={/[a-z]/.test(password) ? styles.ruleMet : styles.ruleUnmet}>• O literă mică</Text>
-            <Text style={/[A-Z]/.test(password) ? styles.ruleMet : styles.ruleUnmet}>• O literă mare</Text>
-            <Text style={/[0-9]/.test(password) ? styles.ruleMet : styles.ruleUnmet}>• Un număr</Text>
-            <Text style={/[^A-Za-z0-9]/.test(password) ? styles.ruleMet : styles.ruleUnmet}>• Un caracter special (!@#$%)</Text>
-          </View>
-          {passwordError && <Text style={styles.errorText}>Parola nu respectă toate regulile.</Text>}
 
           <TouchableOpacity 
             style={[styles.button, isSubmitting && { backgroundColor: '#80b0b2' }]} 
