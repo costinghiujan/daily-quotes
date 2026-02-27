@@ -133,6 +133,7 @@ export default function RegisterScreen({ navigation }: any) {
             value={password}
             onChangeText={(t) => { setPassword(t); if (passwordError) setPasswordError(false); }}
             secureTextEntry
+            autoCapitalize="none"
           />
 
           {passwordError && (

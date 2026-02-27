@@ -86,6 +86,7 @@ export default function LoginScreen({ navigation }: any) {
             if (passwordError) setPasswordError(false);
           }}
           secureTextEntry
+          autoCapitalize="none"
         />
         {passwordError && <Text style={styles.errorText}>Introduceți parola.</Text>}
 
