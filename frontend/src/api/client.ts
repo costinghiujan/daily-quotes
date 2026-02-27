@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { storage } from '../utils/storage'; 
 
 const LOCAL_IP = '10.217.220.219'; 
 const BASE_URL = `http://${LOCAL_IP}:3000/api`;
@@ -12,3 +13,22 @@ export const apiClient = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+apiClient.interceptors.request.use(
+  async (config) => {
+    try {
+      const token = await storage.getToken();
+      
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    } catch (error) {
+      console.error('[Eroare Axios Interceptor] Nu s-a putut injecta token-ul:', error);
+    }
+    
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);

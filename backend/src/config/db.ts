@@ -1,6 +1,5 @@
 import { Pool } from 'pg';
 import dotenv from 'dotenv';
-import bcrypt from 'bcrypt';
 
 dotenv.config();
 
@@ -25,17 +24,6 @@ export const testConnection = async () => {
 export const initDB = async () => {
   try {
     await pool.query(`
-      CREATE TABLE IF NOT EXISTS quotes (
-        id SERIAL PRIMARY KEY,
-        text TEXT NOT NULL,
-        author VARCHAR(255) NOT NULL,
-        category VARCHAR(100),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-    console.log('[Bază de Date] Tabela "quotes" este pregătită.');
-
-    await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
         username VARCHAR(50) UNIQUE NOT NULL,
@@ -46,23 +34,17 @@ export const initDB = async () => {
     `);
     console.log('[Bază de Date] Tabela "users" este pregătită.');
 
-    const adminEmail = 'admin@admin.com';
-    
-    const { rows } = await pool.query('SELECT id FROM users WHERE email = $1', [adminEmail]);
-    
-    if (rows.length === 0) {
-      console.log('[Bază de Date] Contul de admin nu există. Îl generez acum...');
-      
-      const saltRounds = 10;
-      const hashedPassword = await bcrypt.hash('admin', saltRounds);
-
-      await pool.query(
-        'INSERT INTO users (username, email, password_hash) VALUES ($1, $2, $3)',
-        ['admin', adminEmail, hashedPassword]
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS quotes (
+        id SERIAL PRIMARY KEY,
+        text TEXT NOT NULL,
+        author VARCHAR(255) NOT NULL,
+        category VARCHAR(100),
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
-      
-      console.log('[Bază de Date] Contul de Admin a fost creat și securizat cu succes!');
-    }
+    `);
+    console.log('[Bază de Date] Tabela "quotes" este pregătită.');
 
   } catch (error) {
     console.error('[Eroare Bază de Date] Inițializarea tabelelor a eșuat:', error);

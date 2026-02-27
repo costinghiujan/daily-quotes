@@ -6,13 +6,14 @@ import {
   updateQuote, 
   deleteQuote 
 } from '../controllers/quoteController';
+import { protect } from '../middleware/authMiddleware';
 
 const router = Router();
 
-router.post('/', createQuote);
-router.get('/', getAllQuotes);
-router.get('/:id', getQuoteById);
-router.put('/:id', updateQuote);
-router.delete('/:id', deleteQuote);
+router.post('/', protect, createQuote);
+router.get('/', protect, getAllQuotes);
+router.get('/:id', protect, getQuoteById);
+router.put('/:id', protect, updateQuote);
+router.delete('/:id', protect, deleteQuote);
 
 export default router;
