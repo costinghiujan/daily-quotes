@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import { query } from '../config/db';
+import jwt from 'jsonwebtoken';
 
 export const registerUser = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -94,6 +95,22 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
     }
 
     const { password_hash, ...safeUserData } = user;
+
+    const jwtSecret = process.env.JWT_SECRET;
+
+    if (!jwtSecret) {
+      throw new Error('FATAL ERROR: JWT_SECRET nu este definit în variabilele de mediu!');
+    }
+
+    const token = jwt.sign(
+      { 
+        id: user.id, 
+        username: user.username, 
+        email: user.email 
+      }, 
+      jwtSecret,
+      { expiresIn: '7d' } 
+    );
 
     res.status(200).json({
       status: 'success',
