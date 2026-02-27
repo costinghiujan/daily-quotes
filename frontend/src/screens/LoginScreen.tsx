@@ -1,17 +1,19 @@
 import React, { useState, useContext } from 'react';
 import { 
-  View, Text, TextInput, TouchableOpacity, StyleSheet, 
-  KeyboardAvoidingView, Platform, Keyboard, Alert, ActivityIndicator 
+  View, Text, TextInput, TouchableOpacity, Alert, 
+  KeyboardAvoidingView, Platform, Keyboard, ActivityIndicator 
 } from 'react-native';
 import { authService } from '../api/authService';
 import { authStyles as styles } from '../theme/appStyles';
 import { AuthContext } from '../context/AuthContext';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function LoginScreen({ navigation }: any) {
   const { loginState } = useContext(AuthContext);
   
   const [identifier, setIdentifier] = useState(''); 
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const [identifierError, setIdentifierError] = useState(false);
   const [passwordError, setPasswordError] = useState(false);
@@ -77,17 +79,31 @@ export default function LoginScreen({ navigation }: any) {
         />
         {identifierError && <Text style={styles.errorText}>Introduceți un email sau un nume de utilizator.</Text>}
 
-        <TextInput
-          style={[styles.input, passwordError && styles.inputError]}
-          placeholder="Parolă"
-          value={password}
-          onChangeText={(text) => {
-            setPassword(text);
-            if (passwordError) setPasswordError(false);
-          }}
-          secureTextEntry
-          autoCapitalize="none"
-        />
+        <View style={{ width: '100%', justifyContent: 'center' }}>
+          <TextInput
+            style={[styles.input, passwordError && styles.inputError, { paddingRight: 50 }]}
+            placeholder="Parolă"
+            value={password}
+            onChangeText={(text) => {
+              setPassword(text);
+              if (passwordError) setPasswordError(false);
+            }}
+            secureTextEntry={!showPassword}
+            autoCapitalize="none"
+          />
+
+          <TouchableOpacity 
+            style={{ position: 'absolute', right: 15 }} 
+            onPress={() => setShowPassword(!showPassword)}
+          >
+            <Ionicons 
+              name={showPassword ? "eye-off" : "eye"} 
+              size={24} 
+              color="#757575" 
+            />
+          </TouchableOpacity>
+        </View>
+
         {passwordError && <Text style={styles.errorText}>Introduceți parola.</Text>}
 
         <TouchableOpacity 

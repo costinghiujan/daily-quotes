@@ -5,11 +5,13 @@ import {
 } from 'react-native';
 import { authService } from '../api/authService';
 import { authStyles as styles } from '../theme/appStyles';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function RegisterScreen({ navigation }: any) {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const [usernameError, setUsernameError] = useState(false);
   const [emailError, setEmailError] = useState(false);
@@ -127,20 +129,36 @@ export default function RegisterScreen({ navigation }: any) {
           />
           {emailError && <Text style={styles.errorText}>Introduceți un email valid.</Text>}
 
+          <View style={{ width: '100%', justifyContent: 'center' }}>
           <TextInput
-            style={[styles.input, passwordError && styles.inputError]}
+            style={[styles.input, passwordError && styles.inputError, { paddingRight: 50 }]}
             placeholder="Parolă"
             value={password}
-            onChangeText={(t) => { setPassword(t); if (passwordError) setPasswordError(false); }}
-            secureTextEntry
+            onChangeText={(t) => { 
+              setPassword(t); 
+              if (passwordError) setPasswordError(false); 
+            }}
+            secureTextEntry={!showPassword}
             autoCapitalize="none"
           />
 
-          {passwordError && (
-            <Text style={styles.errorText}>
-              Introduceți o parolă ce are minim 6 caractere și o putere cel puțin medie.
-            </Text>
-          )}
+          <TouchableOpacity 
+            style={{ position: 'absolute', right: 15 }} 
+            onPress={() => setShowPassword(!showPassword)}
+          >
+            <Ionicons 
+              name={showPassword ? "eye-off" : "eye"} 
+              size={24} 
+              color="#757575" 
+            />
+          </TouchableOpacity>
+        </View>
+
+        {passwordError && (
+          <Text style={styles.errorText}>
+            Introduceți o parolă ce are minim 6 caractere și o putere cel puțin medie.
+          </Text>
+        )}
 
           <View style={styles.strengthContainer}>
             <View style={styles.strengthBarBackground}>
