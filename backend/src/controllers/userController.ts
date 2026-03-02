@@ -26,6 +26,35 @@ export const searchUsers = async (req: AuthRequest, res: Response): Promise<void
   }
 };
 
+export const getMyProfile = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const currentUserId = req.user?.id;
+
+    if (!currentUserId) {
+      res.status(401).json({ status: 'error', message: 'Neautorizat.' });
+      return;
+    }
+
+    const userResult = await query(`
+      SELECT id, username, full_name, bio, profile_picture_url, created_at 
+      FROM users WHERE id = $1;
+    `, [currentUserId]);
+
+    const quotesResult = await query(
+      'SELECT * FROM quotes WHERE user_id = $1 ORDER BY created_at DESC;', 
+      [currentUserId]
+    );
+
+    res.status(200).json({ 
+      status: 'success', 
+      data: { profile: userResult.rows[0], quotes: quotesResult.rows }
+    });
+  } catch (error) {
+    console.error('[Eroare Controller] Nu s-a putut încărca profilul propriu:', error);
+    res.status(500).json({ status: 'error', message: 'Eroare internă a serverului.' });
+  }
+};
+
 export const getUserProfile = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;

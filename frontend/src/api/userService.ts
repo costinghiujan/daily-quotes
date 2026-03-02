@@ -19,4 +19,24 @@ export const userService = {
       throw error;
     }
   },
+
+  getMyProfile: async (): Promise<any> => {
+    try {
+      const response = await apiClient.get('/users/me');
+      return response.data.data;
+    } catch (error) {
+      console.error('[Eroare Frontend] Preluare profil:', error);
+      throw error;
+    }
+  },
+
+  updateProfile: async (data: { full_name?: string; bio?: string }): Promise<UserProfile> => {
+    try {
+      const response = await apiClient.put('/users/profile', data);
+      return response.data.data;
+    } catch (error) {
+      console.error('[Eroare Frontend] Actualizare profil:', error);
+      throw error;
+    }
+  }
 };
