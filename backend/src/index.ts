@@ -3,6 +3,7 @@ import cors from 'cors';
 import quoteRoutes from './routes/quoteRoutes';
 import authRoutes from './routes/authRoutes';
 import userRoutes from './routes/userRoutes';
+import friendshipRoutes from './routes/friendshipRoutes';
 import { testConnection, initDB } from './config/db';
 
 const app = express();
@@ -23,6 +24,7 @@ app.get('/api/health', (req: Request, res: Response) => {
   res.status(200).json({ status: 'success', message: 'Serverul funcționează corect!' });
 });
 
+app.use('/api/friendships', friendshipRoutes);
 app.use('/api/quotes', quoteRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
