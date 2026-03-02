@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import quoteRoutes from './routes/quoteRoutes';
 import authRoutes from './routes/authRoutes';
+import userRoutes from './routes/userRoutes';
 import { testConnection, initDB } from './config/db';
 
 const app = express();
@@ -23,6 +24,7 @@ app.get('/api/health', (req: Request, res: Response) => {
 });
 
 app.use('/api/quotes', quoteRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 
 const startServer = async () => {
