@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { storage } from '../utils/storage'; 
 
-const LOCAL_IP = '10.217.220.219'; 
+const LOCAL_IP = '10.46.19.219'; 
 const BASE_URL = `http://${LOCAL_IP}:3000/api`;
 
 console.log('[Axios] Instanța a fost inițializată cu BASE_URL:', BASE_URL);

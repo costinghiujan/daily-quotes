@@ -46,6 +46,26 @@ export const initDB = async () => {
     `);
     console.log('[Bază de Date] Tabela "quotes" este pregătită.');
 
+    await pool.query(`
+      ALTER TABLE users 
+      ADD COLUMN IF NOT EXISTS full_name VARCHAR(100),
+      ADD COLUMN IF NOT EXISTS bio TEXT,
+      ADD COLUMN IF NOT EXISTS profile_picture_url TEXT;
+    `);
+    console.log('[Bază de Date] Tabela "users" a fost extinsă cu profilul social.');
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS friendships (
+        id SERIAL PRIMARY KEY,
+        requester_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        receiver_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        status VARCHAR(20) DEFAULT 'pending', 
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(requester_id, receiver_id)
+      );
+    `);
+    console.log('[Bază de Date] Tabela "friendships" este pregătită.');
+
   } catch (error) {
     console.error('[Eroare Bază de Date] Inițializarea tabelelor a eșuat:', error);
     throw error;
