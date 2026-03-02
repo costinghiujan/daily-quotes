@@ -4,11 +4,14 @@ import {
   getAllQuotes, 
   getQuoteById, 
   updateQuote, 
-  deleteQuote 
+  deleteQuote,
+  getFeedQuotes
 } from '../controllers/quoteController';
 import { protect } from '../middleware/authMiddleware';
 
 const router = Router();
+
+router.get('/feed', protect, getFeedQuotes);
 
 router.post('/', protect, createQuote);
 router.get('/', protect, getAllQuotes);

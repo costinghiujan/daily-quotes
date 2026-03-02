@@ -151,3 +151,39 @@ export const deleteQuote = async (req: AuthRequest, res: Response): Promise<void
     res.status(500).json({ status: 'error', message: 'Eroare internă.' });
   }
 };
+
+export const getFeedQuotes = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const currentUserId = req.user?.id;
+
+    if (!currentUserId) {
+      res.status(401).json({ status: 'error', message: 'Neautorizat.' });
+      return;
+    }
+
+    const feedQuery = `
+      SELECT q.id, q.text, q.author as original_author, q.category, q.created_at,
+             u.id as user_id, u.username, u.full_name, u.profile_picture_url
+      FROM quotes q
+      JOIN users u ON q.user_id = u.id
+      WHERE q.user_id IN (
+        SELECT receiver_id FROM friendships WHERE requester_id = $1 AND status = 'accepted'
+        UNION
+        SELECT requester_id FROM friendships WHERE receiver_id = $1 AND status = 'accepted'
+      )
+      ORDER BY q.created_at DESC
+      LIMIT 50;
+    `;
+
+    const result = await query(feedQuery, [currentUserId]);
+
+    res.status(200).json({ 
+      status: 'success', 
+      results: result.rows.length, 
+      data: result.rows 
+    });
+  } catch (error) {
+    console.error('[Eroare Controller] Nu s-a putut încărca feed-ul:', error);
+    res.status(500).json({ status: 'error', message: 'Eroare internă la încărcarea feed-ului.' });
+  }
+};
