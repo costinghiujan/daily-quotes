@@ -1,230 +1,200 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
-  StyleSheet, Text, View, FlatList, ActivityIndicator,
-   TextInput, TouchableOpacity, Alert, Keyboard 
+  View, 
+  Text, 
+  TextInput, 
+  TouchableOpacity, 
+  FlatList, 
+  StyleSheet, 
+  ActivityIndicator,
+  Alert,
+  Image,
+  RefreshControl
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { quoteService } from '../api/quoteService';
-import { Quote } from '../types/Quote';
-import { homeStyles as styles } from '../theme/appStyles';
-import { AuthContext } from '../context/AuthContext';
+import { colors } from '../theme/colors';
 
-export default function App() {
-  const { logout } = useContext(AuthContext)
+export default function HomeScreen() {
+  const [feedQuotes, setFeedQuotes] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const [quotes, setQuotes] = useState<Quote[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  const [newText, setNewText] = useState('');
+  const [newAuthor, setNewAuthor] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [newText, setNewText] = useState<string>('');
-  const [newAuthor, setNewAuthor] = useState<string>('');
-  const [newCategory, setNewCategory] = useState<string>('');
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  
-  const [editingQuoteId, setEditingQuoteId] = useState<number | null>(null);
-
-  useEffect(() => {
-    fetchQuotes();
-  }, []);
-
-  const fetchQuotes = async () => {
+  const fetchFeed = async () => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
-      setError(null);
-      const data = await quoteService.getAll();
-      setQuotes(data);
-    } catch (err) {
-      setError('Nu am putut contacta serverul. Verifică IP-ul!');
+      const data = await quoteService.getFeed();
+      setFeedQuotes(data);
+    } catch (error) {
+      console.error('Eroare la încărcarea feed-ului:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const resetForm = () => {
-    setNewText('');
-    setNewAuthor('');
-    setNewCategory('');
-    setEditingQuoteId(null);
-    Keyboard.dismiss();
-  };
+  useEffect(() => {
+    fetchFeed();
+  }, []);
 
-  const handleSubmit = async () => {
+  const onRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      const data = await quoteService.getFeed();
+      setFeedQuotes(data);
+    } catch (error) {
+      console.error('Eroare la reîmprospătarea feed-ului:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, []);
+
+  const handleAddQuote = async () => {
     if (!newText.trim() || !newAuthor.trim()) {
-      Alert.alert('Eroare de validare', 'Te rugăm să completezi textul și autorul.');
+      Alert.alert('Eroare', 'Te rugăm să completezi textul și autorul citatului!');
       return;
     }
 
+    setIsSubmitting(true);
     try {
-      setIsSubmitting(true); 
+      await quoteService.create({ text: newText, author: newAuthor, category: 'General' });
+      Alert.alert('Succes', 'Citatul a fost postat pe profilul tău!');
+      setNewText('');
+      setNewAuthor('');
       
-      const payload = {
-        text: newText.trim(),
-        author: newAuthor.trim(),
-        category: newCategory.trim() || undefined
-      };
-
-      if (editingQuoteId) {
-        const updatedQuote = await quoteService.update(editingQuoteId, payload);
-        
-        setQuotes(quotes.map(q => (q.id === editingQuoteId ? updatedQuote : q)));
-        Alert.alert('Succes', 'Citatul a fost actualizat!');
-      } else {
-        const createdQuote = await quoteService.create(payload);
-        setQuotes([createdQuote, ...quotes]);
-      }
-
-      resetForm();
-    } catch (err) {
-      Alert.alert('Eroare', 'Operațiunea a eșuat. Încearcă din nou.');
+    } catch (error) {
+      Alert.alert('Eroare', 'Nu am putut posta citatul.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleEditPress = (quote: Quote) => {
-    setNewText(quote.text);
-    setNewAuthor(quote.author);
-    setNewCategory(quote.category || '');
-    setEditingQuoteId(quote.id);
-  };
-
-  const handleDeleteQuote = (id: number) => {
-    Alert.alert(
-      'Ștergere Citat',
-      'Ești sigur că vrei să ștergi acest citat definitiv?',
-      [
-        { text: 'Anulează', style: 'cancel' },
-        { 
-          text: 'Șterge', 
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await quoteService.delete(id);
-              setQuotes(quotes.filter(quote => quote.id !== id));
-            } catch (err) {
-              Alert.alert('Eroare', 'Citatul nu a putut fi șters. Verifică conexiunea.');
-            }
-          }
-        }
-      ]
-    );
-  };
-
-  if (isLoading) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#0000ff" />
-        <Text style={styles.loadingText}>Se descarcă citatele...</Text>
+  const renderFeedItem = ({ item }: { item: any }) => (
+    <View style={styles.feedCard}>
+      <View style={styles.postHeader}>
+        {item.profile_picture_url ? (
+          <Image source={{ uri: item.profile_picture_url }} style={styles.avatarSmall} />
+        ) : (
+          <View style={styles.avatarPlaceholderSmall}>
+            <Ionicons name="person" size={16} color="#fff" />
+          </View>
+        )}
+        <View>
+          <Text style={styles.postUserName}>{item.full_name || item.username}</Text>
+          <Text style={styles.postUserHandle}>@{item.username}</Text>
+        </View>
       </View>
-    );
+
+      <View style={styles.quoteContent}>
+        <Text style={styles.quoteText}>"{item.text}"</Text>
+        <Text style={styles.quoteAuthor}>— {item.original_author}</Text>
+      </View>
+    </View>
+  );
+
+  const headerElement = (
+    <View style={styles.createPostContainer}>
+      <Text style={styles.createPostTitle}>Împarte un citat cu prietenii</Text>
+      <TextInput
+        style={[styles.input, { height: 80 }]}
+        placeholder="Scrie citatul aici..."
+        value={newText}
+        onChangeText={setNewText}
+        multiline
+      />
+      <TextInput
+        style={styles.input}
+        placeholder="Autorul citatului (ex: Albert Einstein)"
+        value={newAuthor}
+        onChangeText={setNewAuthor}
+      />
+      <TouchableOpacity 
+        style={styles.postButton} 
+        onPress={handleAddQuote}
+        disabled={isSubmitting}
+      >
+        {isSubmitting ? (
+          <ActivityIndicator color="#fff" size="small" />
+        ) : (
+          <Text style={styles.postButtonText}>Postează</Text>
+        )}
+      </TouchableOpacity>
+    </View>
+  );
+
+  if (isLoading && feedQuotes.length === 0) {
+    return <View style={styles.centered}><ActivityIndicator size="large" color={colors.primary} /></View>;
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 20 }}>
-        <Text style={[styles.headerTitle, { marginVertical: 0 }]}>Daily Quotes</Text>
-        <TouchableOpacity 
-          onPress={logout} 
-          style={{ backgroundColor: '#ffebee', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8 }}
-        >
-          <Text style={{ color: '#d32f2f', fontWeight: 'bold' }}>Ieșire Cont</Text>
-        </TouchableOpacity>
-      </View>
-      
-      <View style={styles.formContainer}>
-        {editingQuoteId && (
-          <Text style={styles.editModeText}>Mod Editare Activ</Text>
-        )}
-        
-        <TextInput 
-          style={styles.input} 
-          placeholder="Citatul (ex: Fii schimbarea...)" 
-          value={newText}
-          onChangeText={setNewText}
-          multiline
-        />
-        <View style={styles.row}>
-          <TextInput 
-            style={[styles.input, styles.flex1, { marginRight: 8 }]} 
-            placeholder="Autor" 
-            value={newAuthor}
-            onChangeText={setNewAuthor}
-          />
-          <TextInput 
-            style={[styles.input, styles.flex1]} 
-            placeholder="Categorie (opțional)" 
-            value={newCategory}
-            onChangeText={setNewCategory}
-          />
-        </View>
-        
-        <View style={styles.actionButtonsRow}>
-          <TouchableOpacity 
-            style={[styles.button, styles.flex1, isSubmitting && styles.buttonDisabled]} 
-            onPress={handleSubmit}
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>
-                {editingQuoteId ? 'Salvează' : 'Adaugă Citat'}
-              </Text>
-            )}
-          </TouchableOpacity>
-
-          {editingQuoteId && (
-            <TouchableOpacity 
-              style={[styles.cancelButton, { marginLeft: 8 }]} 
-              onPress={resetForm}
-              disabled={isSubmitting}
-            >
-              <Text style={styles.cancelButtonText}>Anulează</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-
-      {error && <Text style={styles.errorText}>{error}</Text>}
-
+    <View style={styles.container}>
       <FlatList
-        data={quotes}
+        data={feedQuotes}
         keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <View>
-              <Text style={styles.quoteText}>"{item.text}"</Text>
-              <Text style={styles.authorText}>- {item.author}</Text>
-            </View>
-            
-            <View style={styles.cardFooter}>
-              {item.category ? (
-                <Text style={styles.categoryBadge}>{item.category}</Text>
-              ) : (
-                <View />
-              )}
-              
-              <View style={styles.cardActions}>
-                <TouchableOpacity 
-                  onPress={() => handleEditPress(item)}
-                  style={styles.editButton}
-                >
-                  <Text style={styles.editButtonText}>Editează</Text>
-                </TouchableOpacity>
+        renderItem={renderFeedItem}
+        ListHeaderComponent={headerElement}
+        contentContainerStyle={styles.listContent}
+        
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={onRefresh}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
+          />
+        }
 
-                <TouchableOpacity 
-                  onPress={() => handleDeleteQuote(item.id)}
-                  style={styles.deleteButton}
-                >
-                  <Text style={styles.deleteButtonText}>Șterge</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Ionicons name="people-outline" size={64} color="#ccc" />
+            <Text style={styles.emptyText}>Feed-ul tău este gol.</Text>
+            <Text style={styles.emptySubText}>Caută prieteni și acceptă cereri pentru a vedea citatele lor aici!</Text>
           </View>
-        )}
-        ListEmptyComponent={<Text style={styles.emptyText}>Baza de date este goală. Adaugă citate!</Text>}
-        contentContainerStyle={styles.listContainer}
+        }
       />
-    </SafeAreaView>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  listContent: { padding: 15, paddingBottom: 30 },
+  
+  createPostContainer: {
+    backgroundColor: '#fff', padding: 15, borderRadius: 10, marginBottom: 20,
+    elevation: 2, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 5,
+  },
+  createPostTitle: { fontSize: 16, fontWeight: 'bold', color: '#333', marginBottom: 10 },
+  input: {
+    backgroundColor: '#f9f9f9', borderWidth: 1, borderColor: '#eee', 
+    borderRadius: 8, padding: 12, marginBottom: 10, fontSize: 15,
+  },
+  postButton: {
+    backgroundColor: colors.primary, padding: 12, borderRadius: 8, alignItems: 'center',
+  },
+  postButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+
+  feedCard: {
+    backgroundColor: '#fff', borderRadius: 10, padding: 15, marginBottom: 15,
+    elevation: 2, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 4,
+  },
+  postHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  avatarSmall: { width: 40, height: 40, borderRadius: 20, marginRight: 10 },
+  avatarPlaceholderSmall: {
+    width: 40, height: 40, borderRadius: 20, marginRight: 10,
+    backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center',
+  },
+  postUserName: { fontSize: 15, fontWeight: 'bold', color: '#333' },
+  postUserHandle: { fontSize: 13, color: '#777' },
+  quoteContent: { borderLeftWidth: 3, borderLeftColor: colors.primary, paddingLeft: 10, marginTop: 5 },
+  quoteText: { fontSize: 16, fontStyle: 'italic', color: '#444', marginBottom: 8, lineHeight: 22 },
+  quoteAuthor: { fontSize: 14, fontWeight: 'bold', color: '#888' },
+
+  emptyContainer: { alignItems: 'center', marginTop: 40, paddingHorizontal: 20 },
+  emptyText: { fontSize: 18, fontWeight: 'bold', color: '#555', marginTop: 15 },
+  emptySubText: { fontSize: 15, color: '#777', textAlign: 'center', marginTop: 10, lineHeight: 22 },
+});

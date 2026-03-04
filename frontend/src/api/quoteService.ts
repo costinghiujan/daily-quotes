@@ -47,5 +47,15 @@ export const quoteService = {
       console.error(`[Eroare Frontend] Nu s-a putut actualiza citatul cu ID ${id}:`, error);
       throw error;
     }
-  }
+  },
+
+  getFeed: async (): Promise<any[]> => {
+    try {
+      const response = await apiClient.get('/quotes/feed');
+      return response.data.data;
+    } catch (error) {
+      console.error('[Eroare Frontend] Nu s-a putut prelua feed-ul:', error);
+      throw error;
+    }
+  },
 };
