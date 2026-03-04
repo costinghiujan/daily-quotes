@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
-  Modal, // NOU: Componenta pentru fereastra suprapusă
+  Modal,
   ScrollView
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
@@ -17,7 +17,8 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 
 import { userService, UserProfile } from '../api/userService';
-import { sessionService, Session } from '../api/sessionService'; // NOU: Importăm serviciul de sesiuni
+import { sessionService, Session } from '../api/sessionService';
+import { quoteService } from '../api/quoteService';
 import { AuthContext } from '../context/AuthContext';
 import { colors } from '../theme/colors';
 
@@ -33,17 +34,11 @@ export default function ProfileScreen() {
   const [editFullName, setEditFullName] = useState('');
   const [editBio, setEditBio] = useState('');
 
-  // ==========================================
-  // Stări noi pentru Modulul de Securitate
-  // ==========================================
   const [isSecurityModalVisible, setSecurityModalVisible] = useState(false);
   const [activeSessions, setActiveSessions] = useState<Session[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<number | null>(null);
   const [isSessionsLoading, setIsSessionsLoading] = useState(false);
 
-  // ==========================================
-  // 1. Încărcarea Datelor de Profil
-  // ==========================================
   const fetchProfileData = async () => {
     setIsLoading(true);
     try {
@@ -65,9 +60,6 @@ export default function ProfileScreen() {
     }, [])
   );
 
-  // ==========================================
-  // 2. Acțiuni Profil (Editare, Poză, Logout curent)
-  // ==========================================
   const handleSaveProfile = async () => {
     try {
       const updatedData = await userService.updateProfile({ full_name: editFullName, bio: editBio });
@@ -114,9 +106,6 @@ export default function ProfileScreen() {
     ]);
   };
 
-  // ==========================================
-  // 3. Funcții pentru Modulul de Securitate
-  // ==========================================
   const openSecurityModal = async () => {
     setSecurityModalVisible(true);
     setIsSessionsLoading(true);
@@ -141,7 +130,6 @@ export default function ProfileScreen() {
         onPress: async () => {
           try {
             await sessionService.revokeSession(sessionId);
-            // Ștergem sesiunea din lista vizuală instantaneu
             setActiveSessions(prev => prev.filter(s => s.id !== sessionId));
             Alert.alert('Succes', 'Dispozitivul a fost deconectat.');
           } catch (error) {
@@ -152,9 +140,41 @@ export default function ProfileScreen() {
     ]);
   };
 
+  const handleDeleteQuote = (quoteId: number) => {
+    Alert.alert(
+      'Șterge Citatul',
+      'Ești sigur că vrei să ștergi acest citat? Acțiunea este ireversibilă.',
+      [
+        { text: 'Anulează', style: 'cancel' },
+        { 
+          text: 'Șterge', 
+          style: 'destructive', 
+          onPress: async () => {
+            try {
+              await quoteService.delete(quoteId);
+              setQuotes(prevQuotes => prevQuotes.filter(q => q.id !== quoteId));
+            } catch (error) {
+              Alert.alert('Eroare', 'Nu s-a putut șterge citatul.');
+            }
+          } 
+        }
+      ]
+    );
+  };
+
   const renderQuoteItem = ({ item }: { item: any }) => (
     <View style={styles.quoteCard}>
-      <Text style={styles.quoteText}>"{item.text}"</Text>
+      <View style={styles.quoteCardHeader}>
+        <Text style={styles.quoteText}>"{item.text}"</Text>
+        
+        <TouchableOpacity 
+          onPress={() => handleDeleteQuote(item.id)}
+          style={styles.deleteQuoteBtn}
+        >
+          <Ionicons name="trash-outline" size={20} color="#F44336" />
+        </TouchableOpacity>
+      </View>
+      
       <Text style={styles.quoteAuthor}>— {item.author}</Text>
     </View>
   );
@@ -198,7 +218,6 @@ export default function ProfileScreen() {
                 <Text style={styles.btnText}>Editează</Text>
               </TouchableOpacity>
 
-              {/* Butonul de Securitate (Nou) */}
               <TouchableOpacity style={styles.securityBtn} onPress={openSecurityModal}>
                 <Ionicons name="shield-checkmark" size={16} color="#fff" />
                 <Text style={styles.btnText}>Securitate</Text>
@@ -221,9 +240,6 @@ export default function ProfileScreen() {
         ListEmptyComponent={<Text style={styles.emptyText}>Nu ai adăugat niciun citat încă.</Text>}
       />
 
-      {/* ========================================== */}
-      {/* MODALUL DE SECURITATE (Dispozitive Conectate) */}
-      {/* ========================================== */}
       <Modal
         visible={isSecurityModalVisible}
         animationType="slide"
@@ -284,9 +300,6 @@ export default function ProfileScreen() {
   );
 }
 
-// ==========================================
-// Stiluri (Design)
-// ==========================================
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
@@ -316,12 +329,38 @@ const styles = StyleSheet.create({
   btn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8 },
   sectionTitle: { fontSize: 18, fontWeight: 'bold', padding: 15, color: '#333' },
   listContent: { paddingHorizontal: 15, paddingBottom: 20 },
-  quoteCard: { backgroundColor: '#fff', padding: 15, borderRadius: 10, marginBottom: 10, borderLeftWidth: 4, borderLeftColor: colors.primary },
-  quoteText: { fontSize: 16, fontStyle: 'italic', color: '#444', marginBottom: 5 },
-  quoteAuthor: { fontSize: 14, fontWeight: 'bold', color: '#777', textAlign: 'right' },
+  
+  quoteCard: { 
+    backgroundColor: '#fff', 
+    padding: 15, 
+    borderRadius: 10, 
+    marginBottom: 10, 
+    borderLeftWidth: 4, 
+    borderLeftColor: colors.primary 
+  },
+  quoteCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 5,
+  },
+  quoteText: { 
+    flex: 1, 
+    fontSize: 16, 
+    fontStyle: 'italic', 
+    color: '#444', 
+    paddingRight: 10 
+  },
+  deleteQuoteBtn: {
+    padding: 5,
+  },
+  quoteAuthor: { 
+    fontSize: 14, 
+    fontWeight: 'bold', 
+    color: '#777', 
+    textAlign: 'right' 
+  },
   emptyText: { textAlign: 'center', color: '#757575', marginTop: 20 },
-
-  // Stiluri Modal Securitate
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalContent: { backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, maxHeight: '80%' },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 15, borderBottomWidth: 1, borderBottomColor: '#eee', marginBottom: 10 },
