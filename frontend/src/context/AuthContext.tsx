@@ -1,5 +1,7 @@
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
+import { Alert } from 'react-native';
 import { storage } from '../utils/storage';
+import { apiClient } from '../api/client';
 
 interface AuthContextType {
   userToken: string | null;
@@ -17,7 +19,6 @@ export const AuthContext = createContext<AuthContextType>({
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [userToken, setUserToken] = useState<string | null>(null);
-  
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
@@ -47,6 +48,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUserToken(null);
     setIsLoading(false);
   };
+
+  useEffect(() => {
+    const interceptor = apiClient.interceptors.response.use(
+      (response) => response,
+      async (error) => {
+        if (error.response && error.response.status === 401) {
+          Alert.alert(
+            'Sesiune Inactivă', 
+            'Acest dispozitiv a fost deconectat de la distanță sau sesiunea a expirat.'
+          );
+          
+          await logout();
+        }
+        
+        return Promise.reject(error);
+      }
+    );
+
+    return () => {
+      apiClient.interceptors.response.eject(interceptor);
+    };
+  }, []);
 
   return (
     <AuthContext.Provider value={{ userToken, isLoading, loginState, logout }}>
