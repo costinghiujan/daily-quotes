@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useContext } from 'react';
 import { 
   View, 
   Text, 
@@ -8,19 +8,21 @@ import {
   StyleSheet, 
   ActivityIndicator,
   Alert,
-  Image // NOU: Importăm componenta nativă pentru imagini
+  Image
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker'; // NOU: Importăm selectorul de galerie
+import * as ImagePicker from 'expo-image-picker';
 import { userService, UserProfile } from '../api/userService';
 import { colors } from '../theme/colors';
+import { AuthContext } from '../context/AuthContext';
 
 export default function ProfileScreen() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [quotes, setQuotes] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isUploading, setIsUploading] = useState(false); // NOU: Stare pentru spinner-ul de upload
+  const [isUploading, setIsUploading] = useState(false);
+  const { logout } = useContext(AuthContext);
 
   const [isEditing, setIsEditing] = useState(false);
   const [editFullName, setEditFullName] = useState('');
@@ -41,6 +43,17 @@ export default function ProfileScreen() {
     }
   };
 
+  const handleLogout = () => {
+    Alert.alert(
+      'Delogare',
+      'Ești sigur că vrei să ieși din cont?',
+      [
+        { text: 'Anulează', style: 'cancel' },
+        { text: 'Ieși', style: 'destructive', onPress: () => logout() }
+      ]
+    );
+  };
+
   useFocusEffect(
     useCallback(() => {
       fetchProfileData();
@@ -58,11 +71,7 @@ export default function ProfileScreen() {
     }
   };
 
-  // ==========================================
-  // NOU: Funcția de selectare și încărcare a imaginii
-  // ==========================================
   const handlePickImage = async () => {
-    // 1. Cerem permisiunea de a accesa galeria
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     
     if (permissionResult.granted === false) {
@@ -70,22 +79,18 @@ export default function ProfileScreen() {
       return;
     }
 
-    // 2. Deschidem galeria (limităm la imagini, permitem tăierea/crop-ul în pătrat)
     const pickerResult = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
-      aspect: [1, 1], // Forțăm un format pătrat perfect pentru avatar
-      quality: 0.7,   // Comprimăm puțin imaginea (70%) pentru a salva lățimea de bandă
+      aspect: [1, 1],
+      quality: 0.7,
     });
 
-    // 3. Dacă utilizatorul a selectat o poză (nu a anulat acțiunea)
     if (!pickerResult.canceled && pickerResult.assets[0]) {
       setIsUploading(true);
       try {
-        // Trimitem URI-ul local către serviciul nostru API
         const updatedProfile = await userService.uploadAvatar(pickerResult.assets[0].uri);
         
-        // Actualizăm starea locală cu noul URL primit de la server
         setProfile(updatedProfile);
         Alert.alert('Succes', 'Fotografia de profil a fost actualizată!');
       } catch (error) {
@@ -113,7 +118,6 @@ export default function ProfileScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         
-        {/* NOU: Zona interactivă pentru Avatar */}
         <TouchableOpacity onPress={handlePickImage} disabled={isUploading} style={styles.avatarContainer}>
           {profile?.profile_picture_url ? (
             <Image 
@@ -126,7 +130,6 @@ export default function ProfileScreen() {
             </View>
           )}
           
-          {/* Suprapunem un mic indicator de încărcare sau iconița de cameră */}
           <View style={styles.avatarOverlay}>
             {isUploading ? (
               <ActivityIndicator size="small" color="#fff" />
@@ -150,10 +153,17 @@ export default function ProfileScreen() {
             <Text style={styles.fullName}>{profile?.full_name || 'Nume nesetat'}</Text>
             <Text style={styles.username}>@{profile?.username}</Text>
             {profile?.bio && <Text style={styles.bio}>{profile.bio}</Text>}
-            <TouchableOpacity style={styles.editBtn} onPress={() => setIsEditing(true)}>
-              <Ionicons name="pencil" size={16} color="#fff" />
-              <Text style={styles.btnText}>Editează Profilul</Text>
-            </TouchableOpacity>
+            
+            <View style={styles.actionButtonsRow}>
+              <TouchableOpacity style={styles.editBtn} onPress={() => setIsEditing(true)}>
+                <Ionicons name="pencil" size={16} color="#fff" />
+                <Text style={styles.btnText}>Editează Profilul</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+                <Ionicons name="log-out-outline" size={18} color="#F44336" />
+              </TouchableOpacity>
+            </View>
           </View>
         )}
       </View>
@@ -170,9 +180,6 @@ export default function ProfileScreen() {
   );
 }
 
-// ==========================================
-// Stiluri (Design actualizat pentru avatar)
-// ==========================================
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
@@ -182,7 +189,7 @@ const styles = StyleSheet.create({
     elevation: 2, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 5,
   },
   avatarContainer: {
-    position: 'relative', // Pentru a putea poziționa iconița de cameră peste poză
+    position: 'relative', 
     marginBottom: 15,
   },
   avatarImage: {
@@ -224,5 +231,21 @@ const styles = StyleSheet.create({
   },
   quoteText: { fontSize: 16, fontStyle: 'italic', color: '#444', marginBottom: 5 },
   quoteAuthor: { fontSize: 14, fontWeight: 'bold', color: '#777', textAlign: 'right' },
-  emptyText: { textAlign: 'center', color: '#757575', marginTop: 20 }
+  emptyText: { textAlign: 'center', color: '#757575', marginTop: 20 },
+  actionButtonsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  logoutBtn: {
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#F44336',
+    paddingHorizontal: 12, 
+    paddingVertical: 8, 
+    borderRadius: 20,
+  },
 });
