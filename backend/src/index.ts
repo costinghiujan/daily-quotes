@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
+import path from 'path';
 import quoteRoutes from './routes/quoteRoutes';
 import authRoutes from './routes/authRoutes';
 import userRoutes from './routes/userRoutes';
@@ -24,6 +25,7 @@ app.get('/api/health', (req: Request, res: Response) => {
   res.status(200).json({ status: 'success', message: 'Serverul funcționează corect!' });
 });
 
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 app.use('/api/friendships', friendshipRoutes);
 app.use('/api/quotes', quoteRoutes);
 app.use('/api/users', userRoutes);
