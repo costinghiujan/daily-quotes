@@ -5,6 +5,7 @@ import quoteRoutes from './routes/quoteRoutes';
 import authRoutes from './routes/authRoutes';
 import userRoutes from './routes/userRoutes';
 import friendshipRoutes from './routes/friendshipRoutes';
+import sessionRoutes from './routes/sessionRoutes';
 import { testConnection, initDB } from './config/db';
 
 const app = express();
@@ -27,6 +28,7 @@ app.get('/api/health', (req: Request, res: Response) => {
 
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 app.use('/api/friendships', friendshipRoutes);
+app.use('/api/sessions', sessionRoutes);
 app.use('/api/quotes', quoteRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
