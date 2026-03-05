@@ -84,8 +84,8 @@ export const initDB = async () => {
         reaction_type VARCHAR(50) NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         
-        -- Această regulă previne spam-ul. Un user poate avea o singură reacție activă per citat.
-        CONSTRAINT unique_user_quote_reaction UNIQUE (user_id, quote_id)
+        -- ARHITECTURĂ NOUĂ: Permitem reacții multiple, dar prevenim duplicatele de același tip
+        CONSTRAINT unique_user_quote_reaction UNIQUE (user_id, quote_id, reaction_type)
       );
     `);
     console.log('[Bază de Date] Tabela "quote_reactions" este pregătită.');
