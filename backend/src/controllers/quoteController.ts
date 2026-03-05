@@ -183,9 +183,9 @@ export const getFeedQuotes = async (req: AuthRequest, res: Response): Promise<vo
       LEFT JOIN quote_reactions qr ON q.id = qr.quote_id
       WHERE q.user_id = $1 
          OR q.user_id IN (
-            SELECT CASE WHEN user_id = $1 THEN friend_id ELSE user_id END
-            FROM friendships
-            WHERE (user_id = $1 OR friend_id = $1) AND status = 'accepted'
+            SELECT CASE WHEN f.requester_id = $1 THEN f.receiver_id ELSE f.requester_id END
+            FROM friendships f
+            WHERE (f.requester_id = $1 OR f.receiver_id = $1) AND f.status = 'accepted'
          )
       GROUP BY q.id, u.id
       ORDER BY q.created_at DESC

@@ -58,4 +58,13 @@ export const quoteService = {
       throw error;
     }
   },
+
+  toggleReaction: async (quoteId: number, reactionType: string): Promise<void> => {
+    try {
+      await apiClient.post(`/quotes/${quoteId}/react`, { reactionType });
+    } catch (error) {
+      console.error('[Eroare Frontend] Nu s-a putut trimite reacția:', error);
+      throw error;
+    }
+  },
 };
