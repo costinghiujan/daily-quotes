@@ -1,8 +1,14 @@
 import axios from 'axios';
 import { storage } from '../utils/storage'; 
+import Constants from 'expo-constants';
 
-const LOCAL_IP = '10.46.19.219'; 
-const BASE_URL = `http://${LOCAL_IP}:3000/api`;
+const debuggerHost = Constants.expoConfig?.hostUri;
+
+const dynamicIp = debuggerHost ? debuggerHost.split(':')[0] : null;
+
+const BASE_URL = dynamicIp 
+  ? `http://${dynamicIp}:3000/api` 
+  : 'http://localhost:3000/api'; 
 
 console.log('[Axios] Instanța a fost inițializată cu BASE_URL:', BASE_URL);
 
@@ -18,14 +24,12 @@ apiClient.interceptors.request.use(
   async (config) => {
     try {
       const token = await storage.getToken();
-      
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
     } catch (error) {
       console.error('[Eroare Axios Interceptor] Nu s-a putut injecta token-ul:', error);
     }
-    
     return config;
   },
   (error) => {
