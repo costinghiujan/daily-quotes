@@ -15,7 +15,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { quoteService } from '../api/quoteService';
 import { colors } from '../theme/colors';
 
-// Configurația reacțiilor noastre
 const REACTIONS_CONFIG = [
   { key: 'BLUE_HEART', emoji: '💙', prop: 'blue_heart_count' },
   { key: 'APPLAUSE', emoji: '👏', prop: 'applause_count' },
@@ -34,9 +33,6 @@ export default function HomeScreen() {
   const [newAuthor, setNewAuthor] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // ==========================================
-  // Încărcare și Refresh
-  // ==========================================
   const fetchFeed = async () => {
     setIsLoading(true);
     try {
@@ -65,9 +61,6 @@ export default function HomeScreen() {
     }
   }, []);
 
-  // ==========================================
-  // Postare Citat Nou
-  // ==========================================
   const handleAddQuote = async () => {
     if (!newText.trim() || !newAuthor.trim()) {
       Alert.alert('Eroare', 'Completează textul și autorul!');
@@ -79,6 +72,7 @@ export default function HomeScreen() {
       Alert.alert('Succes', 'Citatul a fost postat!');
       setNewText('');
       setNewAuthor('');
+      onRefresh(); 
     } catch (error) {
       Alert.alert('Eroare', 'Nu am putut posta citatul.');
     } finally {
@@ -86,48 +80,34 @@ export default function HomeScreen() {
     }
   };
 
-  // ==========================================
-  // ARHITECTURĂ: Manipularea Reacțiilor (Optimistic UI)
-  // ==========================================
   const handleToggleReaction = async (quoteId: number, reactionKey: string) => {
-    // 1. Modificăm starea locală instantaneu pentru a oferi feedback vizual utilizatorului
     setFeedQuotes(prevQuotes => prevQuotes.map(quote => {
       if (quote.id !== quoteId) return quote;
 
       const updatedQuote = { ...quote };
-      const currentReaction = updatedQuote.user_reaction;
+      const currentReactions = Array.isArray(updatedQuote.user_reactions) ? updatedQuote.user_reactions : [];
       const targetProp = reactionKey.toLowerCase() + '_count';
+      
+      const hasReacted = currentReactions.includes(reactionKey);
 
-      if (currentReaction === reactionKey) {
-        // Cazul B: Apasă pe aceeași reacție -> O șterge
+      if (hasReacted) {
         updatedQuote[targetProp] = Math.max(0, parseInt(updatedQuote[targetProp] || 0) - 1);
-        updatedQuote.user_reaction = null;
+        updatedQuote.user_reactions = currentReactions.filter((key: string) => key !== reactionKey);
       } else {
-        // Cazul A & C: Apasă pe o reacție nouă
-        if (currentReaction) {
-          // Scădem contorul de la reacția veche (dacă se răzgândește)
-          const oldProp = currentReaction.toLowerCase() + '_count';
-          updatedQuote[oldProp] = Math.max(0, parseInt(updatedQuote[oldProp] || 0) - 1);
-        }
-        // Creștem contorul la noua reacție
         updatedQuote[targetProp] = parseInt(updatedQuote[targetProp] || 0) + 1;
-        updatedQuote.user_reaction = reactionKey;
+        updatedQuote.user_reactions = [...currentReactions, reactionKey];
       }
+      
       return updatedQuote;
     }));
 
-    // 2. Trimitem cererea în fundal către server
     try {
       await quoteService.toggleReaction(quoteId, reactionKey);
     } catch (error) {
       console.error('A apărut o eroare de rețea la salvarea reacției.', error);
-      // Notă: Într-o aplicație complexă, aici am da "Revert" la setFeedQuotes dacă pică netul
     }
   };
 
-  // ==========================================
-  // UI Component: Citat din Feed
-  // ==========================================
   const renderFeedItem = ({ item }: { item: any }) => (
     <View style={styles.feedCard}>
       <View style={styles.postHeader}>
@@ -149,11 +129,10 @@ export default function HomeScreen() {
         <Text style={styles.quoteAuthor}>— {item.original_author}</Text>
       </View>
 
-      {/* BARA DE REACȚII */}
       <View style={styles.reactionsBar}>
         {REACTIONS_CONFIG.map((reaction) => {
           const count = parseInt(item[reaction.prop] || 0);
-          const isSelected = item.user_reaction === reaction.key;
+          const isSelected = Array.isArray(item.user_reactions) && item.user_reactions.includes(reaction.key);
 
           return (
             <TouchableOpacity 
@@ -210,9 +189,6 @@ export default function HomeScreen() {
   );
 }
 
-// ==========================================
-// Stiluri (Design)
-// ==========================================
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
@@ -230,7 +206,7 @@ const styles = StyleSheet.create({
   avatarPlaceholderSmall: { width: 40, height: 40, borderRadius: 20, marginRight: 10, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' },
   postUserName: { fontSize: 15, fontWeight: 'bold', color: '#333' },
   postUserHandle: { fontSize: 13, color: '#777' },
-  quoteContent: { borderLeftWidth: 3, borderLeftColor: colors.primary, paddingLeft: 10, marginTop: 5, marginBottom: 15 }, // Adăugat marginBottom
+  quoteContent: { borderLeftWidth: 3, borderLeftColor: colors.primary, paddingLeft: 10, marginTop: 5, marginBottom: 15 },
   quoteText: { fontSize: 16, fontStyle: 'italic', color: '#444', marginBottom: 8, lineHeight: 22 },
   quoteAuthor: { fontSize: 14, fontWeight: 'bold', color: '#888' },
 
@@ -238,40 +214,10 @@ const styles = StyleSheet.create({
   emptyText: { fontSize: 18, fontWeight: 'bold', color: '#555', marginTop: 15 },
   emptySubText: { fontSize: 15, color: '#777', textAlign: 'center', marginTop: 10, lineHeight: 22 },
 
-  // ==========================================
-  // Stiluri Noi pentru Bara de Reacții
-  // ==========================================
-  reactionsBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between', // Le spațiază egal pe lățimea cardului
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
-    paddingTop: 12,
-  },
-  reactionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderRadius: 20,
-    backgroundColor: '#f9f9f9', // Fundal subtil
-  },
-  reactionBtnActive: {
-    backgroundColor: '#e3f2fd', // Culoare albăstruie dacă ai apăsat pe el
-    borderWidth: 1,
-    borderColor: '#bbdefb',
-  },
-  emojiText: {
-    fontSize: 16,
-  },
-  reactionCount: {
-    fontSize: 13,
-    fontWeight: 'bold',
-    color: '#777',
-    marginLeft: 4,
-  },
-  reactionCountActive: {
-    color: '#1976d2',
-  }
+  reactionsBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: '#f0f0f0', paddingTop: 12 },
+  reactionBtn: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 6, borderRadius: 20, backgroundColor: '#f9f9f9' },
+  reactionBtnActive: { backgroundColor: '#e3f2fd', borderWidth: 1, borderColor: '#bbdefb' },
+  emojiText: { fontSize: 16 },
+  reactionCount: { fontSize: 13, fontWeight: 'bold', color: '#777', marginLeft: 4 },
+  reactionCountActive: { color: '#1976d2' }
 });
