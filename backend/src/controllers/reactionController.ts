@@ -30,26 +30,14 @@ export const toggleReaction = async (req: AuthRequest, res: Response): Promise<v
     }
 
     const existingReaction = await query(
-      'SELECT id, reaction_type FROM quote_reactions WHERE user_id = $1 AND quote_id = $2',
-      [userId, quoteId]
+      'SELECT id FROM quote_reactions WHERE user_id = $1 AND quote_id = $2 AND reaction_type = $3',
+      [userId, quoteId, reactionType]
     );
 
     if (existingReaction.rows.length > 0) {
-      const currentReaction = existingReaction.rows[0].reaction_type;
-      const reactionId = existingReaction.rows[0].id;
-
-      if (currentReaction === reactionType) {
-        await query('DELETE FROM quote_reactions WHERE id = $1', [reactionId]);
-        res.status(200).json({ status: 'success', action: 'removed', message: 'Reacția a fost ștearsă.' });
-        return;
-      } else {
-        await query(
-          'UPDATE quote_reactions SET reaction_type = $1 WHERE id = $2',
-          [reactionType, reactionId]
-        );
-        res.status(200).json({ status: 'success', action: 'updated', message: 'Reacția a fost actualizată.' });
-        return;
-      }
+      await query('DELETE FROM quote_reactions WHERE id = $1', [existingReaction.rows[0].id]);
+      res.status(200).json({ status: 'success', action: 'removed', message: 'Reacția a fost eliminată.' });
+      return;
     } else {
       await query(
         'INSERT INTO quote_reactions (user_id, quote_id, reaction_type) VALUES ($1, $2, $3)',

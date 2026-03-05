@@ -177,7 +177,7 @@ export const getFeedQuotes = async (req: AuthRequest, res: Response): Promise<vo
         COUNT(CASE WHEN qr.reaction_type = 'TOUCHING' THEN 1 END) AS touching_count,
         COUNT(CASE WHEN qr.reaction_type = 'HUG' THEN 1 END) AS hug_count,
         COUNT(CASE WHEN qr.reaction_type = 'MIND_BLOWN' THEN 1 END) AS mind_blown_count,
-        MAX(CASE WHEN qr.user_id = $1 THEN qr.reaction_type ELSE NULL END) AS user_reaction
+        ARRAY_REMOVE(ARRAY_AGG(CASE WHEN qr.user_id = $1 THEN qr.reaction_type END), NULL) AS user_reactions
       FROM quotes q
       JOIN users u ON q.user_id = u.id
       LEFT JOIN quote_reactions qr ON q.id = qr.quote_id
