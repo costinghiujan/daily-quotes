@@ -162,15 +162,32 @@ export const getFeedQuotes = async (req: AuthRequest, res: Response): Promise<vo
     }
 
     const feedQuery = `
-      SELECT q.id, q.text, q.author as original_author, q.category, q.created_at,
-             u.id as user_id, u.username, u.full_name, u.profile_picture_url
+      SELECT 
+        q.id, 
+        q.text, 
+        q.author AS original_author, 
+        q.created_at,
+        u.id AS post_user_id, 
+        u.username, 
+        u.full_name, 
+        u.profile_picture_url,
+        COUNT(CASE WHEN qr.reaction_type = 'BLUE_HEART' THEN 1 END) AS blue_heart_count,
+        COUNT(CASE WHEN qr.reaction_type = 'APPLAUSE' THEN 1 END) AS applause_count,
+        COUNT(CASE WHEN qr.reaction_type = 'SAD' THEN 1 END) AS sad_count,
+        COUNT(CASE WHEN qr.reaction_type = 'TOUCHING' THEN 1 END) AS touching_count,
+        COUNT(CASE WHEN qr.reaction_type = 'HUG' THEN 1 END) AS hug_count,
+        COUNT(CASE WHEN qr.reaction_type = 'MIND_BLOWN' THEN 1 END) AS mind_blown_count,
+        MAX(CASE WHEN qr.user_id = $1 THEN qr.reaction_type ELSE NULL END) AS user_reaction
       FROM quotes q
       JOIN users u ON q.user_id = u.id
-      WHERE q.user_id IN (
-        SELECT receiver_id FROM friendships WHERE requester_id = $1 AND status = 'accepted'
-        UNION
-        SELECT requester_id FROM friendships WHERE receiver_id = $1 AND status = 'accepted'
-      )
+      LEFT JOIN quote_reactions qr ON q.id = qr.quote_id
+      WHERE q.user_id = $1 
+         OR q.user_id IN (
+            SELECT CASE WHEN user_id = $1 THEN friend_id ELSE user_id END
+            FROM friendships
+            WHERE (user_id = $1 OR friend_id = $1) AND status = 'accepted'
+         )
+      GROUP BY q.id, u.id
       ORDER BY q.created_at DESC
       LIMIT 50;
     `;
