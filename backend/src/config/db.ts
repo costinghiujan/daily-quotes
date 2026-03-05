@@ -76,6 +76,25 @@ export const initDB = async () => {
     `);
     console.log('[Bază de Date] Tabela "sessions" este pregătită.');
 
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS quote_reactions (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        quote_id INTEGER NOT NULL REFERENCES quotes(id) ON DELETE CASCADE,
+        reaction_type VARCHAR(50) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        
+        -- Această regulă previne spam-ul. Un user poate avea o singură reacție activă per citat.
+        CONSTRAINT unique_user_quote_reaction UNIQUE (user_id, quote_id)
+      );
+    `);
+    console.log('[Bază de Date] Tabela "quote_reactions" este pregătită.');
+
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_reactions_quote_id ON quote_reactions(quote_id);
+    `);
+    console.log('[Bază de Date] Indexul "idx_reactions_quote_id" este pregătit.');
+
   } catch (error) {
     console.error('[Eroare Bază de Date] Inițializarea tabelelor a eșuat:', error);
     throw error;
