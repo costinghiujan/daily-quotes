@@ -95,6 +95,35 @@ export const initDB = async () => {
     `);
     console.log('[Bază de Date] Indexul "idx_reactions_quote_id" este pregătit.');
 
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS notification_settings (
+        user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+        notify_reactions BOOLEAN DEFAULT TRUE,
+        notify_friend_requests BOOLEAN DEFAULT TRUE,
+        notify_friend_accepted BOOLEAN DEFAULT TRUE,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    console.log('[Bază de Date] Tabela "notification_settings" este pregătită.');
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS notifications (
+        id SERIAL PRIMARY KEY,
+        recipient_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        sender_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        type VARCHAR(50) NOT NULL, -- ex: 'REACTION_ADDED', 'FRIEND_REQUEST', 'FRIEND_ACCEPTED'
+        reference_id INTEGER, -- ID-ul citatului sau al cererii de prietenie (polimorfism ușor)
+        is_read BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    console.log('[Bază de Date] Tabela "notifications" este pregătită.');
+
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_notifications_recipient ON notifications(recipient_id);
+    `);
+    console.log('[Bază de Date] Indexul "idx_notifications_recipient" este pregătit.');
+
   } catch (error) {
     console.error('[Eroare Bază de Date] Inițializarea tabelelor a eșuat:', error);
     throw error;

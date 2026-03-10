@@ -36,10 +36,17 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
       [username, email, passwordHash]
     );
 
+    const newUser = result.rows[0];
+
+    await query(
+      `INSERT INTO notification_settings (user_id) VALUES ($1)`,
+      [newUser.id]
+    );
+
     res.status(201).json({
       status: 'success',
       message: 'Contul a fost creat cu succes!',
-      data: result.rows[0]
+      data: newUser
     });
 
   } catch (error) {
