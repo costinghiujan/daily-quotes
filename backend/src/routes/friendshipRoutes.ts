@@ -4,8 +4,6 @@ import {
   sendFriendRequest, 
   acceptFriendRequest, 
   removeFriendOrRequest, 
-  getPendingRequests, 
-  getFriends 
 } from '../controllers/friendshipController';
 
 const router = Router();
@@ -13,9 +11,9 @@ const router = Router();
 router.use(protect);
 
 router.post('/request', sendFriendRequest);
-router.put('/accept', acceptFriendRequest);
-router.delete('/remove/:targetUserId', removeFriendOrRequest);
-router.get('/pending', getPendingRequests);
-router.get('/list', getFriends);
+
+router.put('/accept/:id', acceptFriendRequest);
+
+router.delete('/:id', removeFriendOrRequest);
 
 export default router;

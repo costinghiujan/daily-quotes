@@ -1,44 +1,52 @@
 import { apiClient } from './client';
-import { UserProfile } from './userService';
 
-export interface FriendRequest extends UserProfile {
-  created_at: string;
+export interface FriendRequest {
+  id: number;
+  requester_id: number;
+  receiver_id: number;
+  status: string;
+  username: string;
+  full_name: string;
+  profile_picture_url: string;
 }
 
 export const friendshipService = {
   sendRequest: async (receiverId: number): Promise<void> => {
     try {
       await apiClient.post('/friendships/request', { receiverId });
-    } catch (error) {
-      console.error('[Eroare Frontend] Trimitere cerere:', error);
-      throw error;
+    } catch (error: any) {
+      const backendMessage = error.response?.data?.message || error.message;
+      console.error('[Eroare Frontend] Trimitere cerere:', backendMessage);
+      throw new Error(backendMessage); 
+    }
+  },
+
+  acceptRequest: async (requestId: number): Promise<void> => {
+    try {
+      await apiClient.put(`/friendships/accept/${requestId}`, { requestId });
+    } catch (error: any) {
+      const backendMessage = error.response?.data?.message || error.message;
+      console.error('[Eroare Frontend] Acceptare cerere:', backendMessage);
+      throw new Error(backendMessage);
+    }
+  },
+
+  removeFriendOrRequest: async (requestId: number): Promise<void> => {
+    try {
+      await apiClient.delete(`/friendships/${requestId}`);
+    } catch (error: any) {
+      const backendMessage = error.response?.data?.message || error.message;
+      console.error('[Eroare Frontend] Respingere cerere/prietenie:', backendMessage);
+      throw new Error(backendMessage);
     }
   },
 
   getPendingRequests: async (): Promise<FriendRequest[]> => {
     try {
-      const response = await apiClient.get('/friendships/pending');
+      const response = await apiClient.get('/friendships/requests');
       return response.data.data;
-    } catch (error) {
-      console.error('[Eroare Frontend] Preluare notificări:', error);
-      throw error;
-    }
-  },
-
-  acceptRequest: async (requesterId: number): Promise<void> => {
-    try {
-      await apiClient.put('/friendships/accept', { requesterId });
-    } catch (error) {
-      console.error('[Eroare Frontend] Acceptare cerere:', error);
-      throw error;
-    }
-  },
-
-  removeFriendOrRequest: async (targetUserId: number): Promise<void> => {
-    try {
-      await apiClient.delete(`/friendships/remove/${targetUserId}`);
-    } catch (error) {
-      console.error('[Eroare Frontend] Ștergere/Respingere cerere:', error);
+    } catch (error: any) {
+      console.error('[Eroare Frontend] Preluare cereri:', error.response?.data?.message || error.message);
       throw error;
     }
   }

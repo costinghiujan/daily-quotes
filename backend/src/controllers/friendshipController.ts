@@ -6,10 +6,17 @@ import { sendNotification } from '../utils/notificationHelper';
 export const sendFriendRequest = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const requesterId = req.user?.id;
-    const receiverId = parseInt(req.params.id as string, 10);
+    
+    const rawReceiverId = req.body.receiverId || req.body.friendId || req.params.id;
+    const receiverId = parseInt(rawReceiverId as string, 10);
 
     if (!requesterId) {
       res.status(401).json({ status: 'error', message: 'Neautorizat.' });
+      return;
+    }
+
+    if (!receiverId || isNaN(receiverId)) {
+      res.status(400).json({ status: 'error', message: 'ID-ul utilizatorului lipsește sau este invalid.' });
       return;
     }
 
@@ -46,11 +53,18 @@ export const sendFriendRequest = async (req: AuthRequest, res: Response): Promis
 
 export const acceptFriendRequest = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const receiverId = req.user?.id;
-    const friendshipId = parseInt(req.params.id as string, 10);
+    const receiverId = req.user?.id; 
+    
+    const rawFriendshipId = req.body.requestId || req.body.id || req.params.id;
+    const friendshipId = parseInt(rawFriendshipId as string, 10);
 
     if (!receiverId) {
       res.status(401).json({ status: 'error', message: 'Neautorizat.' });
+      return;
+    }
+
+    if (!friendshipId || isNaN(friendshipId)) {
+      res.status(400).json({ status: 'error', message: 'ID-ul cererii lipsește sau este invalid.' });
       return;
     }
 
@@ -82,25 +96,40 @@ export const acceptFriendRequest = async (req: AuthRequest, res: Response): Prom
 
 export const removeFriendOrRequest = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const currentUserId = req.user?.id;
-    const { targetUserId } = req.params;
+    const userId = req.user?.id;
+    const friendshipId = parseInt(req.params.id as string, 10);
 
-    const result = await query(`
-      DELETE FROM friendships 
-      WHERE (requester_id = $1 AND receiver_id = $2) 
-         OR (requester_id = $2 AND receiver_id = $1)
-      RETURNING *;
-    `, [currentUserId, targetUserId]);
-
-    if (result.rows.length === 0) {
-      res.status(404).json({ status: 'error', message: 'Nu s-a găsit nicio relație.' });
+    if (!userId) {
+      res.status(401).json({ status: 'error', message: 'Neautorizat.' });
       return;
     }
 
-    res.status(200).json({ status: 'success', message: 'Relație ștearsă cu succes.' });
+    if (!friendshipId || isNaN(friendshipId)) {
+      res.status(400).json({ status: 'error', message: 'ID-ul interacțiunii este invalid.' });
+      return;
+    }
+
+    const checkQuery = await query(
+      'SELECT id FROM friendships WHERE id = $1 AND (requester_id = $2 OR receiver_id = $2)',
+      [friendshipId, userId]
+    );
+
+    if (checkQuery.rows.length === 0) {
+      res.status(404).json({ status: 'error', message: 'Cererea sau prietenia nu există (a fost deja ștearsă).' });
+      return;
+    }
+
+    await query('DELETE FROM friendships WHERE id = $1', [friendshipId]);
+
+    await query(
+      `DELETE FROM notifications WHERE reference_id = $1 AND type IN ('FRIEND_REQUEST', 'FRIEND_ACCEPTED')`,
+      [friendshipId]
+    );
+
+    res.status(200).json({ status: 'success', message: 'Interacțiunea a fost ștearsă cu succes.' });
   } catch (error) {
-    console.error('[Eroare Controller] Ștergere prieten:', error);
-    res.status(500).json({ status: 'error', message: 'Eroare internă.' });
+    console.error('[Eroare Controller] Ștergere Prietenie:', error);
+    res.status(500).json({ status: 'error', message: 'Eroare internă a serverului.' });
   }
 };
 
