@@ -28,7 +28,9 @@ const MainTabNavigator = () => {
     const fetchUnreadCount = async () => {
       try {
         const count = await notificationService.getUnreadCount();
-        setUnreadCount(count);
+        console.log(`[Polling] Am interogat serverul. Notificări necitite: ${count} (Tip de date: typeof count este ${typeof count})`);
+        
+        setUnreadCount(Number(count)); 
       } catch (error) {
         console.log('[Polling] Eroare preluare badge:', error);
       }
@@ -66,7 +68,7 @@ const MainTabNavigator = () => {
         component={NotificationsScreen} 
         options={{ 
           title: 'Notificări',
-          tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
+          tabBarBadge: (unreadCount && !isNaN(unreadCount) && unreadCount > 0) ? unreadCount : undefined,
           tabBarBadgeStyle: { backgroundColor: '#F44336', color: '#fff', fontSize: 10 }
         }} 
       />
