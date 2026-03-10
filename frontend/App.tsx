@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -16,10 +16,31 @@ import ProfileScreen from './src/screens/ProfileScreen';
 import { AuthProvider, AuthContext } from './src/context/AuthContext';
 import { colors } from './src/theme/colors';
 
+import { notificationService } from './src/api/notificationService';
+
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 const MainTabNavigator = () => {
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    const fetchUnreadCount = async () => {
+      try {
+        const count = await notificationService.getUnreadCount();
+        setUnreadCount(count);
+      } catch (error) {
+        console.log('[Polling] Eroare preluare badge:', error);
+      }
+    };
+
+    fetchUnreadCount();
+
+    const intervalId = setInterval(fetchUnreadCount, 10000);
+
+    return () => clearInterval(intervalId);
+  }, []);
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -40,7 +61,15 @@ const MainTabNavigator = () => {
     >
       <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Feed' }} />
       <Tab.Screen name="Search" component={SearchScreen} options={{ title: 'Caută' }} />
-      <Tab.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Notificări' }} />
+      <Tab.Screen 
+        name="Notifications" 
+        component={NotificationsScreen} 
+        options={{ 
+          title: 'Notificări',
+          tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
+          tabBarBadgeStyle: { backgroundColor: '#F44336', color: '#fff', fontSize: 10 }
+        }} 
+      />
       <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profilul Meu' }} />
     </Tab.Navigator>
   );

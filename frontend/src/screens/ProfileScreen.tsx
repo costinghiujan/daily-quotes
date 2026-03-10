@@ -11,7 +11,7 @@ import {
   Image,
   Modal,
   ScrollView,
-  Switch // NOU: Componenta pentru comutatoare On/Off
+  Switch
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -36,18 +36,16 @@ export default function ProfileScreen() {
   const [editFullName, setEditFullName] = useState('');
   const [editBio, setEditBio] = useState('');
 
-  // Stări pentru Modulul de Securitate
   const [isSecurityModalVisible, setSecurityModalVisible] = useState(false);
   const [activeSessions, setActiveSessions] = useState<Session[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<number | null>(null);
   const [isSessionsLoading, setIsSessionsLoading] = useState(false);
 
-  // ==========================================
-  // Stări noi pentru Modulul de Setări Notificări
-  // ==========================================
   const [isNotificationsModalVisible, setNotificationsModalVisible] = useState(false);
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings | null>(null);
   const [isSettingsLoading, setIsSettingsLoading] = useState(false);
+
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const fetchProfileData = async () => {
     setIsLoading(true);
@@ -57,6 +55,10 @@ export default function ProfileScreen() {
       setQuotes(data.quotes);
       setEditFullName(data.profile.full_name || '');
       setEditBio(data.profile.bio || '');
+
+      const count = await notificationService.getUnreadCount();
+      setUnreadCount(count);
+
     } catch (error) {
       console.error('Eroare la încărcare profil:', error);
     } finally {
@@ -150,9 +152,6 @@ export default function ProfileScreen() {
     ]);
   };
 
-  // ==========================================
-  // Funcții pentru Setările de Notificări
-  // ==========================================
   const openNotificationsModal = async () => {
     setNotificationsModalVisible(true);
     setIsSettingsLoading(true);
@@ -170,18 +169,14 @@ export default function ProfileScreen() {
   const handleToggleSetting = async (key: keyof NotificationSettings, value: boolean) => {
     if (!notificationSettings) return;
 
-    // 1. Salvăm starea veche în caz de eroare (Graceful Degradation)
     const previousSettings = { ...notificationSettings };
     
-    // 2. Aplicăm Optimistic UI: actualizăm vizual instantaneu
     const updatedSettings = { ...notificationSettings, [key]: value };
     setNotificationSettings(updatedSettings);
 
-    // 3. Trimitem la server
     try {
       await notificationService.updateSettings(updatedSettings);
     } catch (error) {
-      // 4. Robustețe: Dacă pică netul, dăm revert la comutator și anunțăm utilizatorul
       setNotificationSettings(previousSettings);
       Alert.alert('Eroare conexiune', 'Setarea nu a putut fi salvată.');
     }
@@ -259,9 +254,13 @@ export default function ProfileScreen() {
                 <Ionicons name="pencil" size={16} color="#fff" />
               </TouchableOpacity>
 
-              {/* NOU: Butonul pentru Notificări */}
               <TouchableOpacity style={styles.actionBtn} onPress={openNotificationsModal}>
                 <Ionicons name="notifications-outline" size={18} color="#fff" />
+                {unreadCount > 0 && (
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+                  </View>
+                )}
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.actionBtn} onPress={openSecurityModal}>
@@ -285,7 +284,6 @@ export default function ProfileScreen() {
         ListEmptyComponent={<Text style={styles.emptyText}>Nu ai adăugat niciun citat încă.</Text>}
       />
 
-      {/* MODAL SECURITATE */}
       <Modal visible={isSecurityModalVisible} animationType="slide" transparent={true} onRequestClose={() => setSecurityModalVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -326,9 +324,6 @@ export default function ProfileScreen() {
         </View>
       </Modal>
 
-      {/* ========================================== */}
-      {/* NOU: MODAL SETĂRI NOTIFICĂRI */}
-      {/* ========================================== */}
       <Modal visible={isNotificationsModalVisible} animationType="fade" transparent={true} onRequestClose={() => setNotificationsModalVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -391,9 +386,6 @@ export default function ProfileScreen() {
   );
 }
 
-// ==========================================
-// Stiluri (Design)
-// ==========================================
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
@@ -445,12 +437,28 @@ const styles = StyleSheet.create({
   revokeBtn: { backgroundColor: '#ffebee', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
   revokeBtnText: { color: '#F44336', fontWeight: 'bold', fontSize: 13 },
 
-  // ==========================================
-  // NOU: Stiluri Setări Notificări
-  // ==========================================
   settingsContainer: { paddingBottom: 20 },
   settingRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
   settingTextContainer: { flex: 1, paddingRight: 15 },
   settingTitle: { fontSize: 16, fontWeight: 'bold', color: '#333', marginBottom: 4 },
   settingDescription: { fontSize: 13, color: '#777', lineHeight: 18 },
+  badge: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    backgroundColor: '#F44336',
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#fff',
+    zIndex: 10,
+  },
+  badgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
 });

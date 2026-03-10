@@ -16,4 +16,4 @@ router.put('/accept/:id', acceptFriendRequest);
 
 router.delete('/:id', removeFriendOrRequest);
 
-export default router;
+  export default router;

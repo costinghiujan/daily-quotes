@@ -126,3 +126,27 @@ export const markAllAsRead = async (req: AuthRequest, res: Response): Promise<vo
     res.status(500).json({ status: 'error', message: 'Eroare internă a serverului.' });
   }
 };
+
+export const getUnreadCount = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      res.status(401).json({ status: 'error', message: 'Neautorizat.' });
+      return;
+    }
+
+    const result = await query(
+      `SELECT COUNT(*) FROM notifications WHERE recipient_id = $1 AND is_read = FALSE`,
+      [userId]
+    );
+
+    res.status(200).json({
+      status: 'success',
+      count: parseInt(result.rows[0].count, 10) 
+    });
+  } catch (error) {
+    console.error('[Eroare Controller] Preluare număr notificări:', error);
+    res.status(500).json({ status: 'error', message: 'Eroare internă a serverului.' });
+  }
+};

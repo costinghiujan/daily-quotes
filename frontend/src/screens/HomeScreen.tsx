@@ -24,7 +24,7 @@ const REACTIONS_CONFIG = [
   { key: 'MIND_BLOWN', emoji: '🤯', prop: 'mind_blown_count' },
 ];
 
-export default function HomeScreen() {
+export default function HomeScreen({ navigation }: any) {
   const [feedQuotes, setFeedQuotes] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -192,7 +192,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  listContent: { padding: 15, paddingBottom: 30 },
+  listContent: { padding: 15, paddingBottom: 30, paddingTop: 50 }, // Am adăugat puțin paddingTop ca să nu se lipească de Notch
   
   createPostContainer: { backgroundColor: '#fff', padding: 15, borderRadius: 10, marginBottom: 20, elevation: 2, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 5 },
   createPostTitle: { fontSize: 16, fontWeight: 'bold', color: '#333', marginBottom: 10 },

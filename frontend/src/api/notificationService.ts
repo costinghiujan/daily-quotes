@@ -56,5 +56,15 @@ export const notificationService = {
       console.error('[Eroare Frontend] Marcare notificări ca citite:', error);
       throw error;
     }
+  },
+
+  getUnreadCount: async (): Promise<number> => {
+    try {
+      const response = await apiClient.get('/notifications/unread-count');
+      return response.data.count;
+    } catch (error) {
+      console.error('[Eroare Frontend] Preluare număr notificări:', error);
+      return 0;
+    }
   }
 };
