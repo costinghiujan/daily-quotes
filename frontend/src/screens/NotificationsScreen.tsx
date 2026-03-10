@@ -14,7 +14,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { notificationService, AppNotification } from '../api/notificationService';
-import { friendshipService } from '../api/friendshipService'; // Păstrăm serviciul tău pentru butoane
+import { friendshipService } from '../api/friendshipService';
 import { colors } from '../theme/colors';
 
 export default function NotificationsScreen() {
@@ -62,14 +62,13 @@ export default function NotificationsScreen() {
 
   const handleAccept = async (notificationId: number, friendshipId: number, username: string) => {
     setNotifications(prev => prev.map(n => 
-      n.id === notificationId ? { ...n, type: 'FRIEND_ACCEPTED' } : n
+      n.id === notificationId ? { ...n, type: 'FRIEND_REQUEST_ACCEPTED' } : n
     ));
 
     try {
       await friendshipService.acceptRequest(friendshipId);
       Alert.alert('Succes', `Acum ești prieten cu ${username}!`);
     } catch (error) {
-      // Robustețe: Revert în caz de eroare de rețea
       fetchNotifications();
       Alert.alert('Eroare', 'Nu s-a putut accepta cererea.');
     }
@@ -107,6 +106,7 @@ export default function NotificationsScreen() {
             {isFriendRequest && ' ți-a trimis o cerere de prietenie.'}
             {item.type === 'REACTION_ADDED' && ' a reacționat la citatul tău.'}
             {item.type === 'FRIEND_ACCEPTED' && ' ți-a acceptat cererea de prietenie.'}
+            {item.type === 'FRIEND_REQUEST_ACCEPTED' && ' și cu tine sunteți acum prieteni.'}
           </Text>
           <Text style={styles.timeText}>{date}</Text>
         </View>
@@ -131,6 +131,7 @@ export default function NotificationsScreen() {
           <View style={styles.iconContainer}>
             {item.type === 'REACTION_ADDED' && <Ionicons name="heart" size={24} color="#E91E63" />}
             {item.type === 'FRIEND_ACCEPTED' && <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />}
+            {item.type === 'FRIEND_REQUEST_ACCEPTED' && <Ionicons name="people" size={24} color="#4CAF50" />}
           </View>
         )}
       </View>

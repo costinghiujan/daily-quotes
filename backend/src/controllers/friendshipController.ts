@@ -87,6 +87,13 @@ export const acceptFriendRequest = async (req: AuthRequest, res: Response): Prom
 
     await sendNotification(requesterId, receiverId, 'FRIEND_ACCEPTED', friendshipId);
 
+    await query(
+      `UPDATE notifications 
+       SET type = 'FRIEND_REQUEST_ACCEPTED' 
+       WHERE recipient_id = $1 AND sender_id = $2 AND type = 'FRIEND_REQUEST' AND reference_id = $3`,
+      [receiverId, requesterId, friendshipId]
+    );
+
     res.status(200).json({ status: 'success', message: 'Prietenia a fost acceptată.' });
   } catch (error) {
     console.error('[Eroare Controller] Acceptare Cerere:', error);
