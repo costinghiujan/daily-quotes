@@ -71,3 +71,58 @@ export const updateNotificationSettings = async (req: AuthRequest, res: Response
     res.status(500).json({ status: 'error', message: 'Eroare internă a serverului.' });
   }
 };
+
+export const getNotifications = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      res.status(401).json({ status: 'error', message: 'Neautorizat.' });
+      return;
+    }
+
+    const result = await query(
+      `SELECT 
+         n.id, n.type, n.reference_id, n.is_read, n.created_at,
+         u.id AS sender_id, u.username, u.full_name, u.profile_picture_url
+       FROM notifications n
+       JOIN users u ON n.sender_id = u.id
+       WHERE n.recipient_id = $1
+       ORDER BY n.created_at DESC
+       LIMIT 50`,
+      [userId]
+    );
+
+    res.status(200).json({
+      status: 'success',
+      data: result.rows
+    });
+  } catch (error) {
+    console.error('[Eroare Controller] Preluare Notificări:', error);
+    res.status(500).json({ status: 'error', message: 'Eroare internă a serverului.' });
+  }
+};
+
+export const markAllAsRead = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      res.status(401).json({ status: 'error', message: 'Neautorizat.' });
+      return;
+    }
+
+    await query(
+      `UPDATE notifications SET is_read = TRUE WHERE recipient_id = $1 AND is_read = FALSE`,
+      [userId]
+    );
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Toate notificările au fost marcate ca citite.'
+    });
+  } catch (error) {
+    console.error('[Eroare Controller] Marcare Notificări Citite:', error);
+    res.status(500).json({ status: 'error', message: 'Eroare internă a serverului.' });
+  }
+};
