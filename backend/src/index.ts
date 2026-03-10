@@ -41,6 +41,7 @@ const startServer = async () => {
     await initDB();
 
     app.listen(PORT, () => {
+      console.log(`[Server] Rulează pe http://localhost:${PORT}`);
     }).on('error', (err: NodeJS.ErrnoException) => {
       if (err.code === 'EADDRINUSE') {
         console.error(`[Eroare] Portul ${PORT} este ocupat.`);
