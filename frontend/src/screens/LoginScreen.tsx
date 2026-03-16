@@ -1,15 +1,21 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useMemo } from 'react';
 import { 
   View, Text, TextInput, TouchableOpacity, Alert, 
-  KeyboardAvoidingView, Platform, Keyboard, ActivityIndicator 
+  KeyboardAvoidingView, Platform, Keyboard, ActivityIndicator,
+  StyleSheet 
 } from 'react-native';
 import { authService } from '../api/authService';
-import { authStyles as styles } from '../theme/appStyles';
 import { AuthContext } from '../context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 
+import { ThemeContext } from '../context/ThemeContext';
+import { ThemeColors } from '../theme/colors';
+
 export default function LoginScreen({ navigation }: any) {
   const { loginState } = useContext(AuthContext);
+  
+  const { colors } = useContext(ThemeContext);
+  const styles = useMemo(() => getStyles(colors), [colors]);
   
   const [identifier, setIdentifier] = useState(''); 
   const [password, setPassword] = useState('');
@@ -70,6 +76,7 @@ export default function LoginScreen({ navigation }: any) {
         <TextInput
           style={[styles.input, identifierError && styles.inputError]}
           placeholder="Email sau Username"
+          placeholderTextColor={colors.textLight}
           value={identifier}
           onChangeText={(text) => {
             setIdentifier(text);
@@ -83,6 +90,7 @@ export default function LoginScreen({ navigation }: any) {
           <TextInput
             style={[styles.input, passwordError && styles.inputError, { paddingRight: 50 }]}
             placeholder="Parolă"
+            placeholderTextColor={colors.textLight}
             value={password}
             onChangeText={(text) => {
               setPassword(text);
@@ -99,7 +107,7 @@ export default function LoginScreen({ navigation }: any) {
             <Ionicons 
               name={showPassword ? "eye-off" : "eye"} 
               size={24} 
-              color="#757575" 
+              color={colors.textLight} 
             />
           </TouchableOpacity>
         </View>
@@ -107,12 +115,12 @@ export default function LoginScreen({ navigation }: any) {
         {passwordError && <Text style={styles.errorText}>Introduceți parola.</Text>}
 
         <TouchableOpacity 
-          style={[styles.button, isSubmitting && { backgroundColor: '#80b0b2' }]} 
+          style={[styles.button, isSubmitting && { backgroundColor: colors.primary + '80' }]} 
           onPress={handleLogin}
           disabled={isSubmitting}
         >
           {isSubmitting ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={colors.white} />
           ) : (
             <Text style={styles.buttonText}>Loghează-te</Text>
           )}
@@ -128,3 +136,82 @@ export default function LoginScreen({ navigation }: any) {
     </KeyboardAvoidingView>
   );
 }
+
+const getStyles = (colors: ThemeColors) => StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+    justifyContent: 'center',
+    padding: 20,
+  },
+  formContainer: {
+    backgroundColor: colors.card,
+    padding: 20,
+    borderRadius: 15,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 5 },
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: colors.primary,
+    marginBottom: 5,
+    textAlign: 'center',
+  },
+  subtitle: {
+    fontSize: 16,
+    color: colors.textLight,
+    marginBottom: 25,
+    textAlign: 'center',
+  },
+  input: {
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 10,
+    padding: 15,
+    marginBottom: 15,
+    fontSize: 16,
+    color: colors.textDark,
+  },
+  inputError: {
+    borderColor: colors.error,
+    borderWidth: 1.5,
+  },
+  errorText: {
+    color: colors.error,
+    fontSize: 12,
+    marginTop: -10,
+    marginBottom: 10,
+    marginLeft: 5,
+  },
+  button: {
+    backgroundColor: colors.primary,
+    paddingVertical: 15,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  buttonText: {
+    color: colors.white,
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 20,
+  },
+  footerText: {
+    color: colors.textDark,
+    fontSize: 14,
+  },
+  link: {
+    color: colors.primary,
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+});

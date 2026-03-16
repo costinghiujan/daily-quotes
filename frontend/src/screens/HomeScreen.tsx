@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useContext, useMemo } from 'react';
 import { 
   View, 
   Text, 
@@ -13,7 +13,9 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { quoteService } from '../api/quoteService';
-import { colors } from '../theme/colors';
+
+import { ThemeContext } from '../context/ThemeContext';
+import { ThemeColors } from '../theme/colors';
 
 const REACTIONS_CONFIG = [
   { key: 'BLUE_HEART', emoji: '💙', prop: 'blue_heart_count' },
@@ -25,6 +27,9 @@ const REACTIONS_CONFIG = [
 ];
 
 export default function HomeScreen({ navigation }: any) {
+  const { colors, theme } = useContext(ThemeContext);
+  const styles = useMemo(() => getStyles(colors, theme), [colors, theme]);
+
   const [feedQuotes, setFeedQuotes] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -80,86 +85,101 @@ export default function HomeScreen({ navigation }: any) {
     }
   };
 
-  const handleToggleReaction = async (quoteId: number, reactionKey: string) => {
-    setFeedQuotes(prevQuotes => prevQuotes.map(quote => {
-      if (quote.id !== quoteId) return quote;
-
-      const updatedQuote = { ...quote };
-      const currentReactions = Array.isArray(updatedQuote.user_reactions) ? updatedQuote.user_reactions : [];
-      const targetProp = reactionKey.toLowerCase() + '_count';
-      
-      const hasReacted = currentReactions.includes(reactionKey);
-
-      if (hasReacted) {
-        updatedQuote[targetProp] = Math.max(0, parseInt(updatedQuote[targetProp] || 0) - 1);
-        updatedQuote.user_reactions = currentReactions.filter((key: string) => key !== reactionKey);
-      } else {
-        updatedQuote[targetProp] = parseInt(updatedQuote[targetProp] || 0) + 1;
-        updatedQuote.user_reactions = [...currentReactions, reactionKey];
+  const renderFeedItem = ({ item }: { item: any }) => {
+    const handleToggleReaction = async (quoteId: number, reactionKey: string) => {
+      setFeedQuotes(prevQuotes => prevQuotes.map(quote => {
+        if (quote.id !== quoteId) return quote;
+  
+        const updatedQuote = { ...quote };
+        const currentReactions = Array.isArray(updatedQuote.user_reactions) ? updatedQuote.user_reactions : [];
+        const targetProp = reactionKey.toLowerCase() + '_count';
+        
+        const hasReacted = currentReactions.includes(reactionKey);
+  
+        if (hasReacted) {
+          updatedQuote[targetProp] = Math.max(0, parseInt(updatedQuote[targetProp] || 0) - 1);
+          updatedQuote.user_reactions = currentReactions.filter((key: string) => key !== reactionKey);
+        } else {
+          updatedQuote[targetProp] = parseInt(updatedQuote[targetProp] || 0) + 1;
+          updatedQuote.user_reactions = [...currentReactions, reactionKey];
+        }
+        
+        return updatedQuote;
+      }));
+  
+      try {
+        await quoteService.toggleReaction(quoteId, reactionKey);
+      } catch (error) {
+        console.error('A apărut o eroare de rețea la salvarea reacției.', error);
       }
-      
-      return updatedQuote;
-    }));
+    };
 
-    try {
-      await quoteService.toggleReaction(quoteId, reactionKey);
-    } catch (error) {
-      console.error('A apărut o eroare de rețea la salvarea reacției.', error);
-    }
-  };
-
-  const renderFeedItem = ({ item }: { item: any }) => (
-    <View style={styles.feedCard}>
-      <View style={styles.postHeader}>
-        {item.profile_picture_url ? (
-          <Image source={{ uri: item.profile_picture_url }} style={styles.avatarSmall} />
-        ) : (
-          <View style={styles.avatarPlaceholderSmall}>
-            <Ionicons name="person" size={16} color="#fff" />
+    return (
+      <View style={styles.feedCard}>
+        <View style={styles.postHeader}>
+          {item.profile_picture_url ? (
+            <Image source={{ uri: item.profile_picture_url }} style={styles.avatarSmall} />
+          ) : (
+            <View style={styles.avatarPlaceholderSmall}>
+              <Ionicons name="person" size={16} color={colors.white} />
+            </View>
+          )}
+          <View>
+            <Text style={styles.postUserName}>{item.full_name || item.username}</Text>
+            <Text style={styles.postUserHandle}>@{item.username}</Text>
           </View>
-        )}
-        <View>
-          <Text style={styles.postUserName}>{item.full_name || item.username}</Text>
-          <Text style={styles.postUserHandle}>@{item.username}</Text>
+        </View>
+
+        <View style={styles.quoteContent}>
+          <Text style={styles.quoteText}>"{item.text}"</Text>
+          <Text style={styles.quoteAuthor}>— {item.original_author}</Text>
+        </View>
+
+        <View style={styles.reactionsBar}>
+          {REACTIONS_CONFIG.map((reaction) => {
+            const count = parseInt(item[reaction.prop] || 0);
+            const isSelected = Array.isArray(item.user_reactions) && item.user_reactions.includes(reaction.key);
+
+            return (
+              <TouchableOpacity 
+                key={reaction.key} 
+                style={[styles.reactionBtn, isSelected && styles.reactionBtnActive]}
+                onPress={() => handleToggleReaction(item.id, reaction.key)}
+              >
+                <Text style={styles.emojiText}>{reaction.emoji}</Text>
+                {count > 0 && (
+                  <Text style={[styles.reactionCount, isSelected && styles.reactionCountActive]}>
+                    {count}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </View>
-
-      <View style={styles.quoteContent}>
-        <Text style={styles.quoteText}>"{item.text}"</Text>
-        <Text style={styles.quoteAuthor}>— {item.original_author}</Text>
-      </View>
-
-      <View style={styles.reactionsBar}>
-        {REACTIONS_CONFIG.map((reaction) => {
-          const count = parseInt(item[reaction.prop] || 0);
-          const isSelected = Array.isArray(item.user_reactions) && item.user_reactions.includes(reaction.key);
-
-          return (
-            <TouchableOpacity 
-              key={reaction.key} 
-              style={[styles.reactionBtn, isSelected && styles.reactionBtnActive]}
-              onPress={() => handleToggleReaction(item.id, reaction.key)}
-            >
-              <Text style={styles.emojiText}>{reaction.emoji}</Text>
-              {count > 0 && (
-                <Text style={[styles.reactionCount, isSelected && styles.reactionCountActive]}>
-                  {count}
-                </Text>
-              )}
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    </View>
-  );
+    );
+  };
 
   const headerElement = (
     <View style={styles.createPostContainer}>
       <Text style={styles.createPostTitle}>Împarte un citat cu prietenii</Text>
-      <TextInput style={[styles.input, { height: 80 }]} placeholder="Scrie citatul aici..." value={newText} onChangeText={setNewText} multiline />
-      <TextInput style={styles.input} placeholder="Autorul citatului (ex: Albert Einstein)" value={newAuthor} onChangeText={setNewAuthor} />
+      <TextInput 
+        style={[styles.input, { height: 80 }]} 
+        placeholder="Scrie citatul aici..." 
+        placeholderTextColor={colors.textLight}
+        value={newText} 
+        onChangeText={setNewText} 
+        multiline 
+      />
+      <TextInput 
+        style={styles.input} 
+        placeholder="Autorul citatului (ex: Albert Einstein)" 
+        placeholderTextColor={colors.textLight}
+        value={newAuthor} 
+        onChangeText={setNewAuthor} 
+      />
       <TouchableOpacity style={styles.postButton} onPress={handleAddQuote} disabled={isSubmitting}>
-        {isSubmitting ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.postButtonText}>Postează</Text>}
+        {isSubmitting ? <ActivityIndicator color={colors.white} size="small" /> : <Text style={styles.postButtonText}>Postează</Text>}
       </TouchableOpacity>
     </View>
   );
@@ -179,7 +199,7 @@ export default function HomeScreen({ navigation }: any) {
         refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} colors={[colors.primary]} tintColor={colors.primary} />}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Ionicons name="people-outline" size={64} color="#ccc" />
+            <Ionicons name="people-outline" size={64} color={colors.textLight} />
             <Text style={styles.emptyText}>Feed-ul tău este gol.</Text>
             <Text style={styles.emptySubText}>Caută prieteni și acceptă cereri pentru a vedea citatele lor aici!</Text>
           </View>
@@ -189,35 +209,35 @@ export default function HomeScreen({ navigation }: any) {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ThemeColors, theme: string) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  listContent: { padding: 15, paddingBottom: 30, paddingTop: 50 }, // Am adăugat puțin paddingTop ca să nu se lipească de Notch
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background },
+  listContent: { padding: 15, paddingBottom: 30, paddingTop: 50 },
   
-  createPostContainer: { backgroundColor: '#fff', padding: 15, borderRadius: 10, marginBottom: 20, elevation: 2, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 5 },
-  createPostTitle: { fontSize: 16, fontWeight: 'bold', color: '#333', marginBottom: 10 },
-  input: { backgroundColor: '#f9f9f9', borderWidth: 1, borderColor: '#eee', borderRadius: 8, padding: 12, marginBottom: 10, fontSize: 15 },
+  createPostContainer: { backgroundColor: colors.card, padding: 15, borderRadius: 10, marginBottom: 20, elevation: 2, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 5 },
+  createPostTitle: { fontSize: 16, fontWeight: 'bold', color: colors.textDark, marginBottom: 10 },
+  input: { backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: 12, marginBottom: 10, fontSize: 15, color: colors.textDark },
   postButton: { backgroundColor: colors.primary, padding: 12, borderRadius: 8, alignItems: 'center' },
-  postButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+  postButtonText: { color: colors.white, fontWeight: 'bold', fontSize: 16 },
 
-  feedCard: { backgroundColor: '#fff', borderRadius: 10, padding: 15, marginBottom: 15, elevation: 2, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 4 },
+  feedCard: { backgroundColor: colors.card, borderRadius: 10, padding: 15, marginBottom: 15, elevation: 2, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 4 },
   postHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
   avatarSmall: { width: 40, height: 40, borderRadius: 20, marginRight: 10 },
   avatarPlaceholderSmall: { width: 40, height: 40, borderRadius: 20, marginRight: 10, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' },
-  postUserName: { fontSize: 15, fontWeight: 'bold', color: '#333' },
-  postUserHandle: { fontSize: 13, color: '#777' },
+  postUserName: { fontSize: 15, fontWeight: 'bold', color: colors.textDark },
+  postUserHandle: { fontSize: 13, color: colors.textLight },
   quoteContent: { borderLeftWidth: 3, borderLeftColor: colors.primary, paddingLeft: 10, marginTop: 5, marginBottom: 15 },
-  quoteText: { fontSize: 16, fontStyle: 'italic', color: '#444', marginBottom: 8, lineHeight: 22 },
-  quoteAuthor: { fontSize: 14, fontWeight: 'bold', color: '#888' },
+  quoteText: { fontSize: 16, fontStyle: 'italic', color: colors.textDark, marginBottom: 8, lineHeight: 22 },
+  quoteAuthor: { fontSize: 14, fontWeight: 'bold', color: colors.textLight },
 
   emptyContainer: { alignItems: 'center', marginTop: 40, paddingHorizontal: 20 },
-  emptyText: { fontSize: 18, fontWeight: 'bold', color: '#555', marginTop: 15 },
-  emptySubText: { fontSize: 15, color: '#777', textAlign: 'center', marginTop: 10, lineHeight: 22 },
+  emptyText: { fontSize: 18, fontWeight: 'bold', color: colors.textDark, marginTop: 15 },
+  emptySubText: { fontSize: 15, color: colors.textLight, textAlign: 'center', marginTop: 10, lineHeight: 22 },
 
-  reactionsBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: '#f0f0f0', paddingTop: 12 },
-  reactionBtn: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 6, borderRadius: 20, backgroundColor: '#f9f9f9' },
-  reactionBtnActive: { backgroundColor: '#e3f2fd', borderWidth: 1, borderColor: '#bbdefb' },
+  reactionsBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 12 },
+  reactionBtn: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 6, borderRadius: 20, backgroundColor: theme === 'dark' ? '#2c2c2c' : '#f9f9f9' },
+  reactionBtnActive: { backgroundColor: colors.primary + '30', borderWidth: 1, borderColor: colors.primary + '50' },
   emojiText: { fontSize: 16 },
-  reactionCount: { fontSize: 13, fontWeight: 'bold', color: '#777', marginLeft: 4 },
-  reactionCountActive: { color: '#1976d2' }
+  reactionCount: { fontSize: 13, fontWeight: 'bold', color: colors.textLight, marginLeft: 4 },
+  reactionCountActive: { color: colors.primary }
 });

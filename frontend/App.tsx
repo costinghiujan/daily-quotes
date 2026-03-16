@@ -1,6 +1,6 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState, useMemo } from 'react';
 import { ActivityIndicator, View, StyleSheet, Platform } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, Theme as NavigationTheme, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,10 +19,8 @@ import ProfileScreen from './src/screens/ProfileScreen';
 
 import { AuthProvider, AuthContext } from './src/context/AuthContext';
 import { ThemeProvider, ThemeContext } from './src/context/ThemeContext';
-import { colors } from './src/theme/colors';
+import { ThemeColors } from './src/theme/colors';
 import { notificationService } from './src/api/notificationService';
-
-
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -39,6 +37,8 @@ const Tab = createBottomTabNavigator();
 
 const MainTabNavigator = () => {
   const [unreadCount, setUnreadCount] = useState(0);
+  
+  const { colors } = useContext(ThemeContext);
 
   const registerForPushNotificationsAsync = async () => {
     let token;
@@ -117,8 +117,22 @@ const MainTabNavigator = () => {
           return <Ionicons name={iconName} size={size} color={color} />;
         },
         tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: 'gray',
-        headerShown: true,
+        tabBarInactiveTintColor: colors.textLight,
+        tabBarStyle: {
+          backgroundColor: colors.card,
+          borderTopColor: colors.border,
+        },
+        headerStyle: {
+          backgroundColor: colors.card,
+          shadowColor: 'transparent',
+          elevation: 0,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border,
+        },
+        headerTintColor: colors.textDark,
+        headerTitleStyle: {
+          fontWeight: 'bold',
+        },
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Feed' }} />
@@ -129,7 +143,7 @@ const MainTabNavigator = () => {
         options={{ 
           title: 'Notificări',
           tabBarBadge: (unreadCount && !isNaN(unreadCount) && unreadCount > 0) ? unreadCount : undefined,
-          tabBarBadgeStyle: { backgroundColor: '#F44336', color: '#fff', fontSize: 10 }
+          tabBarBadgeStyle: { backgroundColor: colors.error, color: colors.white, fontSize: 10 }
         }} 
       />
       <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profilul Meu' }} />
@@ -139,6 +153,26 @@ const MainTabNavigator = () => {
 
 const RootNavigator = () => {
   const { userToken, isLoading } = useContext(AuthContext);
+  
+  const { colors, theme } = useContext(ThemeContext);
+  const styles = useMemo(() => getStyles(colors), [colors]);
+
+  const navigationTheme: NavigationTheme = useMemo(() => {
+    const baseTheme = theme === 'dark' ? DarkTheme : DefaultTheme;
+    
+    return {
+      ...baseTheme,
+      colors: {
+        ...baseTheme.colors,
+        primary: colors.primary,
+        background: colors.background,
+        card: colors.card,
+        text: colors.textDark,
+        border: colors.border,
+        notification: colors.error,
+      },
+    };
+  }, [colors, theme]);
 
   if (isLoading) {
     return (
@@ -149,7 +183,7 @@ const RootNavigator = () => {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={navigationTheme}>
       <Stack.Navigator>
         {userToken == null ? (
           <>
@@ -178,7 +212,7 @@ export default function App() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ThemeColors) => StyleSheet.create({
   splashContainer: {
     flex: 1,
     justifyContent: 'center',

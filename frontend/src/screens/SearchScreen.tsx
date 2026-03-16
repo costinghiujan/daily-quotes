@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext, useMemo } from 'react';
 import { 
   View, 
   Text, 
@@ -12,9 +12,14 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { userService, UserProfile } from '../api/userService';
 import { friendshipService } from '../api/friendshipService';
-import { colors } from '../theme/colors';
+
+import { ThemeContext } from '../context/ThemeContext';
+import { ThemeColors } from '../theme/colors';
 
 export default function SearchScreen() {
+  const { colors } = useContext(ThemeContext);
+  const styles = useMemo(() => getStyles(colors), [colors]);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [results, setResults] = useState<UserProfile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -53,7 +58,7 @@ export default function SearchScreen() {
   const renderUserItem = ({ item }: { item: UserProfile }) => (
     <View style={styles.userCard}>
       <View style={styles.avatarPlaceholder}>
-        <Ionicons name="person" size={24} color="#fff" />
+        <Ionicons name="person" size={24} color={colors.white} />
       </View>
 
       <View style={styles.userInfo}>
@@ -65,7 +70,7 @@ export default function SearchScreen() {
         style={styles.addButton}
         onPress={() => handleAddFriend(item.id, item.username)}
       >
-        <Ionicons name="person-add" size={20} color="#fff" />
+        <Ionicons name="person-add" size={20} color={colors.white} />
       </TouchableOpacity>
     </View>
   );
@@ -73,10 +78,11 @@ export default function SearchScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.searchContainer}>
-        <Ionicons name="search" size={20} color="#757575" style={styles.searchIcon} />
+        <Ionicons name="search" size={20} color={colors.textLight} style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
           placeholder="Caută utilizatori..."
+          placeholderTextColor={colors.textLight}
           value={searchQuery}
           onChangeText={setSearchQuery}
           autoCapitalize="none"
@@ -101,7 +107,7 @@ export default function SearchScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -109,7 +115,7 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     margin: 15,
     borderRadius: 10,
     paddingHorizontal: 15,
@@ -126,6 +132,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 50,
     fontSize: 16,
+    color: colors.textDark,
   },
   loader: {
     marginTop: 20,
@@ -137,7 +144,7 @@ const styles = StyleSheet.create({
   userCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     padding: 15,
     marginBottom: 10,
     borderRadius: 10,
@@ -157,11 +164,11 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.textDark,
   },
   userHandle: {
     fontSize: 14,
-    color: '#757575',
+    color: colors.textLight,
     marginTop: 2,
   },
   addButton: {
@@ -174,7 +181,7 @@ const styles = StyleSheet.create({
   emptyText: {
     textAlign: 'center',
     marginTop: 20,
-    color: '#757575',
+    color: colors.textLight,
     fontSize: 16,
   }
 });
