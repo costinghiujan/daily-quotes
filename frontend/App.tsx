@@ -18,8 +18,11 @@ import NotificationsScreen from './src/screens/NotificationsScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 
 import { AuthProvider, AuthContext } from './src/context/AuthContext';
+import { ThemeProvider, ThemeContext } from './src/context/ThemeContext';
 import { colors } from './src/theme/colors';
 import { notificationService } from './src/api/notificationService';
+
+
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -168,7 +171,9 @@ const RootNavigator = () => {
 export default function App() {
   return (
     <AuthProvider>
-      <RootNavigator />
+      <ThemeProvider>
+        <RootNavigator />
+      </ThemeProvider>
     </AuthProvider>
   );
 }

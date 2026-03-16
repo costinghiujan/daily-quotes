@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useContext } from 'react';
+import React, { useState, useCallback, useContext, useMemo } from 'react';
 import { 
   View, 
   Text, 
@@ -20,12 +20,18 @@ import * as ImagePicker from 'expo-image-picker';
 import { userService, UserProfile } from '../api/userService';
 import { sessionService, Session } from '../api/sessionService';
 import { quoteService } from '../api/quoteService';
-import { notificationService, NotificationSettings } from '../api/notificationService'; // NOU: Importăm serviciul
+import { notificationService, NotificationSettings } from '../api/notificationService';
 import { AuthContext } from '../context/AuthContext';
-import { colors } from '../theme/colors';
+
+import { ThemeContext } from '../context/ThemeContext'; 
+import { ThemeColors } from '../theme/colors';
 
 export default function ProfileScreen() {
   const { logout } = useContext(AuthContext);
+  
+  const { colors, theme, setTheme } = useContext(ThemeContext);
+
+  const styles = useMemo(() => getStyles(colors), [colors]);
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [quotes, setQuotes] = useState<any[]>([]);
@@ -44,6 +50,8 @@ export default function ProfileScreen() {
   const [isNotificationsModalVisible, setNotificationsModalVisible] = useState(false);
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings | null>(null);
   const [isSettingsLoading, setIsSettingsLoading] = useState(false);
+
+  const [isThemeModalVisible, setThemeModalVisible] = useState(false);
 
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -170,7 +178,6 @@ export default function ProfileScreen() {
     if (!notificationSettings) return;
 
     const previousSettings = { ...notificationSettings };
-    
     const updatedSettings = { ...notificationSettings, [key]: value };
     setNotificationSettings(updatedSettings);
 
@@ -209,7 +216,7 @@ export default function ProfileScreen() {
       <View style={styles.quoteCardHeader}>
         <Text style={styles.quoteText}>"{item.text}"</Text>
         <TouchableOpacity onPress={() => handleDeleteQuote(item.id)} style={styles.deleteQuoteBtn}>
-          <Ionicons name="trash-outline" size={20} color="#F44336" />
+          <Ionicons name="trash-outline" size={20} color={colors.error} />
         </TouchableOpacity>
       </View>
       <Text style={styles.quoteAuthor}>— {item.author}</Text>
@@ -236,11 +243,24 @@ export default function ProfileScreen() {
 
         {isEditing ? (
           <View style={styles.editContainer}>
-            <TextInput style={styles.input} placeholder="Nume Complet" value={editFullName} onChangeText={setEditFullName} />
-            <TextInput style={[styles.input, { height: 60 }]} placeholder="O scurtă descriere (Bio)" value={editBio} onChangeText={setEditBio} multiline />
+            <TextInput 
+              style={styles.input} 
+              placeholder="Nume Complet" 
+              placeholderTextColor={colors.textLight}
+              value={editFullName} 
+              onChangeText={setEditFullName} 
+            />
+            <TextInput 
+              style={[styles.input, { height: 60 }]} 
+              placeholder="O scurtă descriere (Bio)" 
+              placeholderTextColor={colors.textLight}
+              value={editBio} 
+              onChangeText={setEditBio} 
+              multiline 
+            />
             <View style={styles.actionButtons}>
-              <TouchableOpacity style={[styles.btn, { backgroundColor: '#4CAF50' }]} onPress={handleSaveProfile}><Text style={styles.btnText}>Salvează</Text></TouchableOpacity>
-              <TouchableOpacity style={[styles.btn, { backgroundColor: '#F44336' }]} onPress={() => setIsEditing(false)}><Text style={styles.btnText}>Anulează</Text></TouchableOpacity>
+              <TouchableOpacity style={[styles.btn, { backgroundColor: colors.success }]} onPress={handleSaveProfile}><Text style={styles.btnText}>Salvează</Text></TouchableOpacity>
+              <TouchableOpacity style={[styles.btn, { backgroundColor: colors.error }]} onPress={() => setIsEditing(false)}><Text style={styles.btnText}>Anulează</Text></TouchableOpacity>
             </View>
           </View>
         ) : (
@@ -263,12 +283,16 @@ export default function ProfileScreen() {
                 )}
               </TouchableOpacity>
 
+              <TouchableOpacity style={styles.actionBtn} onPress={() => setThemeModalVisible(true)}>
+                <Ionicons name={theme === 'light' ? 'moon-outline' : 'sunny-outline'} size={18} color="#fff" />
+              </TouchableOpacity>
+
               <TouchableOpacity style={styles.actionBtn} onPress={openSecurityModal}>
                 <Ionicons name="shield-checkmark" size={18} color="#fff" />
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-                <Ionicons name="log-out-outline" size={18} color="#F44336" />
+                <Ionicons name="log-out-outline" size={18} color={colors.error} />
               </TouchableOpacity>
             </View>
           </View>
@@ -290,7 +314,7 @@ export default function ProfileScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Dispozitive Conectate</Text>
               <TouchableOpacity onPress={() => setSecurityModalVisible(false)}>
-                <Ionicons name="close" size={24} color="#333" />
+                <Ionicons name="close" size={24} color={colors.textDark} />
               </TouchableOpacity>
             </View>
             {isSessionsLoading ? (
@@ -303,7 +327,7 @@ export default function ProfileScreen() {
                   return (
                     <View key={session.id} style={styles.sessionCard}>
                       <View style={styles.sessionInfo}>
-                        <Ionicons name={session.device_name.includes('ios') || session.device_name.includes('android') ? "phone-portrait-outline" : "laptop-outline"} size={24} color="#555" />
+                        <Ionicons name={session.device_name.includes('ios') || session.device_name.includes('android') ? "phone-portrait-outline" : "laptop-outline"} size={24} color={colors.textLight} />
                         <View style={styles.sessionDetails}>
                           <Text style={styles.deviceName} numberOfLines={1}>{session.device_name.substring(0, 30)}</Text>
                           <Text style={styles.sessionDate}>Logat pe: {date}</Text>
@@ -330,7 +354,7 @@ export default function ProfileScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Setări Notificări</Text>
               <TouchableOpacity onPress={() => setNotificationsModalVisible(false)}>
-                <Ionicons name="close" size={24} color="#333" />
+                <Ionicons name="close" size={24} color={colors.textDark} />
               </TouchableOpacity>
             </View>
 
@@ -344,36 +368,10 @@ export default function ProfileScreen() {
                     <Text style={styles.settingDescription}>Când cineva reacționează la citatele tale.</Text>
                   </View>
                   <Switch
-                    trackColor={{ false: "#d3d3d3", true: "#bbdefb" }}
-                    thumbColor={notificationSettings.notify_reactions ? colors.primary : "#f4f3f4"}
+                    trackColor={{ false: colors.border, true: `${colors.primary}80` }}
+                    thumbColor={notificationSettings.notify_reactions ? colors.primary : colors.gray}
                     onValueChange={(val) => handleToggleSetting('notify_reactions', val)}
                     value={notificationSettings.notify_reactions}
-                  />
-                </View>
-
-                <View style={styles.settingRow}>
-                  <View style={styles.settingTextContainer}>
-                    <Text style={styles.settingTitle}>Cereri de prietenie</Text>
-                    <Text style={styles.settingDescription}>Când cineva dorește să se conecteze cu tine.</Text>
-                  </View>
-                  <Switch
-                    trackColor={{ false: "#d3d3d3", true: "#bbdefb" }}
-                    thumbColor={notificationSettings.notify_friend_requests ? colors.primary : "#f4f3f4"}
-                    onValueChange={(val) => handleToggleSetting('notify_friend_requests', val)}
-                    value={notificationSettings.notify_friend_requests}
-                  />
-                </View>
-
-                <View style={styles.settingRow}>
-                  <View style={styles.settingTextContainer}>
-                    <Text style={styles.settingTitle}>Prietenii acceptate</Text>
-                    <Text style={styles.settingDescription}>Când o persoană îți acceptă cererea trimisă.</Text>
-                  </View>
-                  <Switch
-                    trackColor={{ false: "#d3d3d3", true: "#bbdefb" }}
-                    thumbColor={notificationSettings.notify_friend_accepted ? colors.primary : "#f4f3f4"}
-                    onValueChange={(val) => handleToggleSetting('notify_friend_accepted', val)}
-                    value={notificationSettings.notify_friend_accepted}
                   />
                 </View>
               </View>
@@ -382,83 +380,115 @@ export default function ProfileScreen() {
         </View>
       </Modal>
 
+      <Modal visible={isThemeModalVisible} animationType="fade" transparent={true} onRequestClose={() => setThemeModalVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Alege Tema Aplicației</Text>
+              <TouchableOpacity onPress={() => setThemeModalVisible(false)}>
+                <Ionicons name="close" size={24} color={colors.textDark} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.settingsContainer}>
+              <TouchableOpacity style={styles.themeOption} onPress={() => setTheme('light')}>
+                <View style={styles.themeOptionLeft}>
+                  <Ionicons name="sunny" size={24} color={theme === 'light' ? colors.primary : colors.textLight} />
+                  <Text style={styles.settingTitle}>Tema Deschisă</Text>
+                </View>
+                <Ionicons 
+                  name={theme === 'light' ? 'radio-button-on' : 'radio-button-off'} 
+                  size={24} 
+                  color={theme === 'light' ? colors.primary : colors.textLight} 
+                />
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.themeOption} onPress={() => setTheme('dark')}>
+                <View style={styles.themeOptionLeft}>
+                  <Ionicons name="moon" size={24} color={theme === 'dark' ? colors.primary : colors.textLight} />
+                  <Text style={styles.settingTitle}>Tema Întunecată</Text>
+                </View>
+                <Ionicons 
+                  name={theme === 'dark' ? 'radio-button-on' : 'radio-button-off'} 
+                  size={24} 
+                  color={theme === 'dark' ? colors.primary : colors.textLight} 
+                />
+              </TouchableOpacity>
+            </View>
+
+          </View>
+        </View>
+      </Modal>
+
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background },
   header: { 
-    backgroundColor: '#fff', padding: 20, alignItems: 'center',
-    borderBottomWidth: 1, borderBottomColor: '#eee',
+    backgroundColor: colors.card, padding: 20, alignItems: 'center',
+    borderBottomWidth: 1, borderBottomColor: colors.border,
     elevation: 2, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 5,
   },
   avatarContainer: { position: 'relative', marginBottom: 15 },
   avatarImage: { width: 100, height: 100, borderRadius: 50 },
   avatarPlaceholder: { width: 100, height: 100, borderRadius: 50, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' },
-  avatarOverlay: { position: 'absolute', right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#fff' },
+  avatarOverlay: { position: 'absolute', right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: colors.card },
   infoContainer: { alignItems: 'center' },
-  fullName: { fontSize: 20, fontWeight: 'bold', color: '#333' },
-  username: { fontSize: 14, color: '#757575', marginBottom: 10 },
-  bio: { fontSize: 15, color: '#555', textAlign: 'center', marginBottom: 15, paddingHorizontal: 20 },
+  fullName: { fontSize: 20, fontWeight: 'bold', color: colors.textDark },
+  username: { fontSize: 14, color: colors.textLight, marginBottom: 10 },
+  bio: { fontSize: 15, color: colors.textLight, textAlign: 'center', marginBottom: 15, paddingHorizontal: 20 },
   
   actionButtonsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, flexWrap: 'wrap' },
   editBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.primary, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20 },
-  actionBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#333', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20 },
-  logoutBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderWidth: 1, borderColor: '#F44336', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
-  btnText: { color: '#fff', fontWeight: 'bold', fontSize: 13 },
+  actionBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.gray, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20 },
+  logoutBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderWidth: 1, borderColor: colors.error, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
+  btnText: { color: colors.white, fontWeight: 'bold', fontSize: 13 },
   
   editContainer: { width: '100%' },
-  input: { borderWidth: 1, borderColor: '#ddd', borderRadius: 8, padding: 10, marginBottom: 10, backgroundColor: '#f9f9f9' },
+  input: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: 10, marginBottom: 10, backgroundColor: colors.background, color: colors.textDark },
   actionButtons: { flexDirection: 'row', justifyContent: 'center', gap: 10 },
   btn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8 },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', padding: 15, color: '#333' },
+  sectionTitle: { fontSize: 18, fontWeight: 'bold', padding: 15, color: colors.textDark },
   listContent: { paddingHorizontal: 15, paddingBottom: 20 },
   
-  quoteCard: { backgroundColor: '#fff', padding: 15, borderRadius: 10, marginBottom: 10, borderLeftWidth: 4, borderLeftColor: colors.primary },
+  quoteCard: { backgroundColor: colors.card, padding: 15, borderRadius: 10, marginBottom: 10, borderLeftWidth: 4, borderLeftColor: colors.primary },
   quoteCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 5 },
-  quoteText: { flex: 1, fontSize: 16, fontStyle: 'italic', color: '#444', paddingRight: 10 },
+  quoteText: { flex: 1, fontSize: 16, fontStyle: 'italic', color: colors.textDark, paddingRight: 10 },
   deleteQuoteBtn: { padding: 5 },
-  quoteAuthor: { fontSize: 14, fontWeight: 'bold', color: '#777', textAlign: 'right' },
-  emptyText: { textAlign: 'center', color: '#757575', marginTop: 20 },
+  quoteAuthor: { fontSize: 14, fontWeight: 'bold', color: colors.textLight, textAlign: 'right' },
+  emptyText: { textAlign: 'center', color: colors.textLight, marginTop: 20 },
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  modalContent: { backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, maxHeight: '80%' },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 15, borderBottomWidth: 1, borderBottomColor: '#eee', marginBottom: 10 },
-  modalTitle: { fontSize: 18, fontWeight: 'bold', color: '#333' },
+  modalContent: { backgroundColor: colors.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, maxHeight: '80%' },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 15, borderBottomWidth: 1, borderBottomColor: colors.border, marginBottom: 10 },
+  modalTitle: { fontSize: 18, fontWeight: 'bold', color: colors.textDark },
   sessionsList: { paddingBottom: 20 },
-  sessionCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
+  sessionCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: colors.border },
   sessionInfo: { flexDirection: 'row', alignItems: 'center', flex: 1 },
   sessionDetails: { marginLeft: 15, flex: 1 },
-  deviceName: { fontSize: 15, fontWeight: 'bold', color: '#333' },
-  sessionDate: { fontSize: 13, color: '#777', marginTop: 2 },
+  deviceName: { fontSize: 15, fontWeight: 'bold', color: colors.textDark },
+  sessionDate: { fontSize: 13, color: colors.textLight, marginTop: 2 },
   currentBadge: { color: colors.primary, fontSize: 12, fontWeight: 'bold', marginTop: 2 },
-  revokeBtn: { backgroundColor: '#ffebee', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
-  revokeBtnText: { color: '#F44336', fontWeight: 'bold', fontSize: 13 },
+  revokeBtn: { backgroundColor: colors.errorBg, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
+  revokeBtnText: { color: colors.error, fontWeight: 'bold', fontSize: 13 },
 
   settingsContainer: { paddingBottom: 20 },
-  settingRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
+  settingRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: colors.border },
   settingTextContainer: { flex: 1, paddingRight: 15 },
-  settingTitle: { fontSize: 16, fontWeight: 'bold', color: '#333', marginBottom: 4 },
-  settingDescription: { fontSize: 13, color: '#777', lineHeight: 18 },
+  settingTitle: { fontSize: 16, fontWeight: 'bold', color: colors.textDark, marginBottom: 4 },
+  settingDescription: { fontSize: 13, color: colors.textLight, lineHeight: 18 },
+  
+  themeOption: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: colors.border },
+  themeOptionLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+
   badge: {
-    position: 'absolute',
-    top: -5,
-    right: -5,
-    backgroundColor: '#F44336',
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#fff',
-    zIndex: 10,
+    position: 'absolute', top: -5, right: -5,
+    backgroundColor: colors.error, width: 18, height: 18, borderRadius: 9,
+    justifyContent: 'center', alignItems: 'center',
+    borderWidth: 1, borderColor: colors.card, zIndex: 10,
   },
-  badgeText: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: 'bold',
-  },
+  badgeText: { color: colors.white, fontSize: 10, fontWeight: 'bold' },
 });
