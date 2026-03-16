@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "457325469325",
+    "project_id": "dailyquotescostin",
+    "storage_bucket": "dailyquotescostin.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:457325469325:android:6a6eef8cdc5350077cccc4",
+        "android_client_info": {
+          "package_name": "com.cox_teen.frontend"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAwYYol_lhX3nVNM4vchLkNsQJ3OUqlxGo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

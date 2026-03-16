@@ -29,9 +29,9 @@ export const initDB = async () => {
         username VARCHAR(50) UNIQUE NOT NULL,
         email VARCHAR(255) UNIQUE NOT NULL,
         password_hash VARCHAR(255) NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        expo_push_token VARCHAR(255)
       );
-      ALTER TABLE users ADD COLUMN expo_push_token VARCHAR(255);
     `);
     console.log('[Bază de Date] Tabela "users" este pregătită.');
 

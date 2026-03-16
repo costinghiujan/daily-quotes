@@ -66,5 +66,14 @@ export const notificationService = {
       console.error('[Eroare Frontend] Preluare număr notificări:', error);
       return 0;
     }
+  },
+
+  savePushToken: async (pushToken: string): Promise<void> => {
+    try {
+      await apiClient.post('/notifications/push-token', { pushToken });
+      console.log('[Frontend] Push Token salvat cu succes în baza de date.');
+    } catch (error) {
+      console.error('[Eroare Frontend] Nu s-a putut salva Push Token-ul:', error);
+    }
   }
 };

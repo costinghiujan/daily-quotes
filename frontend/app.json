@@ -21,10 +21,28 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.cox_teen.frontend",
+      "googleServicesFile": "./google-services.json" 
     },
+    
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#ffffff"
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "1868779a-1da9-4915-bd6c-9b9ac743f635"
+      }
+    },
+    "owner": "cox_teen"
   }
 }
