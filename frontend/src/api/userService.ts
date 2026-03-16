@@ -30,13 +30,13 @@ export const userService = {
     }
   },
 
-  uploadAvatar: async (imageUri: string): Promise<UserProfile> => {
+  uploadAvatar: async (imageUri: string) => {
     try {
       const formData = new FormData();
-      
-      const filename = imageUri.split('/').pop() || 'avatar.jpg';
+
+      const filename = imageUri.split('/').pop() || 'profile-picture.jpg';
       const match = /\.(\w+)$/.exec(filename);
-      const type = match ? `image/${match[1]}` : 'image/jpeg';
+      const type = match ? `image/${match[1]}` : `image/jpeg`;
 
       formData.append('avatar', {
         uri: imageUri,
@@ -49,8 +49,8 @@ export const userService = {
           'Content-Type': 'multipart/form-data',
         },
       });
-      
-      return response.data.data;
+
+      return response.data;
     } catch (error) {
       console.error('[Eroare Frontend] Upload avatar:', error);
       throw error;
