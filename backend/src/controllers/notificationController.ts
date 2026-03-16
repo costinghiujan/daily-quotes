@@ -150,3 +150,33 @@ export const getUnreadCount = async (req: AuthRequest, res: Response): Promise<v
     res.status(500).json({ status: 'error', message: 'Eroare internă a serverului.' });
   }
 };
+
+export const savePushToken = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    const { pushToken } = req.body;
+
+    if (!userId) {
+      res.status(401).json({ status: 'error', message: 'Neautorizat.' });
+      return;
+    }
+
+    if (!pushToken || typeof pushToken !== 'string') {
+      res.status(400).json({ status: 'error', message: 'Token-ul de push este invalid sau lipsește.' });
+      return;
+    }
+
+    await query(
+      'UPDATE users SET expo_push_token = $1 WHERE id = $2',
+      [pushToken, userId]
+    );
+
+    res.status(200).json({ 
+      status: 'success', 
+      message: 'Token-ul de push a fost salvat cu succes.' 
+    });
+  } catch (error) {
+    console.error('[Eroare Controller] Salvare Push Token:', error);
+    res.status(500).json({ status: 'error', message: 'Eroare internă a serverului.' });
+  }
+};

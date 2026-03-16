@@ -31,6 +31,7 @@ export const initDB = async () => {
         password_hash VARCHAR(255) NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+      ALTER TABLE users ADD COLUMN expo_push_token VARCHAR(255);
     `);
     console.log('[Bază de Date] Tabela "users" este pregătită.');
 
