@@ -2,8 +2,18 @@ import { Response } from 'express';
 import { query } from '../config/db';
 import { AuthRequest } from './authController';
 import { sendNotification, removeNotification } from '../utils/notificationHelper';
+import { sendPushNotification } from '../services/expoPushService';
 
 const VALID_REACTIONS = ['BLUE_HEART', 'APPLAUSE', 'SAD', 'TOUCHING', 'HUG', 'MIND_BLOWN'];
+
+const REACTION_EMOJIS: Record<string, string> = {
+  BLUE_HEART: '💙',
+  APPLAUSE: '👏',
+  SAD: '😢',
+  TOUCHING: '🥺',
+  HUG: '🤗',
+  MIND_BLOWN: '🤯'
+};
 
 export const toggleReaction = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -36,11 +46,11 @@ export const toggleReaction = async (req: AuthRequest, res: Response): Promise<v
 
     if (existingReaction.rows.length > 0) {
       await query('DELETE FROM quote_reactions WHERE id = $1', [existingReaction.rows[0].id]);
-      
       await removeNotification(quoteAuthorId, userId, 'REACTION_ADDED', quoteId);
       
       res.status(200).json({ status: 'success', action: 'removed', message: 'Reacția a fost eliminată.' });
       return;
+      
     } else {
       await query(
         'INSERT INTO quote_reactions (user_id, quote_id, reaction_type) VALUES ($1, $2, $3)',
@@ -49,6 +59,28 @@ export const toggleReaction = async (req: AuthRequest, res: Response): Promise<v
       
       await sendNotification(quoteAuthorId, userId, 'REACTION_ADDED', quoteId);
       
+      if (userId !== quoteAuthorId) {
+        try {
+          const receiverData = await query('SELECT expo_push_token FROM users WHERE id = $1', [quoteAuthorId]);
+          const senderData = await query('SELECT username FROM users WHERE id = $1', [userId]);
+
+          const pushToken = receiverData.rows[0]?.expo_push_token;
+          const senderName = senderData.rows[0]?.username || 'Un utilizator';
+          const emoji = REACTION_EMOJIS[reactionType as string] || '✨';
+
+          if (pushToken) {
+            await sendPushNotification(
+              pushToken,
+              `Nouă reacție! ${emoji}`,
+              `${senderName} a reacționat la citatul tău.`,
+              { route: 'Notifications', type: 'REACTION_ADDED', quoteId }
+            );
+          }
+        } catch (pushError) {
+          console.error('[Eroare Non-Critică] Trimitere push notification eșuată (Reacție):', pushError);
+        }
+      }
+
       res.status(201).json({ status: 'success', action: 'added', message: 'Reacția a fost adăugată.' });
       return;
     }

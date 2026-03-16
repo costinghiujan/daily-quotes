@@ -1,7 +1,8 @@
 import { Response } from 'express';
 import { query } from '../config/db';
-import { AuthRequest } from './quoteController';
+import { AuthRequest } from './quoteController'; 
 import { sendNotification } from '../utils/notificationHelper';
+import { sendPushNotification } from '../services/expoPushService';
 
 export const sendFriendRequest = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -43,6 +44,26 @@ export const sendFriendRequest = async (req: AuthRequest, res: Response): Promis
     const friendshipId = result.rows[0].id;
 
     await sendNotification(receiverId, requesterId, 'FRIEND_REQUEST', friendshipId);
+
+    try {
+      const receiverData = await query('SELECT expo_push_token FROM users WHERE id = $1', [receiverId]);
+      const senderData = await query('SELECT username FROM users WHERE id = $1', [requesterId]);
+
+      const pushToken = receiverData.rows[0]?.expo_push_token;
+      const senderName = senderData.rows[0]?.username || 'Un utilizator';
+
+      if (pushToken) {
+        await sendPushNotification(
+          pushToken,
+          'Cerere nouă de prietenie! 👤',
+          `${senderName} dorește să se conecteze cu tine.`,
+          { route: 'Notifications', type: 'FRIEND_REQUEST' }
+        );
+      }
+    } catch (pushError) {
+      console.error('[Eroare Non-Critică] Trimitere push notification eșuată (Trimitere Cerere):', pushError);
+    }
+    // ==========================================
 
     res.status(201).json({ status: 'success', message: 'Cererea de prietenie a fost trimisă.' });
   } catch (error) {
@@ -93,6 +114,25 @@ export const acceptFriendRequest = async (req: AuthRequest, res: Response): Prom
        WHERE recipient_id = $1 AND sender_id = $2 AND type = 'FRIEND_REQUEST' AND reference_id = $3`,
       [receiverId, requesterId, friendshipId]
     );
+
+    try {
+      const originalRequesterData = await query('SELECT expo_push_token FROM users WHERE id = $1', [requesterId]);
+      const accepterData = await query('SELECT username FROM users WHERE id = $1', [receiverId]);
+
+      const pushToken = originalRequesterData.rows[0]?.expo_push_token;
+      const accepterName = accepterData.rows[0]?.username || 'Un prieten';
+
+      if (pushToken) {
+        await sendPushNotification(
+          pushToken,
+          'Cerere acceptată! ✅',
+          `${accepterName} ți-a acceptat cererea de prietenie.`,
+          { route: 'Notifications', type: 'FRIEND_ACCEPTED' }
+        );
+      }
+    } catch (pushError) {
+      console.error('[Eroare Non-Critică] Trimitere push notification eșuată (Acceptare Cerere):', pushError);
+    }
 
     res.status(200).json({ status: 'success', message: 'Prietenia a fost acceptată.' });
   } catch (error) {
