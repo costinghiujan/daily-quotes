@@ -1,8 +1,10 @@
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { lightTheme, darkTheme, ThemeColors } from '../theme/colors';
+import { 
+  lightTheme, darkTheme, oceanTheme, natureTheme, autumnTheme, minimalistTheme, ThemeColors 
+} from '../theme/colors';
 
-export type ThemeType = 'light' | 'dark';
+export type ThemeType = 'light' | 'dark' | 'ocean' | 'nature' | 'autumn' | 'minimalist';
 
 interface ThemeContextProps {
   theme: ThemeType;
@@ -16,6 +18,15 @@ export const ThemeContext = createContext<ThemeContextProps>({
   setTheme: () => {},
 });
 
+const themeMap: Record<ThemeType, ThemeColors> = {
+  light: lightTheme,
+  dark: darkTheme,
+  ocean: oceanTheme,
+  nature: natureTheme,
+  autumn: autumnTheme,
+  minimalist: minimalistTheme,
+};
+
 interface ThemeProviderProps {
   children: ReactNode;
 }
@@ -26,9 +37,9 @@ export const ThemeProvider = ({ children }: ThemeProviderProps) => {
   useEffect(() => {
     const loadTheme = async () => {
       try {
-        const savedTheme = await AsyncStorage.getItem('@app_theme');
-        if (savedTheme === 'dark') {
-          setThemeState('dark');
+        const savedTheme = await AsyncStorage.getItem('@app_theme') as ThemeType;
+        if (savedTheme && themeMap[savedTheme]) {
+          setThemeState(savedTheme);
         }
       } catch (error) {
         console.error('Eroare la încărcarea temei:', error);
@@ -46,7 +57,7 @@ export const ThemeProvider = ({ children }: ThemeProviderProps) => {
     }
   };
 
-  const currentColors = theme === 'light' ? lightTheme : darkTheme;
+  const currentColors = themeMap[theme];
 
   return (
     <ThemeContext.Provider value={{ theme, colors: currentColors, setTheme }}>
