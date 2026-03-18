@@ -121,6 +121,22 @@
       console.log('[Bază de Date] Tabela "notifications" este pregătită.');
 
       await pool.query(`
+        CREATE TABLE IF NOT EXISTS comments (
+          id SERIAL PRIMARY KEY,
+          text TEXT NOT NULL,
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          quote_id INTEGER NOT NULL REFERENCES quotes(id) ON DELETE CASCADE,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+      console.log('[Bază de Date] Tabela "comments" este pregătită.');
+
+      await pool.query(`
+        CREATE INDEX IF NOT EXISTS idx_comments_quote_id ON comments(quote_id);
+      `);
+      console.log('[Bază de Date] Indexul "idx_comments_quote_id" este pregătit.');
+
+      await pool.query(`
         CREATE INDEX IF NOT EXISTS idx_notifications_recipient ON notifications(recipient_id);
       `);
       console.log('[Bază de Date] Indexul "idx_notifications_recipient" este pregătit.');

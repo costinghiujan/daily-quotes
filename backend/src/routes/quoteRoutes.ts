@@ -6,7 +6,9 @@ import {
   getQuoteById, 
   updateQuote, 
   deleteQuote,
-  getFeedQuotes
+  getFeedQuotes,
+  addComment,
+  getCommentsForQuote
 } from '../controllers/quoteController';
 import { protect } from '../middleware/authMiddleware';
 
@@ -20,5 +22,7 @@ router.get('/:id', protect, getQuoteById);
 router.put('/:id', protect, updateQuote);
 router.delete('/:id', protect, deleteQuote);
 router.post('/:id/react', protect, toggleReaction);
+router.post('/:id/comments', protect, addComment);
+router.get('/:id/comments', protect, getCommentsForQuote);
 
 export default router;

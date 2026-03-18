@@ -204,3 +204,76 @@ export const getFeedQuotes = async (req: AuthRequest, res: Response): Promise<vo
     res.status(500).json({ status: 'error', message: 'Eroare internă la încărcarea feed-ului.' });
   }
 };
+
+export const addComment = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const quoteId = req.params.id;
+    const { text } = req.body;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      res.status(401).json({ status: 'error', message: 'Neautorizat.' });
+      return;
+    }
+
+    if (!text || text.trim() === '') {
+      res.status(400).json({ status: 'error', message: 'Comentariul nu poate fi gol.' });
+      return;
+    }
+
+    const insertQuery = `
+      INSERT INTO comments (text, user_id, quote_id)
+      VALUES ($1, $2, $3)
+      RETURNING *;
+    `;
+    const result = await query(insertQuery, [text.trim(), userId, quoteId]);
+    const newComment = result.rows[0];
+
+    const userQuery = `
+      SELECT username, full_name, profile_picture_url 
+      FROM users WHERE id = $1;
+    `;
+    const userResult = await query(userQuery, [userId]);
+    const userDetails = userResult.rows[0];
+
+    const commentWithUser = {
+      ...newComment,
+      ...userDetails
+    };
+
+    res.status(201).json({ status: 'success', data: commentWithUser });
+
+  } catch (error) {
+    console.error('[Eroare Controller] Nu s-a putut adăuga comentariul:', error);
+    res.status(500).json({ status: 'error', message: 'Eroare internă a serverului.' });
+  }
+};
+
+export const getCommentsForQuote = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const quoteId = req.params.id;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      res.status(401).json({ status: 'error', message: 'Neautorizat.' });
+      return;
+    }
+
+    const commentsQuery = `
+      SELECT 
+        c.id, c.text, c.created_at, c.user_id,
+        u.username, u.full_name, u.profile_picture_url
+      FROM comments c
+      JOIN users u ON c.user_id = u.id
+      WHERE c.quote_id = $1
+      ORDER BY c.created_at ASC;
+    `;
+
+    const result = await query(commentsQuery, [quoteId]);
+
+    res.status(200).json({ status: 'success', results: result.rows.length, data: result.rows });
+  } catch (error) {
+    console.error('[Eroare Controller] Nu s-au putut prelua comentariile:', error);
+    res.status(500).json({ status: 'error', message: 'Eroare internă la preluarea comentariilor.' });
+  }
+};
