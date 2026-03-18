@@ -16,6 +16,7 @@ import HomeScreen from './src/screens/HomeScreen';
 import SearchScreen from './src/screens/SearchScreen';
 import NotificationsScreen from './src/screens/NotificationsScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
+import CommentsScreen from './src/screens/CommentsScreen';
 
 import { AuthProvider, AuthContext } from './src/context/AuthContext';
 import { ThemeProvider, ThemeContext } from './src/context/ThemeContext';
@@ -191,11 +192,21 @@ const RootNavigator = () => {
             <Stack.Screen name="Register" component={RegisterScreen} options={{ headerShown: false }} />
           </>
         ) : (
-          <Stack.Screen 
-            name="MainTabs" 
-            component={MainTabNavigator} 
-            options={{ headerShown: false }} 
-          />
+          <>
+            <Stack.Screen 
+              name="MainTabs" 
+              component={MainTabNavigator} 
+              options={{ headerShown: false }} 
+            />
+            <Stack.Screen 
+              name="Comments" 
+              component={CommentsScreen} 
+              options={{ 
+                title: 'Comentarii',
+                headerBackTitle: 'Înapoi' 
+              }} 
+            />
+          </>
         )}
       </Stack.Navigator>
     </NavigationContainer>

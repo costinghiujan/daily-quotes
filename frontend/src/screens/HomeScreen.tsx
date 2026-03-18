@@ -136,25 +136,34 @@ export default function HomeScreen({ navigation }: any) {
         </View>
 
         <View style={styles.reactionsBar}>
-          {REACTIONS_CONFIG.map((reaction) => {
-            const count = parseInt(item[reaction.prop] || 0);
-            const isSelected = Array.isArray(item.user_reactions) && item.user_reactions.includes(reaction.key);
+          <View style={{ flexDirection: 'row', flex: 1, flexWrap: 'wrap', gap: 4 }}>
+            {REACTIONS_CONFIG.map((reaction) => {
+              const count = parseInt(item[reaction.prop] || 0);
+              const isSelected = Array.isArray(item.user_reactions) && item.user_reactions.includes(reaction.key);
 
-            return (
-              <TouchableOpacity 
-                key={reaction.key} 
-                style={[styles.reactionBtn, isSelected && styles.reactionBtnActive]}
-                onPress={() => handleToggleReaction(item.id, reaction.key)}
-              >
-                <Text style={styles.emojiText}>{reaction.emoji}</Text>
-                {count > 0 && (
-                  <Text style={[styles.reactionCount, isSelected && styles.reactionCountActive]}>
-                    {count}
-                  </Text>
-                )}
-              </TouchableOpacity>
-            );
-          })}
+              return (
+                <TouchableOpacity 
+                  key={reaction.key} 
+                  style={[styles.reactionBtn, isSelected && styles.reactionBtnActive]}
+                  onPress={() => handleToggleReaction(item.id, reaction.key)}
+                >
+                  <Text style={styles.emojiText}>{reaction.emoji}</Text>
+                  {count > 0 && (
+                    <Text style={[styles.reactionCount, isSelected && styles.reactionCountActive]}>
+                      {count}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          <TouchableOpacity 
+            style={styles.commentIconBtn}
+            onPress={() => navigation.navigate('Comments', { quoteId: item.id })}
+          >
+            <Ionicons name="chatbubble-outline" size={22} color={colors.textLight} />
+          </TouchableOpacity>
         </View>
       </View>
     );
@@ -235,6 +244,7 @@ const getStyles = (colors: ThemeColors, theme: string) => StyleSheet.create({
   emptySubText: { fontSize: 15, color: colors.textLight, textAlign: 'center', marginTop: 10, lineHeight: 22 },
 
   reactionsBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 12 },
+  commentIconBtn: { padding: 8, marginLeft: 10, backgroundColor: colors.background, borderRadius: 20 },
   reactionBtn: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 6, borderRadius: 20, backgroundColor: theme === 'dark' ? '#2c2c2c' : '#f9f9f9' },
   reactionBtnActive: { backgroundColor: colors.primary + '30', borderWidth: 1, borderColor: colors.primary + '50' },
   emojiText: { fontSize: 16 },

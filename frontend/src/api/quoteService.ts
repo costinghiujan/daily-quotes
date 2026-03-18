@@ -1,6 +1,16 @@
 import { apiClient } from './client';
 import { Quote } from '../types/Quote';
 
+export interface Comment {
+  id: number;
+  text: string;
+  user_id: number;
+  username: string;
+  full_name: string | null;
+  profile_picture_url: string | null;
+  created_at: string;
+}
+
 interface ApiResponse {
   status: string;
   results?: number;
@@ -64,6 +74,26 @@ export const quoteService = {
       await apiClient.post(`/quotes/${quoteId}/react`, { reactionType });
     } catch (error) {
       console.error('[Eroare Frontend] Nu s-a putut trimite reacția:', error);
+      throw error;
+    }
+  },
+
+  getComments: async (quoteId: number): Promise<Comment[]> => {
+    try {
+      const response = await apiClient.get(`/quotes/${quoteId}/comments`);
+      return response.data.data;
+    } catch (error) {
+      console.error('[Eroare Frontend] Preluare comentarii:', error);
+      throw error;
+    }
+  },
+
+  addComment: async (quoteId: number, text: string): Promise<Comment> => {
+    try {
+      const response = await apiClient.post(`/quotes/${quoteId}/comments`, { text });
+      return response.data.data;
+    } catch (error) {
+      console.error('[Eroare Frontend] Adăugare comentariu:', error);
       throw error;
     }
   },
