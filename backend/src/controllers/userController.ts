@@ -13,9 +13,19 @@ export const searchUsers = async (req: AuthRequest, res: Response): Promise<void
     }
 
     const result = await query(`
-      SELECT id, username, full_name, profile_picture_url 
-      FROM users 
-      WHERE (username ILIKE $1 OR full_name ILIKE $1) AND id != $2
+      SELECT 
+        u.id, 
+        u.username, 
+        u.full_name, 
+        u.profile_picture_url,
+        f.status AS friendship_status,
+        f.requester_id
+      FROM users u
+      LEFT JOIN friendships f 
+        ON (f.requester_id = $2 AND f.receiver_id = u.id) 
+        OR (f.requester_id = u.id AND f.receiver_id = $2)
+      WHERE (u.username ILIKE $1 OR u.full_name ILIKE $1) 
+        AND u.id != $2
       LIMIT 20;
     `, [`%${searchQuery}%`, currentUserId]);
 
