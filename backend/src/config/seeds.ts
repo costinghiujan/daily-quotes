@@ -1,5 +1,5 @@
 import bcrypt from 'bcrypt';
-import { pool } from './config/db';
+import { pool } from './db';
 
 const seedUsers = async () => {
   try {
@@ -25,7 +25,7 @@ const seedUsers = async () => {
         const newUserId = userResult.rows[0].id;
 
         await pool.query(
-          `INSERT INTO notification_settings (user_id) VALUES ($1) ON CONFLICT DO NOTHING`,
+          `INSERT INTO notification_settings (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING`,
           [newUserId]
         );
         console.log(`✅ Cont creat cu succes: ${username} (ID: ${newUserId})`);
@@ -34,7 +34,7 @@ const seedUsers = async () => {
       }
     }
 
-    console.log('[Seed] Generarea a fost finalizată! Poți șterge acest fișier.');
+    console.log('[Seed] Generarea a fost finalizată! Poți șterge acest fișier sau îl poți păstra pentru teste viitoare.');
     process.exit(0);
   } catch (error) {
     console.error('[Seed] Eroare fatală:', error);
