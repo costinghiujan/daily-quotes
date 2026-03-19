@@ -2,6 +2,7 @@ import { apiClient } from './client';
 
 export interface NotificationSettings {
   notify_reactions: boolean;
+  notify_comments: boolean; // NOU
   notify_friend_requests: boolean;
   notify_friend_accepted: boolean;
 }
@@ -14,15 +15,19 @@ export interface AppNotification {
   created_at: string;
   sender_id: number;
   username: string;
-  full_name: string;
-  profile_picture_url: string;
+  full_name: string | null;
+  profile_picture_url: string | null;
 }
 
 export const notificationService = {
   getSettings: async (): Promise<NotificationSettings> => {
     try {
       const response = await apiClient.get('/notifications/settings');
-      return response.data.data;
+      const data = response.data.data;
+      return {
+        ...data,
+        notify_comments: data.notify_comments !== false
+      };
     } catch (error) {
       console.error('[Eroare Frontend] Preluare setări notificări:', error);
       throw error;
@@ -31,7 +36,12 @@ export const notificationService = {
 
   updateSettings: async (settings: NotificationSettings): Promise<NotificationSettings> => {
     try {
-      const response = await apiClient.put('/notifications/settings', settings);
+      const response = await apiClient.put('/notifications/settings', {
+        notify_reactions: settings.notify_reactions,
+        notify_comments: settings.notify_comments,
+        notify_friend_requests: settings.notify_friend_requests,
+        notify_friend_accepted: settings.notify_friend_accepted
+      });
       return response.data.data;
     } catch (error) {
       console.error('[Eroare Frontend] Actualizare setări notificări:', error);
@@ -63,7 +73,7 @@ export const notificationService = {
       const response = await apiClient.get('/notifications/unread-count');
       return response.data.count;
     } catch (error) {
-      console.error('[Eroare Frontend] Preluare număr notificări:', error);
+      console.error('[Eroare Frontend] Preluare număr notificări necitite:', error);
       return 0;
     }
   },
@@ -71,9 +81,9 @@ export const notificationService = {
   savePushToken: async (pushToken: string): Promise<void> => {
     try {
       await apiClient.post('/notifications/push-token', { pushToken });
-      console.log('[Frontend] Push Token salvat cu succes în baza de date.');
     } catch (error) {
-      console.error('[Eroare Frontend] Nu s-a putut salva Push Token-ul:', error);
+      console.error('[Eroare Frontend] Salvare Push Token:', error);
+      throw error;
     }
   }
 };

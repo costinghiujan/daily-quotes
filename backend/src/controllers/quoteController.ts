@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { query } from '../config/db';
 import { Quote } from '../models/Quote';
+import { sendNotification } from '../utils/notificationHelper';
 
 export interface AuthRequest extends Request {
   user?: {
@@ -207,12 +208,17 @@ export const getFeedQuotes = async (req: AuthRequest, res: Response): Promise<vo
 
 export const addComment = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const quoteId = req.params.id;
+    const quoteId = parseInt(String(req.params.id), 10);
     const { text } = req.body;
     const userId = req.user?.id;
 
     if (!userId) {
       res.status(401).json({ status: 'error', message: 'Neautorizat.' });
+      return;
+    }
+
+    if (isNaN(quoteId)) {
+      res.status(400).json({ status: 'error', message: 'ID-ul citatului este invalid.' });
       return;
     }
 
@@ -234,21 +240,17 @@ export const addComment = async (req: AuthRequest, res: Response): Promise<void>
     const quoteOwnerId = quoteRes.rows[0]?.user_id;
 
     if (quoteOwnerId && quoteOwnerId !== userId) {
-      const settingsRes = await query('SELECT notify_comments FROM notification_settings WHERE user_id = $1', [quoteOwnerId]);
-      const notifyComments = settingsRes.rows[0]?.notify_comments !== false;
-
-      if (notifyComments) {
-        await query(`
-          INSERT INTO notifications (recipient_id, sender_id, type, reference_id)
-          VALUES ($1, $2, 'COMMENT_ADDED', $3)
-        `, [quoteOwnerId, userId, quoteId]);
-      }
+      console.log(`[Push Debug] Se trimite notificarea de comentariu de la ${userId} către ${quoteOwnerId}`);
+      
+      await sendNotification(
+        quoteOwnerId, 
+        userId, 
+        'COMMENT_ADDED', 
+        quoteId
+      );
     }
 
-    const userQuery = `
-      SELECT username, full_name, profile_picture_url 
-      FROM users WHERE id = $1;
-    `;
+    const userQuery = `SELECT username, full_name, profile_picture_url FROM users WHERE id = $1;`;
     const userResult = await query(userQuery, [userId]);
     const userDetails = userResult.rows[0];
 
