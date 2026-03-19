@@ -52,6 +52,8 @@
         ADD COLUMN IF NOT EXISTS full_name VARCHAR(100),
         ADD COLUMN IF NOT EXISTS bio TEXT,
         ADD COLUMN IF NOT EXISTS profile_picture_url TEXT;
+        ALTER TABLE notification_settings 
+        ADD COLUMN IF NOT EXISTS notify_comments BOOLEAN DEFAULT TRUE;
       `);
       console.log('[Bază de Date] Tabela "users" a fost extinsă cu profilul social.');
 

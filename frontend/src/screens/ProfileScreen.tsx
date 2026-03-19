@@ -28,9 +28,7 @@ import { ThemeColors } from '../theme/colors';
 
 export default function ProfileScreen() {
   const { logout } = useContext(AuthContext);
-  
   const { colors, theme, setTheme } = useContext(ThemeContext);
-
   const styles = useMemo(() => getStyles(colors), [colors]);
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -48,12 +46,10 @@ export default function ProfileScreen() {
   const [isSessionsLoading, setIsSessionsLoading] = useState(false);
 
   const [isNotificationsModalVisible, setNotificationsModalVisible] = useState(false);
-  const [notificationSettings, setNotificationSettings] = useState<NotificationSettings | null>(null);
+  const [notificationSettings, setNotificationSettings] = useState<NotificationSettings | any>(null);
   const [isSettingsLoading, setIsSettingsLoading] = useState(false);
 
   const [isThemeModalVisible, setThemeModalVisible] = useState(false);
-
-  const [unreadCount, setUnreadCount] = useState(0);
 
   const fetchProfileData = async () => {
     setIsLoading(true);
@@ -63,10 +59,7 @@ export default function ProfileScreen() {
       setQuotes(data.quotes);
       setEditFullName(data.profile.full_name || '');
       setEditBio(data.profile.bio || '');
-
-      const count = await notificationService.getUnreadCount();
-      setUnreadCount(count);
-
+      
     } catch (error) {
       console.error('Eroare la încărcare profil:', error);
     } finally {
@@ -174,7 +167,7 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleToggleSetting = async (key: keyof NotificationSettings, value: boolean) => {
+  const handleToggleSetting = async (key: string, value: boolean) => {
     if (!notificationSettings) return;
 
     const previousSettings = { ...notificationSettings };
@@ -243,21 +236,8 @@ export default function ProfileScreen() {
 
         {isEditing ? (
           <View style={styles.editContainer}>
-            <TextInput 
-              style={styles.input} 
-              placeholder="Nume Complet" 
-              placeholderTextColor={colors.textLight}
-              value={editFullName} 
-              onChangeText={setEditFullName} 
-            />
-            <TextInput 
-              style={[styles.input, { height: 60 }]} 
-              placeholder="O scurtă descriere (Bio)" 
-              placeholderTextColor={colors.textLight}
-              value={editBio} 
-              onChangeText={setEditBio} 
-              multiline 
-            />
+            <TextInput style={styles.input} placeholder="Nume Complet" placeholderTextColor={colors.textLight} value={editFullName} onChangeText={setEditFullName} />
+            <TextInput style={[styles.input, { height: 60 }]} placeholder="O scurtă descriere (Bio)" placeholderTextColor={colors.textLight} value={editBio} onChangeText={setEditBio} multiline />
             <View style={styles.actionButtons}>
               <TouchableOpacity style={[styles.btn, { backgroundColor: colors.success }]} onPress={handleSaveProfile}><Text style={styles.btnText}>Salvează</Text></TouchableOpacity>
               <TouchableOpacity style={[styles.btn, { backgroundColor: colors.error }]} onPress={() => setIsEditing(false)}><Text style={styles.btnText}>Anulează</Text></TouchableOpacity>
@@ -276,11 +256,6 @@ export default function ProfileScreen() {
 
               <TouchableOpacity style={styles.actionBtn} onPress={openNotificationsModal}>
                 <Ionicons name="notifications-outline" size={18} color="#fff" />
-                {unreadCount > 0 && (
-                  <View style={styles.badge}>
-                    <Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
-                  </View>
-                )}
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.actionBtn} onPress={() => setThemeModalVisible(true)}>
@@ -313,9 +288,7 @@ export default function ProfileScreen() {
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Dispozitive Conectate</Text>
-              <TouchableOpacity onPress={() => setSecurityModalVisible(false)}>
-                <Ionicons name="close" size={24} color={colors.textDark} />
-              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setSecurityModalVisible(false)}><Ionicons name="close" size={24} color={colors.textDark} /></TouchableOpacity>
             </View>
             {isSessionsLoading ? (
               <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 20 }} />
@@ -335,9 +308,7 @@ export default function ProfileScreen() {
                         </View>
                       </View>
                       {!isCurrent && (
-                        <TouchableOpacity style={styles.revokeBtn} onPress={() => handleRevokeSession(session.id)}>
-                          <Text style={styles.revokeBtnText}>Ieși</Text>
-                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.revokeBtn} onPress={() => handleRevokeSession(session.id)}><Text style={styles.revokeBtnText}>Ieși</Text></TouchableOpacity>
                       )}
                     </View>
                   );
@@ -362,10 +333,11 @@ export default function ProfileScreen() {
               <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 20 }} />
             ) : (
               <View style={styles.settingsContainer}>
+                
                 <View style={styles.settingRow}>
                   <View style={styles.settingTextContainer}>
                     <Text style={styles.settingTitle}>Reacții la citate</Text>
-                    <Text style={styles.settingDescription}>Când cineva reacționează la citatele tale.</Text>
+                    <Text style={styles.settingDescription}>Când cineva reacționează la postările tale.</Text>
                   </View>
                   <Switch
                     trackColor={{ false: colors.border, true: `${colors.primary}80` }}
@@ -374,100 +346,51 @@ export default function ProfileScreen() {
                     value={notificationSettings.notify_reactions}
                   />
                 </View>
+
+                <View style={styles.settingRow}>
+                  <View style={styles.settingTextContainer}>
+                    <Text style={styles.settingTitle}>Comentarii noi</Text>
+                    <Text style={styles.settingDescription}>Când cineva lasă un comentariu la citatul tău.</Text>
+                  </View>
+                  <Switch
+                    trackColor={{ false: colors.border, true: `${colors.primary}80` }}
+                    thumbColor={notificationSettings.notify_comments ? colors.primary : colors.gray}
+                    onValueChange={(val) => handleToggleSetting('notify_comments', val)}
+                    value={notificationSettings.notify_comments}
+                  />
+                </View>
+
+                <View style={styles.settingRow}>
+                  <View style={styles.settingTextContainer}>
+                    <Text style={styles.settingTitle}>Cereri de prietenie</Text>
+                    <Text style={styles.settingDescription}>Când cineva dorește să se conecteze cu tine.</Text>
+                  </View>
+                  <Switch
+                    trackColor={{ false: colors.border, true: `${colors.primary}80` }}
+                    thumbColor={notificationSettings.notify_friend_requests ? colors.primary : colors.gray}
+                    onValueChange={(val) => handleToggleSetting('notify_friend_requests', val)}
+                    value={notificationSettings.notify_friend_requests}
+                  />
+                </View>
+
+                <View style={styles.settingRow}>
+                  <View style={styles.settingTextContainer}>
+                    <Text style={styles.settingTitle}>Cereri acceptate</Text>
+                    <Text style={styles.settingDescription}>Când cineva îți acceptă cererea trimisă.</Text>
+                  </View>
+                  <Switch
+                    trackColor={{ false: colors.border, true: `${colors.primary}80` }}
+                    thumbColor={notificationSettings.notify_friend_accepted ? colors.primary : colors.gray}
+                    onValueChange={(val) => handleToggleSetting('notify_friend_accepted', val)}
+                    value={notificationSettings.notify_friend_accepted}
+                  />
+                </View>
+
               </View>
             )}
           </View>
         </View>
       </Modal>
-
-      <Modal visible={isThemeModalVisible} animationType="fade" transparent={true} onRequestClose={() => setThemeModalVisible(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Alege Tema Aplicației</Text>
-              <TouchableOpacity onPress={() => setThemeModalVisible(false)}>
-                <Ionicons name="close" size={24} color={colors.textDark} />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.settingsContainer}>
-              <TouchableOpacity style={styles.themeOption} onPress={() => setTheme('light')}>
-                <View style={styles.themeOptionLeft}>
-                  <Ionicons name="sunny" size={24} color={theme === 'light' ? colors.primary : colors.textLight} />
-                  <Text style={styles.settingTitle}>Deschisă (Clasică)</Text>
-                </View>
-                <Ionicons 
-                  name={theme === 'light' ? 'radio-button-on' : 'radio-button-off'} 
-                  size={24} 
-                  color={theme === 'light' ? colors.primary : colors.textLight} 
-                />
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.themeOption} onPress={() => setTheme('dark')}>
-                <View style={styles.themeOptionLeft}>
-                  <Ionicons name="moon" size={24} color={theme === 'dark' ? colors.primary : colors.textLight} />
-                  <Text style={styles.settingTitle}>Întunecată</Text>
-                </View>
-                <Ionicons 
-                  name={theme === 'dark' ? 'radio-button-on' : 'radio-button-off'} 
-                  size={24} 
-                  color={theme === 'dark' ? colors.primary : colors.textLight} 
-                />
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.themeOption} onPress={() => setTheme('ocean')}>
-                <View style={styles.themeOptionLeft}>
-                  <Ionicons name="water" size={24} color={theme === 'ocean' ? colors.primary : colors.textLight} />
-                  <Text style={styles.settingTitle}>Ocean (Albastru)</Text>
-                </View>
-                <Ionicons 
-                  name={theme === 'ocean' ? 'radio-button-on' : 'radio-button-off'} 
-                  size={24} 
-                  color={theme === 'ocean' ? colors.primary : colors.textLight} 
-                />
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.themeOption} onPress={() => setTheme('nature')}>
-                <View style={styles.themeOptionLeft}>
-                  <Ionicons name="leaf" size={24} color={theme === 'nature' ? colors.primary : colors.textLight} />
-                  <Text style={styles.settingTitle}>Natură (Verde)</Text>
-                </View>
-                <Ionicons 
-                  name={theme === 'nature' ? 'radio-button-on' : 'radio-button-off'} 
-                  size={24} 
-                  color={theme === 'nature' ? colors.primary : colors.textLight} 
-                />
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.themeOption} onPress={() => setTheme('autumn')}>
-                <View style={styles.themeOptionLeft}>
-                  <Ionicons name="cafe" size={24} color={theme === 'autumn' ? colors.primary : colors.textLight} />
-                  <Text style={styles.settingTitle}>Cafea / Toamnă</Text>
-                </View>
-                <Ionicons 
-                  name={theme === 'autumn' ? 'radio-button-on' : 'radio-button-off'} 
-                  size={24} 
-                  color={theme === 'autumn' ? colors.primary : colors.textLight} 
-                />
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.themeOption} onPress={() => setTheme('minimalist')}>
-                <View style={styles.themeOptionLeft}>
-                  <Ionicons name="cube-outline" size={24} color={theme === 'minimalist' ? colors.primary : colors.textLight} />
-                  <Text style={styles.settingTitle}>Minimalistă</Text>
-                </View>
-                <Ionicons 
-                  name={theme === 'minimalist' ? 'radio-button-on' : 'radio-button-off'} 
-                  size={24} 
-                  color={theme === 'minimalist' ? colors.primary : colors.textLight} 
-                />
-              </TouchableOpacity>
-            </View>
-
-          </View>
-        </View>
-      </Modal>
-
     </View>
   );
 }
@@ -475,11 +398,7 @@ export default function ProfileScreen() {
 const getStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background },
-  header: { 
-    backgroundColor: colors.card, padding: 20, alignItems: 'center',
-    borderBottomWidth: 1, borderBottomColor: colors.border,
-    elevation: 2, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 5,
-  },
+  header: { backgroundColor: colors.card, padding: 20, alignItems: 'center', borderBottomWidth: 1, borderBottomColor: colors.border, elevation: 2, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 5 },
   avatarContainer: { position: 'relative', marginBottom: 15 },
   avatarImage: { width: 100, height: 100, borderRadius: 50 },
   avatarPlaceholder: { width: 100, height: 100, borderRadius: 50, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' },
@@ -488,27 +407,23 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
   fullName: { fontSize: 20, fontWeight: 'bold', color: colors.textDark },
   username: { fontSize: 14, color: colors.textLight, marginBottom: 10 },
   bio: { fontSize: 15, color: colors.textLight, textAlign: 'center', marginBottom: 15, paddingHorizontal: 20 },
-  
   actionButtonsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, flexWrap: 'wrap' },
   editBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.primary, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20 },
   actionBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.gray, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20 },
   logoutBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderWidth: 1, borderColor: colors.error, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
   btnText: { color: colors.white, fontWeight: 'bold', fontSize: 13 },
-  
   editContainer: { width: '100%' },
   input: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: 10, marginBottom: 10, backgroundColor: colors.background, color: colors.textDark },
   actionButtons: { flexDirection: 'row', justifyContent: 'center', gap: 10 },
   btn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8 },
   sectionTitle: { fontSize: 18, fontWeight: 'bold', padding: 15, color: colors.textDark },
   listContent: { paddingHorizontal: 15, paddingBottom: 20 },
-  
   quoteCard: { backgroundColor: colors.card, padding: 15, borderRadius: 10, marginBottom: 10, borderLeftWidth: 4, borderLeftColor: colors.primary },
   quoteCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 5 },
   quoteText: { flex: 1, fontSize: 16, fontStyle: 'italic', color: colors.textDark, paddingRight: 10 },
   deleteQuoteBtn: { padding: 5 },
   quoteAuthor: { fontSize: 14, fontWeight: 'bold', color: colors.textLight, textAlign: 'right' },
   emptyText: { textAlign: 'center', color: colors.textLight, marginTop: 20 },
-
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalContent: { backgroundColor: colors.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, maxHeight: '80%' },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 15, borderBottomWidth: 1, borderBottomColor: colors.border, marginBottom: 10 },
@@ -522,21 +437,9 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
   currentBadge: { color: colors.primary, fontSize: 12, fontWeight: 'bold', marginTop: 2 },
   revokeBtn: { backgroundColor: colors.errorBg, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
   revokeBtnText: { color: colors.error, fontWeight: 'bold', fontSize: 13 },
-
   settingsContainer: { paddingBottom: 20 },
   settingRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: colors.border },
   settingTextContainer: { flex: 1, paddingRight: 15 },
   settingTitle: { fontSize: 16, fontWeight: 'bold', color: colors.textDark, marginBottom: 4 },
   settingDescription: { fontSize: 13, color: colors.textLight, lineHeight: 18 },
-  
-  themeOption: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: colors.border },
-  themeOptionLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-
-  badge: {
-    position: 'absolute', top: -5, right: -5,
-    backgroundColor: colors.error, width: 18, height: 18, borderRadius: 9,
-    justifyContent: 'center', alignItems: 'center',
-    borderWidth: 1, borderColor: colors.card, zIndex: 10,
-  },
-  badgeText: { color: colors.white, fontSize: 10, fontWeight: 'bold' },
 });

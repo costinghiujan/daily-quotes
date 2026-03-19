@@ -229,6 +229,22 @@ export const addComment = async (req: AuthRequest, res: Response): Promise<void>
     const result = await query(insertQuery, [text.trim(), userId, quoteId]);
     const newComment = result.rows[0];
 
+    const getQuoteQuery = 'SELECT user_id FROM quotes WHERE id = $1';
+    const quoteRes = await query(getQuoteQuery, [quoteId]);
+    const quoteOwnerId = quoteRes.rows[0]?.user_id;
+
+    if (quoteOwnerId && quoteOwnerId !== userId) {
+      const settingsRes = await query('SELECT notify_comments FROM notification_settings WHERE user_id = $1', [quoteOwnerId]);
+      const notifyComments = settingsRes.rows[0]?.notify_comments !== false;
+
+      if (notifyComments) {
+        await query(`
+          INSERT INTO notifications (recipient_id, sender_id, type, reference_id)
+          VALUES ($1, $2, 'COMMENT_ADDED', $3)
+        `, [quoteOwnerId, userId, quoteId]);
+      }
+    }
+
     const userQuery = `
       SELECT username, full_name, profile_picture_url 
       FROM users WHERE id = $1;

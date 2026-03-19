@@ -19,7 +19,7 @@ import { friendshipService } from '../api/friendshipService';
 import { ThemeContext } from '../context/ThemeContext';
 import { ThemeColors } from '../theme/colors';
 
-export default function NotificationsScreen() {
+export default function NotificationsScreen({ navigation }: any) {
   const { colors, theme } = useContext(ThemeContext);
   const styles = useMemo(() => getStyles(colors, theme), [colors, theme]);
 
@@ -90,7 +90,7 @@ export default function NotificationsScreen() {
     }
   };
 
-  const renderNotificationItem = ({ item }: { item: AppNotification }) => {
+  const renderNotificationItem = ({ item }: { item: AppNotification | any }) => {
     const isFriendRequest = item.type === 'FRIEND_REQUEST';
     const date = new Date(item.created_at).toLocaleDateString('ro-RO', { hour: '2-digit', minute: '2-digit' });
     const displayName = item.full_name || item.username;
@@ -112,6 +112,7 @@ export default function NotificationsScreen() {
             {item.type === 'REACTION_ADDED' && ' a reacționat la citatul tău.'}
             {item.type === 'FRIEND_ACCEPTED' && ' ți-a acceptat cererea de prietenie.'}
             {item.type === 'FRIEND_REQUEST_ACCEPTED' && ' și cu tine sunteți acum prieteni.'}
+            {item.type === 'COMMENT_ADDED' && ' a lăsat un comentariu la citatul tău.'} {/* NOU */}
           </Text>
           <Text style={styles.timeText}>{date}</Text>
         </View>
@@ -137,6 +138,7 @@ export default function NotificationsScreen() {
             {item.type === 'REACTION_ADDED' && <Ionicons name="heart" size={24} color={colors.error} />}
             {item.type === 'FRIEND_ACCEPTED' && <Ionicons name="checkmark-circle" size={24} color={colors.success} />}
             {item.type === 'FRIEND_REQUEST_ACCEPTED' && <Ionicons name="people" size={24} color={colors.success} />}
+            {item.type === 'COMMENT_ADDED' && <Ionicons name="chatbubble-ellipses" size={24} color={colors.primary} />}
           </View>
         )}
       </View>
@@ -159,7 +161,7 @@ export default function NotificationsScreen() {
           <View style={styles.emptyContainer}>
             <Ionicons name="notifications-off-outline" size={64} color={colors.textLight} />
             <Text style={styles.emptyText}>Nu ai nicio notificare încă.</Text>
-            <Text style={styles.emptySubText}>Aici vor apărea reacțiile și cererile de prietenie.</Text>
+            <Text style={styles.emptySubText}>Aici vor apărea reacțiile, comentariile și cererile de prietenie.</Text>
           </View>
         }
       />
@@ -171,30 +173,17 @@ const getStyles = (colors: ThemeColors, theme: string) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background },
   listContent: { padding: 15 },
-  
-  card: { 
-    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, 
-    padding: 15, marginBottom: 10, borderRadius: 10, 
-    elevation: 2, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 5 
-  },
-  unreadCard: { 
-    backgroundColor: theme === 'dark' ? colors.primary + '20' : colors.primary + '10', 
-    borderWidth: 1, borderColor: colors.primary + '50' 
-  },
-  
+  card: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, padding: 15, marginBottom: 10, borderRadius: 10, elevation: 2, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 5 },
+  unreadCard: { backgroundColor: theme === 'dark' ? colors.primary + '20' : colors.primary + '10', borderWidth: 1, borderColor: colors.primary + '50' },
   avatar: { width: 50, height: 50, borderRadius: 25, marginRight: 15 },
   avatarPlaceholder: { width: 50, height: 50, borderRadius: 25, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center', marginRight: 15 },
-  
   contentContainer: { flex: 1, paddingRight: 10 },
   messageText: { fontSize: 14, color: colors.textDark, lineHeight: 20 },
   usernameText: { fontWeight: 'bold', fontSize: 15 },
   timeText: { fontSize: 12, color: colors.textLight, marginTop: 4 },
-  
   actionButtons: { flexDirection: 'row', gap: 8 },
   iconButton: { width: 34, height: 34, borderRadius: 17, justifyContent: 'center', alignItems: 'center' },
-  
   iconContainer: { justifyContent: 'center', alignItems: 'center', width: 30 },
-  
   emptyContainer: { alignItems: 'center', marginTop: 80, paddingHorizontal: 20 },
   emptyText: { marginTop: 15, fontSize: 18, fontWeight: 'bold', color: colors.textDark },
   emptySubText: { fontSize: 15, color: colors.textLight, textAlign: 'center', marginTop: 10, lineHeight: 22 },
