@@ -1,7 +1,17 @@
 import React, { useState, useCallback, useContext, useMemo } from 'react';
 import { 
-  View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, 
-  ActivityIndicator, Alert, Image, Modal, ScrollView, Switch
+  View, 
+  Text, 
+  TextInput, 
+  FlatList, 
+  TouchableOpacity, 
+  StyleSheet, 
+  ActivityIndicator,
+  Alert,
+  Image,
+  Modal,
+  ScrollView,
+  Switch
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,11 +22,13 @@ import { sessionService, Session } from '../api/sessionService';
 import { quoteService } from '../api/quoteService';
 import { notificationService, NotificationSettings } from '../api/notificationService';
 import { AuthContext } from '../context/AuthContext';
+
 import { ThemeContext } from '../context/ThemeContext'; 
 import { ThemeColors } from '../theme/colors';
 
 export default function ProfileScreen() {
   const { logout } = useContext(AuthContext);
+  
   const { colors, theme, setTheme } = useContext(ThemeContext);
   const styles = useMemo(() => getStyles(colors), [colors]);
 
@@ -55,7 +67,11 @@ export default function ProfileScreen() {
     }
   };
 
-  useFocusEffect(useCallback(() => { fetchProfileData(); }, []));
+  useFocusEffect(
+    useCallback(() => {
+      fetchProfileData();
+    }, [])
+  );
 
   const handleSaveProfile = async () => {
     try {
@@ -70,8 +86,18 @@ export default function ProfileScreen() {
 
   const handlePickImage = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (permissionResult.granted === false) return Alert.alert('Atenție', 'Avem nevoie de permisiunea ta!');
-    const pickerResult = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.7 });
+    if (permissionResult.granted === false) {
+      Alert.alert('Atenție', 'Avem nevoie de permisiunea ta pentru a accesa galeria foto!');
+      return;
+    }
+
+    const pickerResult = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'], 
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    });
+
     if (!pickerResult.canceled && pickerResult.assets[0]) {
       setIsUploading(true);
       try {
@@ -80,60 +106,109 @@ export default function ProfileScreen() {
         Alert.alert('Succes', 'Fotografia de profil a fost actualizată!');
       } catch (error) {
         Alert.alert('Eroare', 'Nu s-a putut încărca fotografia.');
-      } finally { setIsUploading(false); }
+      } finally {
+        setIsUploading(false);
+      }
     }
   };
 
   const handleLogout = () => {
-    Alert.alert('Delogare', 'Ieși din cont de pe acest dispozitiv?', [
-      { text: 'Anulează', style: 'cancel' }, { text: 'Ieși', style: 'destructive', onPress: () => logout() }
+    Alert.alert('Delogare', 'Ești sigur că vrei să ieși din cont de pe acest dispozitiv?', [
+      { text: 'Anulează', style: 'cancel' },
+      { text: 'Ieși', style: 'destructive', onPress: () => logout() }
     ]);
   };
 
   const openSecurityModal = async () => {
-    setSecurityModalVisible(true); setIsSessionsLoading(true);
+    setSecurityModalVisible(true);
+    setIsSessionsLoading(true);
     try {
       const data = await sessionService.getActiveSessions();
-      setActiveSessions(data.sessions); setCurrentSessionId(data.currentSessionId);
-    } catch (error) { Alert.alert('Eroare', 'Eroare la dispozitive.'); setSecurityModalVisible(false); } 
-    finally { setIsSessionsLoading(false); }
+      setActiveSessions(data.sessions);
+      setCurrentSessionId(data.currentSessionId);
+    } catch (error) {
+      Alert.alert('Eroare', 'Nu s-au putut încărca dispozitivele conectate.');
+      setSecurityModalVisible(false);
+    } finally {
+      setIsSessionsLoading(false);
+    }
   };
 
   const handleRevokeSession = (sessionId: number) => {
-    Alert.alert('Deconectare Dispozitiv', 'Ești sigur?', [
+    Alert.alert('Deconectare Dispozitiv', 'Ești sigur că vrei să deconectezi acest dispozitiv de la distanță?', [
       { text: 'Anulează', style: 'cancel' },
-      { text: 'Deconectează', style: 'destructive', onPress: async () => {
+      { 
+        text: 'Deconectează', 
+        style: 'destructive', 
+        onPress: async () => {
           try {
             await sessionService.revokeSession(sessionId);
             setActiveSessions(prev => prev.filter(s => s.id !== sessionId));
-          } catch (error) { Alert.alert('Eroare', 'Nu s-a putut deconecta.'); }
-        }}
+            Alert.alert('Succes', 'Dispozitivul a fost deconectat.');
+          } catch (error) {
+            Alert.alert('Eroare', 'Nu s-a putut deconecta dispozitivul.');
+          }
+        }
+      }
     ]);
   };
 
   const openNotificationsModal = async () => {
-    setNotificationsModalVisible(true); setIsSettingsLoading(true);
+    setNotificationsModalVisible(true);
+    setIsSettingsLoading(true);
     try {
       const settings = await notificationService.getSettings();
       setNotificationSettings(settings);
-    } catch (error) { Alert.alert('Eroare', 'Eroare setări.'); setNotificationsModalVisible(false); } 
-    finally { setIsSettingsLoading(false); }
+    } catch (error) {
+      Alert.alert('Eroare', 'Nu s-au putut încărca setările de notificări.');
+      setNotificationsModalVisible(false);
+    } finally {
+      setIsSettingsLoading(false);
+    }
   };
 
   const handleToggleSetting = async (key: string, value: boolean) => {
     if (!notificationSettings) return;
+
     const previousSettings = { ...notificationSettings };
     const updatedSettings = { ...notificationSettings, [key]: value };
     setNotificationSettings(updatedSettings);
-    try { await notificationService.updateSettings(updatedSettings); } 
-    catch (error) { setNotificationSettings(previousSettings); Alert.alert('Eroare', 'Setarea nu a putut fi salvată.'); }
+
+    try {
+      await notificationService.updateSettings(updatedSettings);
+    } catch (error) {
+      setNotificationSettings(previousSettings);
+      Alert.alert('Eroare conexiune', 'Setarea nu a putut fi salvată.');
+    }
+  };
+
+  const handleDeleteQuote = (quoteId: number) => {
+    Alert.alert(
+      'Șterge Citatul',
+      'Ești sigur că vrei să ștergi acest citat? Acțiunea este ireversibilă.',
+      [
+        { text: 'Anulează', style: 'cancel' },
+        { 
+          text: 'Șterge', 
+          style: 'destructive', 
+          onPress: async () => {
+            try {
+              await quoteService.delete(quoteId);
+              setQuotes(prevQuotes => prevQuotes.filter(q => q.id !== quoteId));
+            } catch (error) {
+              Alert.alert('Eroare', 'Nu s-a putut șterge citatul.');
+            }
+          } 
+        }
+      ]
+    );
   };
 
   const renderQuoteItem = ({ item }: { item: any }) => (
     <View style={styles.quoteCard}>
       <View style={styles.quoteCardHeader}>
         <Text style={styles.quoteText}>"{item.text}"</Text>
-        <TouchableOpacity onPress={() => {/* logică ștergere */}} style={styles.deleteQuoteBtn}>
+        <TouchableOpacity onPress={() => handleDeleteQuote(item.id)} style={styles.deleteQuoteBtn}>
           <Ionicons name="trash-outline" size={20} color={colors.error} />
         </TouchableOpacity>
       </View>
@@ -141,7 +216,9 @@ export default function ProfileScreen() {
     </View>
   );
 
-  if (isLoading && !profile) return <View style={styles.centered}><ActivityIndicator size="large" color={colors.primary} /></View>;
+  if (isLoading && !profile) {
+    return <View style={styles.centered}><ActivityIndicator size="large" color={colors.primary} /></View>;
+  }
 
   return (
     <View style={styles.container}>
@@ -152,12 +229,15 @@ export default function ProfileScreen() {
           ) : (
             <View style={styles.avatarPlaceholder}><Ionicons name="person" size={40} color={colors.white} /></View>
           )}
+          <View style={styles.avatarOverlay}>
+            {isUploading ? <ActivityIndicator size="small" color={colors.white} /> : <Ionicons name="camera" size={16} color={colors.white} />}
+          </View>
         </TouchableOpacity>
 
         {isEditing ? (
           <View style={styles.editContainer}>
             <TextInput style={styles.input} placeholder="Nume Complet" placeholderTextColor={colors.textLight} value={editFullName} onChangeText={setEditFullName} />
-            <TextInput style={[styles.input, { height: 60 }]} placeholder="Bio" placeholderTextColor={colors.textLight} value={editBio} onChangeText={setEditBio} multiline />
+            <TextInput style={[styles.input, { height: 60 }]} placeholder="O scurtă descriere (Bio)" placeholderTextColor={colors.textLight} value={editBio} onChangeText={setEditBio} multiline />
             <View style={styles.actionButtons}>
               <TouchableOpacity style={[styles.btn, { backgroundColor: colors.success }]} onPress={handleSaveProfile}><Text style={styles.btnText}>Salvează</Text></TouchableOpacity>
               <TouchableOpacity style={[styles.btn, { backgroundColor: colors.error }]} onPress={() => setIsEditing(false)}><Text style={styles.btnText}>Anulează</Text></TouchableOpacity>
@@ -173,7 +253,7 @@ export default function ProfileScreen() {
               <TouchableOpacity style={styles.editBtn} onPress={() => setIsEditing(true)}>
                 <Ionicons name="pencil" size={16} color={colors.white} />
               </TouchableOpacity>
-              
+
               <TouchableOpacity style={styles.actionBtn} onPress={openNotificationsModal}>
                 <Ionicons name="notifications-outline" size={18} color={colors.white} />
               </TouchableOpacity>
@@ -194,21 +274,69 @@ export default function ProfileScreen() {
         )}
       </View>
 
-      <FlatList data={quotes} keyExtractor={(item) => item.id.toString()} renderItem={renderQuoteItem} contentContainerStyle={styles.listContent} />
+      <Text style={styles.sectionTitle}>Citatele Mele ({quotes.length})</Text>
+      <FlatList
+        data={quotes}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={renderQuoteItem}
+        contentContainerStyle={styles.listContent}
+        ListEmptyComponent={<Text style={styles.emptyText}>Nu ai adăugat niciun citat încă.</Text>}
+      />
+
+      <Modal visible={isSecurityModalVisible} animationType="slide" transparent={true} onRequestClose={() => setSecurityModalVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Dispozitive Conectate</Text>
+              <TouchableOpacity onPress={() => setSecurityModalVisible(false)}>
+                <Ionicons name="close" size={24} color={colors.textDark} />
+              </TouchableOpacity>
+            </View>
+            {isSessionsLoading ? (
+              <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 20 }} />
+            ) : (
+              <ScrollView style={styles.sessionsList}>
+                {activeSessions.map((session) => {
+                  const isCurrent = session.id === currentSessionId;
+                  const date = new Date(session.created_at).toLocaleDateString('ro-RO');
+                  return (
+                    <View key={session.id} style={styles.sessionCard}>
+                      <View style={styles.sessionInfo}>
+                        <Ionicons name={session.device_name.includes('ios') || session.device_name.includes('android') ? "phone-portrait-outline" : "laptop-outline"} size={24} color={colors.textLight} />
+                        <View style={styles.sessionDetails}>
+                          <Text style={styles.deviceName} numberOfLines={1}>{session.device_name.substring(0, 30)}</Text>
+                          <Text style={styles.sessionDate}>Logat pe: {date}</Text>
+                          {isCurrent && <Text style={styles.currentBadge}>Dispozitivul curent</Text>}
+                        </View>
+                      </View>
+                      {!isCurrent && (
+                        <TouchableOpacity style={styles.revokeBtn} onPress={() => handleRevokeSession(session.id)}>
+                          <Text style={styles.revokeBtnText}>Ieși</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  );
+                })}
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </Modal>
 
       <Modal visible={isNotificationsModalVisible} animationType="fade" transparent={true} onRequestClose={() => setNotificationsModalVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Setări Notificări</Text>
-              <TouchableOpacity onPress={() => setNotificationsModalVisible(false)}><Ionicons name="close" size={24} color={colors.textDark} /></TouchableOpacity>
+              <TouchableOpacity onPress={() => setNotificationsModalVisible(false)}>
+                <Ionicons name="close" size={24} color={colors.textDark} />
+              </TouchableOpacity>
             </View>
 
             {isSettingsLoading || !notificationSettings ? (
               <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 20 }} />
             ) : (
               <View style={styles.settingsContainer}>
-                
                 <View style={styles.settingRow}>
                   <View style={styles.settingTextContainer}>
                     <Text style={styles.settingTitle}>Reacții la citate</Text>
@@ -260,9 +388,72 @@ export default function ProfileScreen() {
                     value={notificationSettings.notify_friend_accepted}
                   />
                 </View>
-
               </View>
             )}
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={isThemeModalVisible} animationType="fade" transparent={true} onRequestClose={() => setThemeModalVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Alege Tema Aplicației</Text>
+              <TouchableOpacity onPress={() => setThemeModalVisible(false)}>
+                <Ionicons name="close" size={24} color={colors.textDark} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.settingsContainer} showsVerticalScrollIndicator={false}>
+              <TouchableOpacity style={styles.themeOption} onPress={() => setTheme('light')}>
+                <View style={styles.themeOptionLeft}>
+                  <Ionicons name="sunny" size={24} color={theme === 'light' ? colors.primary : colors.textLight} />
+                  <Text style={styles.settingTitle}>Deschisă (Clasică)</Text>
+                </View>
+                <Ionicons name={theme === 'light' ? 'radio-button-on' : 'radio-button-off'} size={24} color={theme === 'light' ? colors.primary : colors.textLight} />
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.themeOption} onPress={() => setTheme('dark')}>
+                <View style={styles.themeOptionLeft}>
+                  <Ionicons name="moon" size={24} color={theme === 'dark' ? colors.primary : colors.textLight} />
+                  <Text style={styles.settingTitle}>Întunecată</Text>
+                </View>
+                <Ionicons name={theme === 'dark' ? 'radio-button-on' : 'radio-button-off'} size={24} color={theme === 'dark' ? colors.primary : colors.textLight} />
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.themeOption} onPress={() => setTheme('ocean')}>
+                <View style={styles.themeOptionLeft}>
+                  <Ionicons name="water" size={24} color={theme === 'ocean' ? colors.primary : colors.textLight} />
+                  <Text style={styles.settingTitle}>Ocean (Albastru)</Text>
+                </View>
+                <Ionicons name={theme === 'ocean' ? 'radio-button-on' : 'radio-button-off'} size={24} color={theme === 'ocean' ? colors.primary : colors.textLight} />
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.themeOption} onPress={() => setTheme('nature')}>
+                <View style={styles.themeOptionLeft}>
+                  <Ionicons name="leaf" size={24} color={theme === 'nature' ? colors.primary : colors.textLight} />
+                  <Text style={styles.settingTitle}>Natură (Verde)</Text>
+                </View>
+                <Ionicons name={theme === 'nature' ? 'radio-button-on' : 'radio-button-off'} size={24} color={theme === 'nature' ? colors.primary : colors.textLight} />
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.themeOption} onPress={() => setTheme('autumn')}>
+                <View style={styles.themeOptionLeft}>
+                  <Ionicons name="cafe" size={24} color={theme === 'autumn' ? colors.primary : colors.textLight} />
+                  <Text style={styles.settingTitle}>Cafea / Toamnă</Text>
+                </View>
+                <Ionicons name={theme === 'autumn' ? 'radio-button-on' : 'radio-button-off'} size={24} color={theme === 'autumn' ? colors.primary : colors.textLight} />
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.themeOption} onPress={() => setTheme('minimalist')}>
+                <View style={styles.themeOptionLeft}>
+                  <Ionicons name="cube-outline" size={24} color={theme === 'minimalist' ? colors.primary : colors.textLight} />
+                  <Text style={styles.settingTitle}>Minimalistă</Text>
+                </View>
+                <Ionicons name={theme === 'minimalist' ? 'radio-button-on' : 'radio-button-off'} size={24} color={theme === 'minimalist' ? colors.primary : colors.textLight} />
+              </TouchableOpacity>
+            </ScrollView>
+
           </View>
         </View>
       </Modal>
@@ -283,27 +474,32 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
   fullName: { fontSize: 20, fontWeight: 'bold', color: colors.textDark },
   username: { fontSize: 14, color: colors.textLight, marginBottom: 10 },
   bio: { fontSize: 15, color: colors.textLight, textAlign: 'center', marginBottom: 15, paddingHorizontal: 20 },
+  
   actionButtonsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, flexWrap: 'wrap' },
   editBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.primary, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20 },
   actionBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.gray, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20 },
   logoutBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderWidth: 1, borderColor: colors.error, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
   btnText: { color: colors.white, fontWeight: 'bold', fontSize: 13 },
+  
   editContainer: { width: '100%' },
   input: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: 10, marginBottom: 10, backgroundColor: colors.background, color: colors.textDark },
   actionButtons: { flexDirection: 'row', justifyContent: 'center', gap: 10 },
   btn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8 },
   sectionTitle: { fontSize: 18, fontWeight: 'bold', padding: 15, color: colors.textDark },
   listContent: { paddingHorizontal: 15, paddingBottom: 20 },
+  
   quoteCard: { backgroundColor: colors.card, padding: 15, borderRadius: 10, marginBottom: 10, borderLeftWidth: 4, borderLeftColor: colors.primary },
   quoteCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 5 },
   quoteText: { flex: 1, fontSize: 16, fontStyle: 'italic', color: colors.textDark, paddingRight: 10 },
   deleteQuoteBtn: { padding: 5 },
   quoteAuthor: { fontSize: 14, fontWeight: 'bold', color: colors.textLight, textAlign: 'right' },
   emptyText: { textAlign: 'center', color: colors.textLight, marginTop: 20 },
+
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalContent: { backgroundColor: colors.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, maxHeight: '80%' },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 15, borderBottomWidth: 1, borderBottomColor: colors.border, marginBottom: 10 },
   modalTitle: { fontSize: 18, fontWeight: 'bold', color: colors.textDark },
+  
   sessionsList: { paddingBottom: 20 },
   sessionCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: colors.border },
   sessionInfo: { flexDirection: 'row', alignItems: 'center', flex: 1 },
@@ -313,9 +509,13 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
   currentBadge: { color: colors.primary, fontSize: 12, fontWeight: 'bold', marginTop: 2 },
   revokeBtn: { backgroundColor: colors.errorBg, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
   revokeBtnText: { color: colors.error, fontWeight: 'bold', fontSize: 13 },
+
   settingsContainer: { paddingBottom: 20 },
   settingRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: colors.border },
   settingTextContainer: { flex: 1, paddingRight: 15 },
   settingTitle: { fontSize: 16, fontWeight: 'bold', color: colors.textDark, marginBottom: 4 },
   settingDescription: { fontSize: 13, color: colors.textLight, lineHeight: 18 },
+  
+  themeOption: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: colors.border },
+  themeOptionLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
 });
