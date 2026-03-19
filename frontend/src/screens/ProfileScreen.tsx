@@ -1,17 +1,7 @@
 import React, { useState, useCallback, useContext, useMemo } from 'react';
 import { 
-  View, 
-  Text, 
-  TextInput, 
-  FlatList, 
-  TouchableOpacity, 
-  StyleSheet, 
-  ActivityIndicator,
-  Alert,
-  Image,
-  Modal,
-  ScrollView,
-  Switch
+  View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, 
+  ActivityIndicator, Alert, Image, Modal, ScrollView, Switch
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,7 +12,6 @@ import { sessionService, Session } from '../api/sessionService';
 import { quoteService } from '../api/quoteService';
 import { notificationService, NotificationSettings } from '../api/notificationService';
 import { AuthContext } from '../context/AuthContext';
-
 import { ThemeContext } from '../context/ThemeContext'; 
 import { ThemeColors } from '../theme/colors';
 
@@ -59,7 +48,6 @@ export default function ProfileScreen() {
       setQuotes(data.quotes);
       setEditFullName(data.profile.full_name || '');
       setEditBio(data.profile.bio || '');
-      
     } catch (error) {
       console.error('Eroare la încărcare profil:', error);
     } finally {
@@ -67,11 +55,7 @@ export default function ProfileScreen() {
     }
   };
 
-  useFocusEffect(
-    useCallback(() => {
-      fetchProfileData();
-    }, [])
-  );
+  useFocusEffect(useCallback(() => { fetchProfileData(); }, []));
 
   const handleSaveProfile = async () => {
     try {
@@ -86,18 +70,8 @@ export default function ProfileScreen() {
 
   const handlePickImage = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (permissionResult.granted === false) {
-      Alert.alert('Atenție', 'Avem nevoie de permisiunea ta pentru a accesa galeria foto!');
-      return;
-    }
-
-    const pickerResult = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'], 
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.7,
-    });
-
+    if (permissionResult.granted === false) return Alert.alert('Atenție', 'Avem nevoie de permisiunea ta!');
+    const pickerResult = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.7 });
     if (!pickerResult.canceled && pickerResult.assets[0]) {
       setIsUploading(true);
       try {
@@ -106,109 +80,60 @@ export default function ProfileScreen() {
         Alert.alert('Succes', 'Fotografia de profil a fost actualizată!');
       } catch (error) {
         Alert.alert('Eroare', 'Nu s-a putut încărca fotografia.');
-      } finally {
-        setIsUploading(false);
-      }
+      } finally { setIsUploading(false); }
     }
   };
 
   const handleLogout = () => {
-    Alert.alert('Delogare', 'Ești sigur că vrei să ieși din cont de pe acest dispozitiv?', [
-      { text: 'Anulează', style: 'cancel' },
-      { text: 'Ieși', style: 'destructive', onPress: () => logout() }
+    Alert.alert('Delogare', 'Ieși din cont de pe acest dispozitiv?', [
+      { text: 'Anulează', style: 'cancel' }, { text: 'Ieși', style: 'destructive', onPress: () => logout() }
     ]);
   };
 
   const openSecurityModal = async () => {
-    setSecurityModalVisible(true);
-    setIsSessionsLoading(true);
+    setSecurityModalVisible(true); setIsSessionsLoading(true);
     try {
       const data = await sessionService.getActiveSessions();
-      setActiveSessions(data.sessions);
-      setCurrentSessionId(data.currentSessionId);
-    } catch (error) {
-      Alert.alert('Eroare', 'Nu s-au putut încărca dispozitivele conectate.');
-      setSecurityModalVisible(false);
-    } finally {
-      setIsSessionsLoading(false);
-    }
+      setActiveSessions(data.sessions); setCurrentSessionId(data.currentSessionId);
+    } catch (error) { Alert.alert('Eroare', 'Eroare la dispozitive.'); setSecurityModalVisible(false); } 
+    finally { setIsSessionsLoading(false); }
   };
 
   const handleRevokeSession = (sessionId: number) => {
-    Alert.alert('Deconectare Dispozitiv', 'Ești sigur că vrei să deconectezi acest dispozitiv de la distanță?', [
+    Alert.alert('Deconectare Dispozitiv', 'Ești sigur?', [
       { text: 'Anulează', style: 'cancel' },
-      { 
-        text: 'Deconectează', 
-        style: 'destructive', 
-        onPress: async () => {
+      { text: 'Deconectează', style: 'destructive', onPress: async () => {
           try {
             await sessionService.revokeSession(sessionId);
             setActiveSessions(prev => prev.filter(s => s.id !== sessionId));
-            Alert.alert('Succes', 'Dispozitivul a fost deconectat.');
-          } catch (error) {
-            Alert.alert('Eroare', 'Nu s-a putut deconecta dispozitivul.');
-          }
-        }
-      }
+          } catch (error) { Alert.alert('Eroare', 'Nu s-a putut deconecta.'); }
+        }}
     ]);
   };
 
   const openNotificationsModal = async () => {
-    setNotificationsModalVisible(true);
-    setIsSettingsLoading(true);
+    setNotificationsModalVisible(true); setIsSettingsLoading(true);
     try {
       const settings = await notificationService.getSettings();
       setNotificationSettings(settings);
-    } catch (error) {
-      Alert.alert('Eroare', 'Nu s-au putut încărca setările de notificări.');
-      setNotificationsModalVisible(false);
-    } finally {
-      setIsSettingsLoading(false);
-    }
+    } catch (error) { Alert.alert('Eroare', 'Eroare setări.'); setNotificationsModalVisible(false); } 
+    finally { setIsSettingsLoading(false); }
   };
 
   const handleToggleSetting = async (key: string, value: boolean) => {
     if (!notificationSettings) return;
-
     const previousSettings = { ...notificationSettings };
     const updatedSettings = { ...notificationSettings, [key]: value };
     setNotificationSettings(updatedSettings);
-
-    try {
-      await notificationService.updateSettings(updatedSettings);
-    } catch (error) {
-      setNotificationSettings(previousSettings);
-      Alert.alert('Eroare conexiune', 'Setarea nu a putut fi salvată.');
-    }
-  };
-
-  const handleDeleteQuote = (quoteId: number) => {
-    Alert.alert(
-      'Șterge Citatul',
-      'Ești sigur că vrei să ștergi acest citat? Acțiunea este ireversibilă.',
-      [
-        { text: 'Anulează', style: 'cancel' },
-        { 
-          text: 'Șterge', 
-          style: 'destructive', 
-          onPress: async () => {
-            try {
-              await quoteService.delete(quoteId);
-              setQuotes(prevQuotes => prevQuotes.filter(q => q.id !== quoteId));
-            } catch (error) {
-              Alert.alert('Eroare', 'Nu s-a putut șterge citatul.');
-            }
-          } 
-        }
-      ]
-    );
+    try { await notificationService.updateSettings(updatedSettings); } 
+    catch (error) { setNotificationSettings(previousSettings); Alert.alert('Eroare', 'Setarea nu a putut fi salvată.'); }
   };
 
   const renderQuoteItem = ({ item }: { item: any }) => (
     <View style={styles.quoteCard}>
       <View style={styles.quoteCardHeader}>
         <Text style={styles.quoteText}>"{item.text}"</Text>
-        <TouchableOpacity onPress={() => handleDeleteQuote(item.id)} style={styles.deleteQuoteBtn}>
+        <TouchableOpacity onPress={() => {/* logică ștergere */}} style={styles.deleteQuoteBtn}>
           <Ionicons name="trash-outline" size={20} color={colors.error} />
         </TouchableOpacity>
       </View>
@@ -216,9 +141,7 @@ export default function ProfileScreen() {
     </View>
   );
 
-  if (isLoading && !profile) {
-    return <View style={styles.centered}><ActivityIndicator size="large" color={colors.primary} /></View>;
-  }
+  if (isLoading && !profile) return <View style={styles.centered}><ActivityIndicator size="large" color={colors.primary} /></View>;
 
   return (
     <View style={styles.container}>
@@ -227,17 +150,14 @@ export default function ProfileScreen() {
           {profile?.profile_picture_url ? (
             <Image source={{ uri: profile.profile_picture_url }} style={styles.avatarImage} />
           ) : (
-            <View style={styles.avatarPlaceholder}><Ionicons name="person" size={40} color="#fff" /></View>
+            <View style={styles.avatarPlaceholder}><Ionicons name="person" size={40} color={colors.white} /></View>
           )}
-          <View style={styles.avatarOverlay}>
-            {isUploading ? <ActivityIndicator size="small" color="#fff" /> : <Ionicons name="camera" size={16} color="#fff" />}
-          </View>
         </TouchableOpacity>
 
         {isEditing ? (
           <View style={styles.editContainer}>
             <TextInput style={styles.input} placeholder="Nume Complet" placeholderTextColor={colors.textLight} value={editFullName} onChangeText={setEditFullName} />
-            <TextInput style={[styles.input, { height: 60 }]} placeholder="O scurtă descriere (Bio)" placeholderTextColor={colors.textLight} value={editBio} onChangeText={setEditBio} multiline />
+            <TextInput style={[styles.input, { height: 60 }]} placeholder="Bio" placeholderTextColor={colors.textLight} value={editBio} onChangeText={setEditBio} multiline />
             <View style={styles.actionButtons}>
               <TouchableOpacity style={[styles.btn, { backgroundColor: colors.success }]} onPress={handleSaveProfile}><Text style={styles.btnText}>Salvează</Text></TouchableOpacity>
               <TouchableOpacity style={[styles.btn, { backgroundColor: colors.error }]} onPress={() => setIsEditing(false)}><Text style={styles.btnText}>Anulează</Text></TouchableOpacity>
@@ -251,19 +171,19 @@ export default function ProfileScreen() {
             
             <View style={styles.actionButtonsRow}>
               <TouchableOpacity style={styles.editBtn} onPress={() => setIsEditing(true)}>
-                <Ionicons name="pencil" size={16} color="#fff" />
+                <Ionicons name="pencil" size={16} color={colors.white} />
               </TouchableOpacity>
-
+              
               <TouchableOpacity style={styles.actionBtn} onPress={openNotificationsModal}>
-                <Ionicons name="notifications-outline" size={18} color="#fff" />
+                <Ionicons name="notifications-outline" size={18} color={colors.white} />
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.actionBtn} onPress={() => setThemeModalVisible(true)}>
-                <Ionicons name={theme === 'light' ? 'moon-outline' : 'sunny-outline'} size={18} color="#fff" />
+                <Ionicons name={theme === 'light' ? 'moon-outline' : 'sunny-outline'} size={18} color={colors.white} />
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.actionBtn} onPress={openSecurityModal}>
-                <Ionicons name="shield-checkmark" size={18} color="#fff" />
+                <Ionicons name="shield-checkmark" size={18} color={colors.white} />
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
@@ -274,59 +194,14 @@ export default function ProfileScreen() {
         )}
       </View>
 
-      <Text style={styles.sectionTitle}>Citatele Mele ({quotes.length})</Text>
-      <FlatList
-        data={quotes}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={renderQuoteItem}
-        contentContainerStyle={styles.listContent}
-        ListEmptyComponent={<Text style={styles.emptyText}>Nu ai adăugat niciun citat încă.</Text>}
-      />
-
-      <Modal visible={isSecurityModalVisible} animationType="slide" transparent={true} onRequestClose={() => setSecurityModalVisible(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Dispozitive Conectate</Text>
-              <TouchableOpacity onPress={() => setSecurityModalVisible(false)}><Ionicons name="close" size={24} color={colors.textDark} /></TouchableOpacity>
-            </View>
-            {isSessionsLoading ? (
-              <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 20 }} />
-            ) : (
-              <ScrollView style={styles.sessionsList}>
-                {activeSessions.map((session) => {
-                  const isCurrent = session.id === currentSessionId;
-                  const date = new Date(session.created_at).toLocaleDateString('ro-RO');
-                  return (
-                    <View key={session.id} style={styles.sessionCard}>
-                      <View style={styles.sessionInfo}>
-                        <Ionicons name={session.device_name.includes('ios') || session.device_name.includes('android') ? "phone-portrait-outline" : "laptop-outline"} size={24} color={colors.textLight} />
-                        <View style={styles.sessionDetails}>
-                          <Text style={styles.deviceName} numberOfLines={1}>{session.device_name.substring(0, 30)}</Text>
-                          <Text style={styles.sessionDate}>Logat pe: {date}</Text>
-                          {isCurrent && <Text style={styles.currentBadge}>Dispozitivul curent</Text>}
-                        </View>
-                      </View>
-                      {!isCurrent && (
-                        <TouchableOpacity style={styles.revokeBtn} onPress={() => handleRevokeSession(session.id)}><Text style={styles.revokeBtnText}>Ieși</Text></TouchableOpacity>
-                      )}
-                    </View>
-                  );
-                })}
-              </ScrollView>
-            )}
-          </View>
-        </View>
-      </Modal>
+      <FlatList data={quotes} keyExtractor={(item) => item.id.toString()} renderItem={renderQuoteItem} contentContainerStyle={styles.listContent} />
 
       <Modal visible={isNotificationsModalVisible} animationType="fade" transparent={true} onRequestClose={() => setNotificationsModalVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Setări Notificări</Text>
-              <TouchableOpacity onPress={() => setNotificationsModalVisible(false)}>
-                <Ionicons name="close" size={24} color={colors.textDark} />
-              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setNotificationsModalVisible(false)}><Ionicons name="close" size={24} color={colors.textDark} /></TouchableOpacity>
             </View>
 
             {isSettingsLoading || !notificationSettings ? (
@@ -391,6 +266,7 @@ export default function ProfileScreen() {
           </View>
         </View>
       </Modal>
+
     </View>
   );
 }
