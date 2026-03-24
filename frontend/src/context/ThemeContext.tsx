@@ -1,10 +1,10 @@
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { 
-  lightTheme, darkTheme, oceanTheme, natureTheme, autumnTheme, minimalistTheme, ThemeColors 
+  lightTheme, darkTheme, ThemeColors 
 } from '../theme/colors';
 
-export type ThemeType = 'light' | 'dark' | 'ocean' | 'nature' | 'autumn' | 'minimalist';
+export type ThemeType = 'light' | 'dark';
 
 interface ThemeContextProps {
   theme: ThemeType;
@@ -20,11 +20,7 @@ export const ThemeContext = createContext<ThemeContextProps>({
 
 const themeMap: Record<ThemeType, ThemeColors> = {
   light: lightTheme,
-  dark: darkTheme,
-  ocean: oceanTheme,
-  nature: natureTheme,
-  autumn: autumnTheme,
-  minimalist: minimalistTheme,
+  dark: darkTheme
 };
 
 interface ThemeProviderProps {

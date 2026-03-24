@@ -408,7 +408,7 @@ export default function ProfileScreen() {
               <TouchableOpacity style={styles.themeOption} onPress={() => setTheme('light')}>
                 <View style={styles.themeOptionLeft}>
                   <Ionicons name="sunny" size={24} color={theme === 'light' ? colors.primary : colors.textLight} />
-                  <Text style={styles.settingTitle}>Deschisă (Clasică)</Text>
+                  <Text style={styles.settingTitle}>Deschisă</Text>
                 </View>
                 <Ionicons name={theme === 'light' ? 'radio-button-on' : 'radio-button-off'} size={24} color={theme === 'light' ? colors.primary : colors.textLight} />
               </TouchableOpacity>
@@ -419,38 +419,6 @@ export default function ProfileScreen() {
                   <Text style={styles.settingTitle}>Întunecată</Text>
                 </View>
                 <Ionicons name={theme === 'dark' ? 'radio-button-on' : 'radio-button-off'} size={24} color={theme === 'dark' ? colors.primary : colors.textLight} />
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.themeOption} onPress={() => setTheme('ocean')}>
-                <View style={styles.themeOptionLeft}>
-                  <Ionicons name="water" size={24} color={theme === 'ocean' ? colors.primary : colors.textLight} />
-                  <Text style={styles.settingTitle}>Ocean (Albastru)</Text>
-                </View>
-                <Ionicons name={theme === 'ocean' ? 'radio-button-on' : 'radio-button-off'} size={24} color={theme === 'ocean' ? colors.primary : colors.textLight} />
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.themeOption} onPress={() => setTheme('nature')}>
-                <View style={styles.themeOptionLeft}>
-                  <Ionicons name="leaf" size={24} color={theme === 'nature' ? colors.primary : colors.textLight} />
-                  <Text style={styles.settingTitle}>Natură (Verde)</Text>
-                </View>
-                <Ionicons name={theme === 'nature' ? 'radio-button-on' : 'radio-button-off'} size={24} color={theme === 'nature' ? colors.primary : colors.textLight} />
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.themeOption} onPress={() => setTheme('autumn')}>
-                <View style={styles.themeOptionLeft}>
-                  <Ionicons name="cafe" size={24} color={theme === 'autumn' ? colors.primary : colors.textLight} />
-                  <Text style={styles.settingTitle}>Cafea / Toamnă</Text>
-                </View>
-                <Ionicons name={theme === 'autumn' ? 'radio-button-on' : 'radio-button-off'} size={24} color={theme === 'autumn' ? colors.primary : colors.textLight} />
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.themeOption} onPress={() => setTheme('minimalist')}>
-                <View style={styles.themeOptionLeft}>
-                  <Ionicons name="cube-outline" size={24} color={theme === 'minimalist' ? colors.primary : colors.textLight} />
-                  <Text style={styles.settingTitle}>Minimalistă</Text>
-                </View>
-                <Ionicons name={theme === 'minimalist' ? 'radio-button-on' : 'radio-button-off'} size={24} color={theme === 'minimalist' ? colors.primary : colors.textLight} />
               </TouchableOpacity>
             </ScrollView>
 
