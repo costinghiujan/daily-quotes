@@ -26,6 +26,8 @@ import { ThemeProvider, ThemeContext } from './src/context/ThemeContext';
 import { ThemeColors } from './src/theme/colors';
 import { notificationService } from './src/api/notificationService';
 
+import { messageService } from './src/api/messageService';
+
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -41,6 +43,8 @@ const Tab = createBottomTabNavigator();
 
 const MainTabNavigator = () => {
   const [unreadCount, setUnreadCount] = useState(0);
+
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
   
   const { colors } = useContext(ThemeContext);
 
@@ -92,17 +96,20 @@ const MainTabNavigator = () => {
   useEffect(() => {
     registerForPushNotificationsAsync();
 
-    const fetchUnreadCount = async () => {
+    const fetchCounts = async () => {
       try {
-        const count = await notificationService.getUnreadCount();
-        setUnreadCount(Number(count)); 
+        const notifCount = await notificationService.getUnreadCount();
+        setUnreadCount(Number(notifCount)); 
+
+        const msgCount = await messageService.getUnreadCount();
+        setUnreadMessagesCount(Number(msgCount)); 
       } catch (error) {
-        console.log('[Polling] Eroare preluare badge:', error);
+        console.log('[Polling] Eroare preluare badge-uri:', error);
       }
     };
 
-    fetchUnreadCount(); 
-    const intervalId = setInterval(fetchUnreadCount, 10000); 
+    fetchCounts(); 
+    const intervalId = setInterval(fetchCounts, 10000); 
 
     return () => clearInterval(intervalId);
   }, []);
@@ -151,7 +158,15 @@ const MainTabNavigator = () => {
           tabBarBadgeStyle: { backgroundColor: colors.error, color: colors.white, fontSize: 10 }
         }} 
       />
-      <Tab.Screen name="Conversations" component={ConversationsScreen} options={{ title: 'Mesaje' }} />
+      <Tab.Screen 
+        name="Conversations" 
+        component={ConversationsScreen} 
+        options={{ 
+          title: 'Mesaje',
+          tabBarBadge: (unreadMessagesCount && !isNaN(unreadMessagesCount) && unreadMessagesCount > 0) ? unreadMessagesCount : undefined,
+          tabBarBadgeStyle: { backgroundColor: colors.error, color: colors.white, fontSize: 10 }
+        }} 
+      />
       <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profilul Meu' }} />
     </Tab.Navigator>
   );

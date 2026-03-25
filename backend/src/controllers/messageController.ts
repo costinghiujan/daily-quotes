@@ -79,3 +79,25 @@ export const getMessageHistory = async (req: AuthRequest, res: Response): Promis
     res.status(500).json({ status: 'error', message: 'Eroare internă.' });
   }
 };
+
+export const getUnreadMessagesCount = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      res.status(401).json({ status: 'error', message: 'Neautorizat.' });
+      return;
+    }
+
+    const result = await query(`
+      SELECT COUNT(*) 
+      FROM messages 
+      WHERE receiver_id = $1 AND is_read = FALSE
+    `, [userId]);
+
+    res.status(200).json({ status: 'success', data: parseInt(result.rows[0].count, 10) });
+  } catch (error) {
+    console.error('[Eroare Controller] Numărare mesaje necitite:', error);
+    res.status(500).json({ status: 'error', message: 'Eroare internă.' });
+  }
+};

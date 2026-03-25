@@ -38,5 +38,15 @@ export const messageService = {
       console.error('[Eroare Frontend] Preluare istoric:', error.response?.data?.message || error.message);
       throw error;
     }
+  },
+
+  getUnreadCount: async (): Promise<number> => {
+    try {
+      const response = await apiClient.get('/messages/unread-count');
+      return response.data.data;
+    } catch (error: any) {
+      console.error('[Eroare Frontend] Preluare număr mesaje necitite:', error.response?.data?.message || error.message);
+      return 0;
+    }
   }
 };
