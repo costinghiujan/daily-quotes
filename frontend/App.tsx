@@ -22,6 +22,7 @@ import { AuthProvider, AuthContext } from './src/context/AuthContext';
 import { ThemeProvider, ThemeContext } from './src/context/ThemeContext';
 import { ThemeColors } from './src/theme/colors';
 import { notificationService } from './src/api/notificationService';
+import ConversationsScreen from './src/screens/ConversationsScreen';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -113,6 +114,7 @@ const MainTabNavigator = () => {
           if (route.name === 'Home') iconName = focused ? 'home' : 'home-outline';
           else if (route.name === 'Search') iconName = focused ? 'search' : 'search-outline';
           else if (route.name === 'Notifications') iconName = focused ? 'notifications' : 'notifications-outline';
+          else if (route.name === 'Conversations') iconName = focused ? 'chatbubbles' : 'chatbubbles-outline';
           else if (route.name === 'Profile') iconName = focused ? 'person' : 'person-outline';
 
           return <Ionicons name={iconName} size={size} color={color} />;
@@ -147,6 +149,7 @@ const MainTabNavigator = () => {
           tabBarBadgeStyle: { backgroundColor: colors.error, color: colors.white, fontSize: 10 }
         }} 
       />
+      <Tab.Screen name="Conversations" component={ConversationsScreen} options={{ title: 'Mesaje' }} />
       <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profilul Meu' }} />
     </Tab.Navigator>
   );
