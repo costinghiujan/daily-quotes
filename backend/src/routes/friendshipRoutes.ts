@@ -4,11 +4,14 @@ import {
   sendFriendRequest, 
   acceptFriendRequest, 
   removeFriendOrRequest, 
+  getFriends,
 } from '../controllers/friendshipController';
 
 const router = Router();
 
 router.use(protect);
+
+router.get('/friends', getFriends);
 
 router.post('/request', sendFriendRequest);
 

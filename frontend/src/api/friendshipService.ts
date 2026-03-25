@@ -49,5 +49,15 @@ export const friendshipService = {
       console.error('[Eroare Frontend] Preluare cereri:', error.response?.data?.message || error.message);
       throw error;
     }
+  }, 
+
+  getFriends: async (): Promise<any[]> => {
+    try {
+      const response = await apiClient.get('/friendships/friends');
+      return response.data.data;
+    } catch (error: any) {
+      console.error('[Eroare Frontend] Preluare prieteni:', error.response?.data?.message || error.message);
+      throw error;
+    }
   }
 };

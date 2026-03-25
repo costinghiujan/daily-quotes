@@ -17,12 +17,14 @@ import SearchScreen from './src/screens/SearchScreen';
 import NotificationsScreen from './src/screens/NotificationsScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import CommentsScreen from './src/screens/CommentsScreen';
+import ConversationsScreen from './src/screens/ConversationsScreen';
+
+import ChatScreen from './src/screens/ChatScreen';
 
 import { AuthProvider, AuthContext } from './src/context/AuthContext';
 import { ThemeProvider, ThemeContext } from './src/context/ThemeContext';
 import { ThemeColors } from './src/theme/colors';
 import { notificationService } from './src/api/notificationService';
-import ConversationsScreen from './src/screens/ConversationsScreen';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -207,6 +209,13 @@ const RootNavigator = () => {
               options={{ 
                 title: 'Comentarii',
                 headerBackTitle: 'Înapoi' 
+              }} 
+            />
+            <Stack.Screen 
+              name="ChatScreen" 
+              component={ChatScreen} 
+              options={{ 
+                headerBackTitle: 'Înapoi',
               }} 
             />
           </>
