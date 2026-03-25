@@ -5,6 +5,7 @@ const resetDatabase = async () => {
     console.log('⏳ Începe procesul de ștergere a tabelelor...');
 
     await pool.query(`
+      DROP TABLE IF EXISTS messages CASCADE;
       DROP TABLE IF EXISTS comments CASCADE;
       DROP TABLE IF EXISTS notifications CASCADE;
       DROP TABLE IF EXISTS notification_settings CASCADE;

@@ -117,6 +117,20 @@ export const initDB = async () => {
 
     console.log('[Bază de Date] Toate tabelele și indecșii sunt inițializați cu succes.');
 
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS messages (
+        id SERIAL PRIMARY KEY,
+        sender_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        receiver_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        text TEXT NOT NULL,
+        is_read BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_messages_participants ON messages(sender_id, receiver_id);`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at DESC);`);
+
   } catch (error) {
     console.error('[Eroare Bază de Date] Inițializarea tabelelor a eșuat:', error);
     throw error;
