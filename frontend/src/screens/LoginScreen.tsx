@@ -54,7 +54,7 @@ export default function LoginScreen({ navigation }: any) {
 
         console.log('[Login Reușit] Bine ai venit:', response.data.user.username);
         
-        loginState(response.data.token);
+        loginState(response.data.token, response.data.user);
 
       } catch (error: any) {
         Alert.alert('Eroare de Autentificare', error.message);

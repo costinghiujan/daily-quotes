@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import { Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { storage } from '../utils/storage';
 import { apiClient } from '../api/client';
 import { UserProfile } from '../api/userService';
@@ -8,7 +9,7 @@ interface AuthContextType {
   user: UserProfile | null;
   userToken: string | null;
   isLoading: boolean;
-  loginState: (token: string) => void;
+  loginState: (token: string, userData: UserProfile) => Promise<void>; 
   logout: () => Promise<void>;
 }
 
@@ -16,7 +17,7 @@ export const AuthContext = createContext<AuthContextType>({
   user: null,
   userToken: null,
   isLoading: true,
-  loginState: () => {},
+  loginState: async () => {},
   logout: async () => {},
 });
 
@@ -26,30 +27,39 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    const checkToken = async () => {
+    const loadStorageData = async () => {
       try {
         const token = await storage.getToken();
-        if (token) {
+        const storedUser = await AsyncStorage.getItem('userData');
+
+        if (token && storedUser) {
           setUserToken(token);
+          setUser(JSON.parse(storedUser));
         }
       } catch (error) {
-        console.error('[Eroare AuthContext - Verificare Token]:', error);
+        console.error('[Eroare AuthContext - Încărcare Date]:', error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    checkToken();
+    loadStorageData();
   }, []);
 
-  const loginState = (token: string) => {
+  const loginState = async (token: string, userData: UserProfile) => {
     setUserToken(token);
+    setUser(userData);
+    
+    await AsyncStorage.setItem('userData', JSON.stringify(userData));
   };
 
   const logout = async () => {
     setIsLoading(true);
     await storage.removeToken();
+    await AsyncStorage.removeItem('userData');
+    
     setUserToken(null);
+    setUser(null);
     setIsLoading(false);
   };
 

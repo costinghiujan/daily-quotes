@@ -1,18 +1,26 @@
-import React, { useState, useCallback, useContext, useMemo } from 'react';
+import React, { useState, useCallback, useContext, useMemo, useEffect, useRef } from 'react';
 import { 
   View, Text, FlatList, TouchableOpacity, 
   StyleSheet, ActivityIndicator, Image, Modal, TextInput, SafeAreaView
 } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { io, Socket } from 'socket.io-client';
+import Constants from 'expo-constants';
 
-import { messageService, Conversation } from '../api/messageService';
+import { messageService, Conversation, Message } from '../api/messageService';
 import { friendshipService } from '../api/friendshipService';
 import { ThemeContext } from '../context/ThemeContext';
+import { AuthContext } from '../context/AuthContext';
 import { ThemeColors } from '../theme/colors';
+
+const debuggerHost = Constants.expoConfig?.hostUri;
+const dynamicIp = debuggerHost ? debuggerHost.split(':')[0] : null;
+const SOCKET_URL = dynamicIp ? `http://${dynamicIp}:3000` : 'http://localhost:3000';
 
 export default function ConversationsScreen() {
   const { colors } = useContext(ThemeContext);
+  const { user } = useContext(AuthContext);
   const styles = useMemo(() => getStyles(colors), [colors]);
   const navigation = useNavigation<any>();
 
@@ -23,6 +31,8 @@ export default function ConversationsScreen() {
   const [friends, setFriends] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isFriendsLoading, setIsFriendsLoading] = useState(false);
+
+  const socketRef = useRef<Socket | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -42,6 +52,44 @@ export default function ConversationsScreen() {
     }
   };
 
+  useEffect(() => {
+    socketRef.current = io(SOCKET_URL);
+
+    socketRef.current.on('connect', () => {
+      if (user?.id) {
+        socketRef.current?.emit('join_own_room', user.id);
+      }
+    });
+
+    socketRef.current.on('receive_message', (newMessage: Message) => {
+      setConversations((prevConversations) => {
+        const otherUserId = newMessage.sender_id === user?.id ? newMessage.receiver_id : newMessage.sender_id;
+        const existingIndex = prevConversations.findIndex(c => c.user_id === otherUserId);
+
+        if (existingIndex > -1) {
+          const updatedConversations = [...prevConversations];
+          const conversationToMove = updatedConversations[existingIndex];
+          
+          conversationToMove.last_message = newMessage.text;
+          conversationToMove.last_message_date = newMessage.created_at;
+          conversationToMove.is_read = newMessage.sender_id === user?.id;
+
+          updatedConversations.splice(existingIndex, 1);
+          updatedConversations.unshift(conversationToMove);
+          
+          return updatedConversations;
+        } else {
+          fetchConversations();
+          return prevConversations;
+        }
+      });
+    });
+
+    return () => {
+      socketRef.current?.disconnect();
+    };
+  }, [user?.id]);
+
   const handleOpenNewChat = async () => {
     setIsModalVisible(true);
     setIsFriendsLoading(true);
@@ -57,7 +105,7 @@ export default function ConversationsScreen() {
 
   const startChatWithFriend = (friend: any) => {
     setIsModalVisible(false); 
-    setSearchQuery('');
+    setSearchQuery(''); 
     
     navigation.navigate('ChatScreen', { 
       userId: friend.id, 
@@ -67,6 +115,7 @@ export default function ConversationsScreen() {
   };
 
   const formatTime = (dateString: string) => {
+    if (!dateString) return '';
     const date = new Date(dateString);
     const today = new Date();
     if (date.toDateString() === today.toDateString()) {
@@ -104,7 +153,9 @@ export default function ConversationsScreen() {
           <Text style={styles.name} numberOfLines={1}>
             {item.full_name || item.username}
           </Text>
-          <Text style={styles.time}>{formatTime(item.last_message_date)}</Text>
+          <Text style={[styles.time, !item.is_read && styles.unreadMessage]}>
+            {formatTime(item.last_message_date)}
+          </Text>
         </View>
         
         <Text 
@@ -114,6 +165,8 @@ export default function ConversationsScreen() {
           {item.last_message}
         </Text>
       </View>
+      
+      {!item.is_read && <View style={styles.unreadDot} />}
     </TouchableOpacity>
   );
 
@@ -196,7 +249,6 @@ export default function ConversationsScreen() {
           )}
         </SafeAreaView>
       </Modal>
-
     </View>
   );
 }
@@ -204,7 +256,7 @@ export default function ConversationsScreen() {
 const getStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background },
-  listContent: { padding: 15, paddingBottom: 80 }, // Spațiu jos pentru butonul plutitor
+  listContent: { padding: 15, paddingBottom: 80 },
   
   conversationCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, padding: 15, marginBottom: 10, borderRadius: 12, elevation: 1, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 3 },
   avatarContainer: { marginRight: 15 },
@@ -217,6 +269,7 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
   time: { fontSize: 12, color: colors.textLight },
   lastMessage: { fontSize: 14, color: colors.textLight },
   unreadMessage: { color: colors.textDark, fontWeight: 'bold' },
+  unreadDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.primary, marginLeft: 10 },
 
   emptyContainer: { alignItems: 'center', marginTop: 50, paddingHorizontal: 20 },
   emptyText: { fontSize: 18, fontWeight: 'bold', color: colors.textDark, marginTop: 15 },

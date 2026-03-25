@@ -58,20 +58,26 @@ io.on('connection', (socket) => {
   });
 
   socket.on('send_message', async (data) => {
+    console.log('\n[Debug Backend] 1. Eveniment "send_message" PRIMIT!');
+    console.log('[Debug Backend] 2. Date primite:', data);
+
     const { senderId, receiverId, text } = data;
 
     try {
+      console.log('[Debug Backend] 3. Încercare de salvare în DB...');
       const result = await pool.query(
         'INSERT INTO messages (sender_id, receiver_id, text) VALUES ($1, $2, $3) RETURNING *',
         [senderId, receiverId, text]
       );
       const savedMessage = result.rows[0];
+      console.log('[Debug Backend] 4. Salvat cu succes in DB:', savedMessage.id);
 
       io.to(`room_${receiverId}`).emit('receive_message', savedMessage);
       io.to(`room_${senderId}`).emit('receive_message', savedMessage);
+      console.log('[Debug Backend] 5. Ecou trimis înapoi către camerele', `room_${receiverId}`, 'și', `room_${senderId}`);
       
     } catch (error) {
-      console.error('[Sockets Eroare] Nu s-a putut salva/trimite mesajul:', error);
+      console.error('[Debug Backend - EROARE CRITICĂ] Nu s-a putut salva mesajul:', error);
     }
   });
 

@@ -19,8 +19,8 @@ const debuggerHost = Constants.expoConfig?.hostUri;
 const dynamicIp = debuggerHost ? debuggerHost.split(':')[0] : null;
 
 const SOCKET_URL = dynamicIp 
-  ? `http://${dynamicIp}:5000` 
-  : 'http://localhost:5000';
+  ? `http://${dynamicIp}:3000` 
+  : 'http://localhost:3000';
 
 export default function ChatScreen() {
   const route = useRoute<any>();
@@ -57,10 +57,14 @@ export default function ChatScreen() {
     socketRef.current = io(SOCKET_URL);
 
     socketRef.current.on('connect', () => {
-      console.log('Conectat la serverul de Sockets!');
+      console.log(`[Debug Frontend] Socket CONECTAT cu succes la: ${SOCKET_URL}`);
       if (user?.id) {
         socketRef.current?.emit('join_own_room', user.id);
       }
+    });
+
+    socketRef.current.on('connect_error', (error) => {
+      console.log('[Debug Frontend] EROARE de conexiune Socket:', error.message);
     });
 
     socketRef.current.on('receive_message', (newMessage: Message) => {
@@ -79,13 +83,29 @@ export default function ChatScreen() {
   }, [otherUserId, user?.id]);
 
   const handleSendMessage = () => {
-    if (inputText.trim() === '' || !user?.id) return;
+    console.log('[Debug Frontend] 1. Buton Send apăsat!');
+    console.log(`[Debug Frontend] 2. Date curente: Text="${inputText}", MyID=${user?.id}, OtherID=${otherUserId}`);
+
+    if (inputText.trim() === '') {
+      console.log('[Debug Frontend] 3. EȘEC: Textul este gol.');
+      return;
+    }
+    if (!user?.id) {
+      console.log('[Debug Frontend] 3. EȘEC: user.id lipsește din AuthContext!');
+      return;
+    }
 
     const messageData = {
       senderId: user.id,
       receiverId: otherUserId,
       text: inputText.trim(),
     };
+
+    console.log('[Debug Frontend] 4. Emitere payload către Socket:', messageData);
+    
+    if (!socketRef.current?.connected) {
+      console.log('[Debug Frontend] 5. AVERTISMENT: Socket-ul NU este conectat la server!');
+    }
 
     socketRef.current?.emit('send_message', messageData);
     setInputText('');
