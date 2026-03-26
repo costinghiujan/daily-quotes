@@ -65,5 +65,5 @@ export const userService = {
       console.error('[Eroare Frontend] Actualizare profil:', error);
       throw error;
     }
-  }
+  },
 };

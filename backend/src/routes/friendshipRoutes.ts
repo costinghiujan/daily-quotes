@@ -1,9 +1,9 @@
 import { Router } from 'express';
 import { protect } from '../middleware/authMiddleware';
-import { 
-  sendFriendRequest, 
-  acceptFriendRequest, 
-  removeFriendOrRequest, 
+import {
+  sendFriendRequest,
+  acceptFriendRequest,
+  removeFriendOrRequest,
   getFriends,
 } from '../controllers/friendshipController';
 
@@ -19,4 +19,4 @@ router.put('/accept/:id', acceptFriendRequest);
 
 router.delete('/:id', removeFriendOrRequest);
 
-  export default router;
+export default router;

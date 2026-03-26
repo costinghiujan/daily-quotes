@@ -28,5 +28,5 @@ export const storage = {
       console.error('[Eroare Storage] Nu s-a putut șterge tokenul:', error);
       throw new Error('Eroare la delogare.');
     }
-  }
+  },
 };

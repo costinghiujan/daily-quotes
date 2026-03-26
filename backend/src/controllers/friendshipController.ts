@@ -1,13 +1,13 @@
 import { Response } from 'express';
 import { query } from '../config/db';
-import { AuthRequest } from './quoteController'; 
+import { AuthRequest } from './quoteController';
 import { sendNotification } from '../utils/notificationHelper';
 import { sendPushNotification } from '../services/expoPushService';
 
 export const sendFriendRequest = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const requesterId = req.user?.id;
-    
+
     const rawReceiverId = req.body.receiverId || req.body.friendId || req.params.id;
     const receiverId = parseInt(rawReceiverId as string, 10);
 
@@ -17,7 +17,9 @@ export const sendFriendRequest = async (req: AuthRequest, res: Response): Promis
     }
 
     if (!receiverId || isNaN(receiverId)) {
-      res.status(400).json({ status: 'error', message: 'ID-ul utilizatorului lipsește sau este invalid.' });
+      res
+        .status(400)
+        .json({ status: 'error', message: 'ID-ul utilizatorului lipsește sau este invalid.' });
       return;
     }
 
@@ -28,17 +30,19 @@ export const sendFriendRequest = async (req: AuthRequest, res: Response): Promis
 
     const checkExisting = await query(
       'SELECT id FROM friendships WHERE (requester_id = $1 AND receiver_id = $2) OR (requester_id = $2 AND receiver_id = $1)',
-      [requesterId, receiverId]
+      [requesterId, receiverId],
     );
 
     if (checkExisting.rows.length > 0) {
-      res.status(400).json({ status: 'error', message: 'Există deja o interacțiune între acești utilizatori.' });
+      res
+        .status(400)
+        .json({ status: 'error', message: 'Există deja o interacțiune între acești utilizatori.' });
       return;
     }
 
     const result = await query(
       'INSERT INTO friendships (requester_id, receiver_id, status) VALUES ($1, $2, $3) RETURNING id',
-      [requesterId, receiverId, 'pending']
+      [requesterId, receiverId, 'pending'],
     );
 
     const friendshipId = result.rows[0].id;
@@ -46,7 +50,9 @@ export const sendFriendRequest = async (req: AuthRequest, res: Response): Promis
     await sendNotification(receiverId, requesterId, 'FRIEND_REQUEST', friendshipId);
 
     try {
-      const receiverData = await query('SELECT expo_push_token FROM users WHERE id = $1', [receiverId]);
+      const receiverData = await query('SELECT expo_push_token FROM users WHERE id = $1', [
+        receiverId,
+      ]);
       const senderData = await query('SELECT username FROM users WHERE id = $1', [requesterId]);
 
       const pushToken = receiverData.rows[0]?.expo_push_token;
@@ -57,11 +63,14 @@ export const sendFriendRequest = async (req: AuthRequest, res: Response): Promis
           pushToken,
           'Cerere nouă de prietenie! 👤',
           `${senderName} dorește să se conecteze cu tine.`,
-          { route: 'Notifications', type: 'FRIEND_REQUEST' }
+          { route: 'Notifications', type: 'FRIEND_REQUEST' },
         );
       }
     } catch (pushError) {
-      console.error('[Eroare Non-Critică] Trimitere push notification eșuată (Trimitere Cerere):', pushError);
+      console.error(
+        '[Eroare Non-Critică] Trimitere push notification eșuată (Trimitere Cerere):',
+        pushError,
+      );
     }
     // ==========================================
 
@@ -74,8 +83,8 @@ export const sendFriendRequest = async (req: AuthRequest, res: Response): Promis
 
 export const acceptFriendRequest = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const receiverId = req.user?.id; 
-    
+    const receiverId = req.user?.id;
+
     const rawFriendshipId = req.body.requestId || req.body.id || req.params.id;
     const friendshipId = parseInt(rawFriendshipId as string, 10);
 
@@ -85,26 +94,27 @@ export const acceptFriendRequest = async (req: AuthRequest, res: Response): Prom
     }
 
     if (!friendshipId || isNaN(friendshipId)) {
-      res.status(400).json({ status: 'error', message: 'ID-ul cererii lipsește sau este invalid.' });
+      res
+        .status(400)
+        .json({ status: 'error', message: 'ID-ul cererii lipsește sau este invalid.' });
       return;
     }
 
     const checkRequest = await query(
       'SELECT id, requester_id FROM friendships WHERE id = $1 AND receiver_id = $2 AND status = $3',
-      [friendshipId, receiverId, 'pending']
+      [friendshipId, receiverId, 'pending'],
     );
 
     if (checkRequest.rows.length === 0) {
-      res.status(404).json({ status: 'error', message: 'Cererea nu există sau a fost deja procesată.' });
+      res
+        .status(404)
+        .json({ status: 'error', message: 'Cererea nu există sau a fost deja procesată.' });
       return;
     }
 
     const requesterId = checkRequest.rows[0].requester_id;
 
-    await query(
-      'UPDATE friendships SET status = $1 WHERE id = $2',
-      ['accepted', friendshipId]
-    );
+    await query('UPDATE friendships SET status = $1 WHERE id = $2', ['accepted', friendshipId]);
 
     await sendNotification(requesterId, receiverId, 'FRIEND_ACCEPTED', friendshipId);
 
@@ -112,11 +122,13 @@ export const acceptFriendRequest = async (req: AuthRequest, res: Response): Prom
       `UPDATE notifications 
        SET type = 'FRIEND_REQUEST_ACCEPTED' 
        WHERE recipient_id = $1 AND sender_id = $2 AND type = 'FRIEND_REQUEST' AND reference_id = $3`,
-      [receiverId, requesterId, friendshipId]
+      [receiverId, requesterId, friendshipId],
     );
 
     try {
-      const originalRequesterData = await query('SELECT expo_push_token FROM users WHERE id = $1', [requesterId]);
+      const originalRequesterData = await query('SELECT expo_push_token FROM users WHERE id = $1', [
+        requesterId,
+      ]);
       const accepterData = await query('SELECT username FROM users WHERE id = $1', [receiverId]);
 
       const pushToken = originalRequesterData.rows[0]?.expo_push_token;
@@ -127,11 +139,14 @@ export const acceptFriendRequest = async (req: AuthRequest, res: Response): Prom
           pushToken,
           'Cerere acceptată! ✅',
           `${accepterName} ți-a acceptat cererea de prietenie.`,
-          { route: 'Notifications', type: 'FRIEND_ACCEPTED' }
+          { route: 'Notifications', type: 'FRIEND_ACCEPTED' },
         );
       }
     } catch (pushError) {
-      console.error('[Eroare Non-Critică] Trimitere push notification eșuată (Acceptare Cerere):', pushError);
+      console.error(
+        '[Eroare Non-Critică] Trimitere push notification eșuată (Acceptare Cerere):',
+        pushError,
+      );
     }
 
     res.status(200).json({ status: 'success', message: 'Prietenia a fost acceptată.' });
@@ -158,11 +173,14 @@ export const removeFriendOrRequest = async (req: AuthRequest, res: Response): Pr
 
     const checkQuery = await query(
       'SELECT id FROM friendships WHERE id = $1 AND (requester_id = $2 OR receiver_id = $2)',
-      [friendshipId, userId]
+      [friendshipId, userId],
     );
 
     if (checkQuery.rows.length === 0) {
-      res.status(404).json({ status: 'error', message: 'Cererea sau prietenia nu există (a fost deja ștearsă).' });
+      res.status(404).json({
+        status: 'error',
+        message: 'Cererea sau prietenia nu există (a fost deja ștearsă).',
+      });
       return;
     }
 
@@ -170,7 +188,7 @@ export const removeFriendOrRequest = async (req: AuthRequest, res: Response): Pr
 
     await query(
       `DELETE FROM notifications WHERE reference_id = $1 AND type IN ('FRIEND_REQUEST', 'FRIEND_ACCEPTED')`,
-      [friendshipId]
+      [friendshipId],
     );
 
     res.status(200).json({ status: 'success', message: 'Interacțiunea a fost ștearsă cu succes.' });
@@ -184,13 +202,16 @@ export const getPendingRequests = async (req: AuthRequest, res: Response): Promi
   try {
     const currentUserId = req.user?.id;
 
-    const result = await query(`
+    const result = await query(
+      `
       SELECT u.id, u.username, u.full_name, u.profile_picture_url, f.created_at
       FROM friendships f
       JOIN users u ON f.requester_id = u.id
       WHERE f.receiver_id = $1 AND f.status = 'pending'
       ORDER BY f.created_at DESC;
-    `, [currentUserId]);
+    `,
+      [currentUserId],
+    );
 
     res.status(200).json({ status: 'success', data: result.rows });
   } catch (error) {
@@ -203,7 +224,8 @@ export const getFriends = async (req: AuthRequest, res: Response): Promise<void>
   try {
     const currentUserId = req.user?.id;
 
-    const result = await query(`
+    const result = await query(
+      `
       SELECT u.id, u.username, u.full_name, u.profile_picture_url, u.bio
       FROM users u
       JOIN friendships f ON u.id = f.receiver_id
@@ -215,7 +237,9 @@ export const getFriends = async (req: AuthRequest, res: Response): Promise<void>
       FROM users u
       JOIN friendships f ON u.id = f.requester_id
       WHERE f.receiver_id = $1 AND f.status = 'accepted';
-    `, [currentUserId]);
+    `,
+      [currentUserId],
+    );
 
     res.status(200).json({ status: 'success', data: result.rows });
   } catch (error) {

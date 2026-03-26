@@ -6,7 +6,7 @@ export const sendPushNotification = async (
   pushToken: string,
   title: string,
   body: string,
-  data: Record<string, any> = {}
+  data: Record<string, unknown> = {},
 ): Promise<void> => {
   if (!Expo.isExpoPushToken(pushToken)) {
     console.error(`[Push Service] Token invalid detectat: ${pushToken}`);

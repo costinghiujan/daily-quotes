@@ -78,7 +78,9 @@ export const initDB = async () => {
         CONSTRAINT unique_user_quote_reaction UNIQUE (user_id, quote_id, reaction_type)
       );
     `);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_reactions_quote_id ON quote_reactions(quote_id);`);
+    await pool.query(
+      `CREATE INDEX IF NOT EXISTS idx_reactions_quote_id ON quote_reactions(quote_id);`,
+    );
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS notification_settings (
@@ -102,7 +104,9 @@ export const initDB = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_notifications_recipient ON notifications(recipient_id);`);
+    await pool.query(
+      `CREATE INDEX IF NOT EXISTS idx_notifications_recipient ON notifications(recipient_id);`,
+    );
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS comments (
@@ -127,14 +131,17 @@ export const initDB = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
-    
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_messages_participants ON messages(sender_id, receiver_id);`);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at DESC);`);
 
+    await pool.query(
+      `CREATE INDEX IF NOT EXISTS idx_messages_participants ON messages(sender_id, receiver_id);`,
+    );
+    await pool.query(
+      `CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at DESC);`,
+    );
   } catch (error) {
     console.error('[Eroare Bază de Date] Inițializarea tabelelor a eșuat:', error);
     throw error;
   }
 };
 
-export const query = (text: string, params?: any[]) => pool.query(text, params);
+export const query = (text: string, params?: unknown[]) => pool.query(text, params);

@@ -5,7 +5,7 @@ export const sendNotification = async (
   recipientId: number,
   senderId: number,
   type: 'REACTION_ADDED' | 'FRIEND_REQUEST' | 'FRIEND_ACCEPTED' | 'COMMENT_ADDED',
-  referenceId: number
+  referenceId: number,
 ): Promise<void> => {
   try {
     if (recipientId === senderId) return;
@@ -15,7 +15,7 @@ export const sendNotification = async (
        FROM notification_settings ns
        JOIN users u ON ns.user_id = u.id
        WHERE ns.user_id = $1`,
-      [recipientId]
+      [recipientId],
     );
 
     let shouldNotify = true;
@@ -26,26 +26,29 @@ export const sendNotification = async (
       pushToken = data.expo_push_token;
 
       if (type === 'REACTION_ADDED') shouldNotify = data.notify_reactions;
-      if (type === 'COMMENT_ADDED') shouldNotify = data.notify_comments !== false; 
+      if (type === 'COMMENT_ADDED') shouldNotify = data.notify_comments !== false;
       if (type === 'FRIEND_REQUEST') shouldNotify = data.notify_friend_requests;
       if (type === 'FRIEND_ACCEPTED') shouldNotify = data.notify_friend_accepted;
     }
 
-    if (!shouldNotify) return; 
+    if (!shouldNotify) return;
 
     await query(
       'DELETE FROM notifications WHERE recipient_id = $1 AND sender_id = $2 AND type = $3 AND reference_id = $4',
-      [recipientId, senderId, type, referenceId]
+      [recipientId, senderId, type, referenceId],
     );
 
     await query(
       'INSERT INTO notifications (recipient_id, sender_id, type, reference_id) VALUES ($1, $2, $3, $4)',
-      [recipientId, senderId, type, referenceId]
+      [recipientId, senderId, type, referenceId],
     );
 
     if (pushToken) {
-      const senderResult = await query('SELECT username, full_name FROM users WHERE id = $1', [senderId]);
-      const senderName = senderResult.rows[0]?.full_name || senderResult.rows[0]?.username || 'Cineva';
+      const senderResult = await query('SELECT username, full_name FROM users WHERE id = $1', [
+        senderId,
+      ]);
+      const senderName =
+        senderResult.rows[0]?.full_name || senderResult.rows[0]?.username || 'Cineva';
 
       let title = 'Notificare nouă';
       let body = '';
@@ -71,7 +74,6 @@ export const sendNotification = async (
 
       await sendPushNotification(pushToken, title, body, { type, referenceId });
     }
-
   } catch (error) {
     console.error('[Eroare Helper Notificări]:', error);
   }
@@ -81,12 +83,12 @@ export const removeNotification = async (
   recipientId: number,
   senderId: number,
   type: string,
-  referenceId: number
+  referenceId: number,
 ): Promise<void> => {
   try {
     await query(
       'DELETE FROM notifications WHERE recipient_id = $1 AND sender_id = $2 AND type = $3 AND reference_id = $4',
-      [recipientId, senderId, type, referenceId]
+      [recipientId, senderId, type, referenceId],
     );
   } catch (error) {
     console.error('[Eroare Helper Ștergere Notificări]:', error);
@@ -96,31 +98,29 @@ export const removeNotification = async (
 export const sendMessagePushNotification = async (
   senderId: number,
   recipientId: number,
-  messageText: string
+  messageText: string,
 ): Promise<void> => {
   try {
-    const recipientResult = await query(
-      'SELECT expo_push_token FROM users WHERE id = $1',
-      [recipientId]
-    );
+    const recipientResult = await query('SELECT expo_push_token FROM users WHERE id = $1', [
+      recipientId,
+    ]);
 
     const pushToken = recipientResult.rows[0]?.expo_push_token;
     if (!pushToken) return;
 
-    const senderResult = await query(
-      'SELECT username, full_name FROM users WHERE id = $1',
-      [senderId]
-    );
-    const senderName = senderResult.rows[0]?.full_name || senderResult.rows[0]?.username || 'Un prieten';
+    const senderResult = await query('SELECT username, full_name FROM users WHERE id = $1', [
+      senderId,
+    ]);
+    const senderName =
+      senderResult.rows[0]?.full_name || senderResult.rows[0]?.username || 'Un prieten';
 
     const title = `Mesaj nou de la ${senderName} 💬`;
     const body = messageText.length > 60 ? `${messageText.substring(0, 60)}...` : messageText;
 
-    await sendPushNotification(pushToken, title, body, { 
-      type: 'NEW_MESSAGE', 
-      senderId: senderId 
+    await sendPushNotification(pushToken, title, body, {
+      type: 'NEW_MESSAGE',
+      senderId: senderId,
     });
-
   } catch (error) {
     console.error('[Eroare Helper Push Mesaje]:', error);
   }

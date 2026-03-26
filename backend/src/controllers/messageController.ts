@@ -11,7 +11,8 @@ export const getConversations = async (req: AuthRequest, res: Response): Promise
       return;
     }
 
-    const result = await query(`
+    const result = await query(
+      `
       SELECT DISTINCT ON (other_user_id)
         u.id AS user_id,
         u.username,
@@ -30,10 +31,12 @@ export const getConversations = async (req: AuthRequest, res: Response): Promise
       ) m
       JOIN users u ON u.id = m.other_user_id
       ORDER BY other_user_id, m.created_at DESC;
-    `, [userId]);
+    `,
+      [userId],
+    );
 
-    const sortedConversations = result.rows.sort((a, b) => 
-      new Date(b.last_message_date).getTime() - new Date(a.last_message_date).getTime()
+    const sortedConversations = result.rows.sort(
+      (a, b) => new Date(b.last_message_date).getTime() - new Date(a.last_message_date).getTime(),
     );
 
     res.status(200).json({ status: 'success', data: sortedConversations });
@@ -58,20 +61,26 @@ export const getMessageHistory = async (req: AuthRequest, res: Response): Promis
       return;
     }
 
-    await query(`
+    await query(
+      `
       UPDATE messages 
       SET is_read = TRUE 
       WHERE sender_id = $1 AND receiver_id = $2 AND is_read = FALSE
-    `, [otherUserId, currentUserId]);
+    `,
+      [otherUserId, currentUserId],
+    );
 
-    const result = await query(`
+    const result = await query(
+      `
       SELECT id, sender_id, receiver_id, text, is_read, created_at
       FROM messages
       WHERE (sender_id = $1 AND receiver_id = $2)
          OR (sender_id = $2 AND receiver_id = $1)
       ORDER BY created_at ASC
       LIMIT 50;
-    `, [currentUserId, otherUserId]);
+    `,
+      [currentUserId, otherUserId],
+    );
 
     res.status(200).json({ status: 'success', data: result.rows });
   } catch (error) {
@@ -89,11 +98,14 @@ export const getUnreadMessagesCount = async (req: AuthRequest, res: Response): P
       return;
     }
 
-    const result = await query(`
+    const result = await query(
+      `
       SELECT COUNT(*) 
       FROM messages 
       WHERE receiver_id = $1 AND is_read = FALSE
-    `, [userId]);
+    `,
+      [userId],
+    );
 
     res.status(200).json({ status: 'success', data: parseInt(result.rows[0].count, 10) });
   } catch (error) {

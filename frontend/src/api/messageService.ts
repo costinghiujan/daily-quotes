@@ -25,7 +25,10 @@ export const messageService = {
       const response = await apiClient.get('/messages/conversations');
       return response.data.data;
     } catch (error: any) {
-      console.error('[Eroare Frontend] Preluare conversații:', error.response?.data?.message || error.message);
+      console.error(
+        '[Eroare Frontend] Preluare conversații:',
+        error.response?.data?.message || error.message,
+      );
       throw error;
     }
   },
@@ -35,7 +38,10 @@ export const messageService = {
       const response = await apiClient.get(`/messages/${userId}`);
       return response.data.data;
     } catch (error: any) {
-      console.error('[Eroare Frontend] Preluare istoric:', error.response?.data?.message || error.message);
+      console.error(
+        '[Eroare Frontend] Preluare istoric:',
+        error.response?.data?.message || error.message,
+      );
       throw error;
     }
   },
@@ -45,8 +51,11 @@ export const messageService = {
       const response = await apiClient.get('/messages/unread-count');
       return response.data.data;
     } catch (error: any) {
-      console.error('[Eroare Frontend] Preluare număr mesaje necitite:', error.response?.data?.message || error.message);
+      console.error(
+        '[Eroare Frontend] Preluare număr mesaje necitite:',
+        error.response?.data?.message || error.message,
+      );
       return 0;
     }
-  }
+  },
 };

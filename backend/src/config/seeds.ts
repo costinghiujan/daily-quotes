@@ -9,7 +9,7 @@ const seedUsers = async () => {
       const username = `test${i}`;
       const email = `test${i}@gmail.com`;
       const password = `test${i}`;
-      
+
       const saltRounds = 10;
       const passwordHash = await bcrypt.hash(password, saltRounds);
 
@@ -18,7 +18,7 @@ const seedUsers = async () => {
          VALUES ($1, $2, $3, $4) 
          ON CONFLICT (username) DO NOTHING
          RETURNING id`,
-        [username, email, passwordHash, `Test User ${i}`]
+        [username, email, passwordHash, `Test User ${i}`],
       );
 
       if (userResult.rows.length > 0) {
@@ -26,7 +26,7 @@ const seedUsers = async () => {
 
         await pool.query(
           `INSERT INTO notification_settings (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING`,
-          [newUserId]
+          [newUserId],
         );
         console.log(`✅ Cont creat cu succes: ${username} (ID: ${newUserId})`);
       } else {
@@ -34,7 +34,9 @@ const seedUsers = async () => {
       }
     }
 
-    console.log('[Seed] Generarea a fost finalizată! Poți șterge acest fișier sau îl poți păstra pentru teste viitoare.');
+    console.log(
+      '[Seed] Generarea a fost finalizată! Poți șterge acest fișier sau îl poți păstra pentru teste viitoare.',
+    );
     process.exit(0);
   } catch (error) {
     console.error('[Seed] Eroare fatală:', error);

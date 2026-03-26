@@ -1,17 +1,17 @@
 import React, { useState, useCallback, useContext, useMemo } from 'react';
-import { 
-  View, 
-  Text, 
-  TextInput, 
-  FlatList, 
-  TouchableOpacity, 
-  StyleSheet, 
+import {
+  View,
+  Text,
+  TextInput,
+  FlatList,
+  TouchableOpacity,
+  StyleSheet,
   ActivityIndicator,
   Alert,
   Image,
   Modal,
   ScrollView,
-  Switch
+  Switch,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -23,12 +23,12 @@ import { quoteService } from '../api/quoteService';
 import { notificationService, NotificationSettings } from '../api/notificationService';
 import { AuthContext } from '../context/AuthContext';
 
-import { ThemeContext } from '../context/ThemeContext'; 
+import { ThemeContext } from '../context/ThemeContext';
 import { ThemeColors } from '../theme/colors';
 
 export default function ProfileScreen() {
   const { logout } = useContext(AuthContext);
-  
+
   const { colors, theme, setTheme } = useContext(ThemeContext);
   const styles = useMemo(() => getStyles(colors), [colors]);
 
@@ -47,7 +47,9 @@ export default function ProfileScreen() {
   const [isSessionsLoading, setIsSessionsLoading] = useState(false);
 
   const [isNotificationsModalVisible, setNotificationsModalVisible] = useState(false);
-  const [notificationSettings, setNotificationSettings] = useState<NotificationSettings | any>(null);
+  const [notificationSettings, setNotificationSettings] = useState<NotificationSettings | any>(
+    null,
+  );
   const [isSettingsLoading, setIsSettingsLoading] = useState(false);
 
   const [isThemeModalVisible, setThemeModalVisible] = useState(false);
@@ -70,16 +72,20 @@ export default function ProfileScreen() {
   useFocusEffect(
     useCallback(() => {
       fetchProfileData();
-    }, [])
+    }, []),
   );
 
   const handleSaveProfile = async () => {
     try {
-      const updatedData = await userService.updateProfile({ full_name: editFullName, bio: editBio });
+      const updatedData = await userService.updateProfile({
+        full_name: editFullName,
+        bio: editBio,
+      });
       setProfile(updatedData);
       setIsEditing(false);
       Alert.alert('Succes', 'Profilul a fost actualizat!');
     } catch (error) {
+      console.error(error);
       Alert.alert('Eroare', 'Nu am putut salva modificările.');
     }
   };
@@ -92,7 +98,7 @@ export default function ProfileScreen() {
     }
 
     const pickerResult = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'], 
+      mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.7,
@@ -105,6 +111,7 @@ export default function ProfileScreen() {
         setProfile(updatedProfile);
         Alert.alert('Succes', 'Fotografia de profil a fost actualizată!');
       } catch (error) {
+        console.error(error);
         Alert.alert('Eroare', 'Nu s-a putut încărca fotografia.');
       } finally {
         setIsUploading(false);
@@ -115,7 +122,7 @@ export default function ProfileScreen() {
   const handleLogout = () => {
     Alert.alert('Delogare', 'Ești sigur că vrei să ieși din cont de pe acest dispozitiv?', [
       { text: 'Anulează', style: 'cancel' },
-      { text: 'Ieși', style: 'destructive', onPress: () => logout() }
+      { text: 'Ieși', style: 'destructive', onPress: () => logout() },
     ]);
   };
 
@@ -127,6 +134,7 @@ export default function ProfileScreen() {
       setActiveSessions(data.sessions);
       setCurrentSessionId(data.currentSessionId);
     } catch (error) {
+      console.error(error);
       Alert.alert('Eroare', 'Nu s-au putut încărca dispozitivele conectate.');
       setSecurityModalVisible(false);
     } finally {
@@ -135,22 +143,27 @@ export default function ProfileScreen() {
   };
 
   const handleRevokeSession = (sessionId: number) => {
-    Alert.alert('Deconectare Dispozitiv', 'Ești sigur că vrei să deconectezi acest dispozitiv de la distanță?', [
-      { text: 'Anulează', style: 'cancel' },
-      { 
-        text: 'Deconectează', 
-        style: 'destructive', 
-        onPress: async () => {
-          try {
-            await sessionService.revokeSession(sessionId);
-            setActiveSessions(prev => prev.filter(s => s.id !== sessionId));
-            Alert.alert('Succes', 'Dispozitivul a fost deconectat.');
-          } catch (error) {
-            Alert.alert('Eroare', 'Nu s-a putut deconecta dispozitivul.');
-          }
-        }
-      }
-    ]);
+    Alert.alert(
+      'Deconectare Dispozitiv',
+      'Ești sigur că vrei să deconectezi acest dispozitiv de la distanță?',
+      [
+        { text: 'Anulează', style: 'cancel' },
+        {
+          text: 'Deconectează',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await sessionService.revokeSession(sessionId);
+              setActiveSessions((prev) => prev.filter((s) => s.id !== sessionId));
+              Alert.alert('Succes', 'Dispozitivul a fost deconectat.');
+            } catch (error) {
+              console.error(error);
+              Alert.alert('Eroare', 'Nu s-a putut deconecta dispozitivul.');
+            }
+          },
+        },
+      ],
+    );
   };
 
   const openNotificationsModal = async () => {
@@ -160,6 +173,7 @@ export default function ProfileScreen() {
       const settings = await notificationService.getSettings();
       setNotificationSettings(settings);
     } catch (error) {
+      console.error(error);
       Alert.alert('Eroare', 'Nu s-au putut încărca setările de notificări.');
       setNotificationsModalVisible(false);
     } finally {
@@ -177,6 +191,7 @@ export default function ProfileScreen() {
     try {
       await notificationService.updateSettings(updatedSettings);
     } catch (error) {
+      console.error(error);
       setNotificationSettings(previousSettings);
       Alert.alert('Eroare conexiune', 'Setarea nu a putut fi salvată.');
     }
@@ -188,26 +203,27 @@ export default function ProfileScreen() {
       'Ești sigur că vrei să ștergi acest citat? Acțiunea este ireversibilă.',
       [
         { text: 'Anulează', style: 'cancel' },
-        { 
-          text: 'Șterge', 
-          style: 'destructive', 
+        {
+          text: 'Șterge',
+          style: 'destructive',
           onPress: async () => {
             try {
               await quoteService.delete(quoteId);
-              setQuotes(prevQuotes => prevQuotes.filter(q => q.id !== quoteId));
+              setQuotes((prevQuotes) => prevQuotes.filter((q) => q.id !== quoteId));
             } catch (error) {
+              console.error(error);
               Alert.alert('Eroare', 'Nu s-a putut șterge citatul.');
             }
-          } 
-        }
-      ]
+          },
+        },
+      ],
     );
   };
 
   const renderQuoteItem = ({ item }: { item: any }) => (
     <View style={styles.quoteCard}>
       <View style={styles.quoteCardHeader}>
-        <Text style={styles.quoteText}>"{item.text}"</Text>
+        <Text style={styles.quoteText}>&quot;{item.text}&quot;</Text>
         <TouchableOpacity onPress={() => handleDeleteQuote(item.id)} style={styles.deleteQuoteBtn}>
           <Ionicons name="trash-outline" size={20} color={colors.error} />
         </TouchableOpacity>
@@ -217,30 +233,67 @@ export default function ProfileScreen() {
   );
 
   if (isLoading && !profile) {
-    return <View style={styles.centered}><ActivityIndicator size="large" color={colors.primary} /></View>;
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
   }
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={handlePickImage} disabled={isUploading} style={styles.avatarContainer}>
+        <TouchableOpacity
+          onPress={handlePickImage}
+          disabled={isUploading}
+          style={styles.avatarContainer}
+        >
           {profile?.profile_picture_url ? (
             <Image source={{ uri: profile.profile_picture_url }} style={styles.avatarImage} />
           ) : (
-            <View style={styles.avatarPlaceholder}><Ionicons name="person" size={40} color={colors.white} /></View>
+            <View style={styles.avatarPlaceholder}>
+              <Ionicons name="person" size={40} color={colors.white} />
+            </View>
           )}
           <View style={styles.avatarOverlay}>
-            {isUploading ? <ActivityIndicator size="small" color={colors.white} /> : <Ionicons name="camera" size={16} color={colors.white} />}
+            {isUploading ? (
+              <ActivityIndicator size="small" color={colors.white} />
+            ) : (
+              <Ionicons name="camera" size={16} color={colors.white} />
+            )}
           </View>
         </TouchableOpacity>
 
         {isEditing ? (
           <View style={styles.editContainer}>
-            <TextInput style={styles.input} placeholder="Nume Complet" placeholderTextColor={colors.textLight} value={editFullName} onChangeText={setEditFullName} />
-            <TextInput style={[styles.input, { height: 60 }]} placeholder="O scurtă descriere (Bio)" placeholderTextColor={colors.textLight} value={editBio} onChangeText={setEditBio} multiline />
+            <TextInput
+              style={styles.input}
+              placeholder="Nume Complet"
+              placeholderTextColor={colors.textLight}
+              value={editFullName}
+              onChangeText={setEditFullName}
+            />
+            <TextInput
+              style={[styles.input, { height: 60 }]}
+              placeholder="O scurtă descriere (Bio)"
+              placeholderTextColor={colors.textLight}
+              value={editBio}
+              onChangeText={setEditBio}
+              multiline
+            />
             <View style={styles.actionButtons}>
-              <TouchableOpacity style={[styles.btn, { backgroundColor: colors.success }]} onPress={handleSaveProfile}><Text style={styles.btnText}>Salvează</Text></TouchableOpacity>
-              <TouchableOpacity style={[styles.btn, { backgroundColor: colors.error }]} onPress={() => setIsEditing(false)}><Text style={styles.btnText}>Anulează</Text></TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.btn, { backgroundColor: colors.success }]}
+                onPress={handleSaveProfile}
+              >
+                <Text style={styles.btnText}>Salvează</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.btn, { backgroundColor: colors.error }]}
+                onPress={() => setIsEditing(false)}
+              >
+                <Text style={styles.btnText}>Anulează</Text>
+              </TouchableOpacity>
             </View>
           </View>
         ) : (
@@ -248,7 +301,7 @@ export default function ProfileScreen() {
             <Text style={styles.fullName}>{profile?.full_name || 'Nume nesetat'}</Text>
             <Text style={styles.username}>@{profile?.username}</Text>
             {profile?.bio && <Text style={styles.bio}>{profile.bio}</Text>}
-            
+
             <View style={styles.actionButtonsRow}>
               <TouchableOpacity style={styles.editBtn} onPress={() => setIsEditing(true)}>
                 <Ionicons name="pencil" size={16} color={colors.white} />
@@ -259,7 +312,11 @@ export default function ProfileScreen() {
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.actionBtn} onPress={() => setThemeModalVisible(true)}>
-                <Ionicons name={theme === 'light' ? 'moon-outline' : 'sunny-outline'} size={18} color={colors.white} />
+                <Ionicons
+                  name={theme === 'light' ? 'moon-outline' : 'sunny-outline'}
+                  size={18}
+                  color={colors.white}
+                />
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.actionBtn} onPress={openSecurityModal}>
@@ -283,7 +340,12 @@ export default function ProfileScreen() {
         ListEmptyComponent={<Text style={styles.emptyText}>Nu ai adăugat niciun citat încă.</Text>}
       />
 
-      <Modal visible={isSecurityModalVisible} animationType="slide" transparent={true} onRequestClose={() => setSecurityModalVisible(false)}>
+      <Modal
+        visible={isSecurityModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setSecurityModalVisible(false)}
+      >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
@@ -302,15 +364,31 @@ export default function ProfileScreen() {
                   return (
                     <View key={session.id} style={styles.sessionCard}>
                       <View style={styles.sessionInfo}>
-                        <Ionicons name={session.device_name.includes('ios') || session.device_name.includes('android') ? "phone-portrait-outline" : "laptop-outline"} size={24} color={colors.textLight} />
+                        <Ionicons
+                          name={
+                            session.device_name.includes('ios') ||
+                            session.device_name.includes('android')
+                              ? 'phone-portrait-outline'
+                              : 'laptop-outline'
+                          }
+                          size={24}
+                          color={colors.textLight}
+                        />
                         <View style={styles.sessionDetails}>
-                          <Text style={styles.deviceName} numberOfLines={1}>{session.device_name.substring(0, 30)}</Text>
+                          <Text style={styles.deviceName} numberOfLines={1}>
+                            {session.device_name.substring(0, 30)}
+                          </Text>
                           <Text style={styles.sessionDate}>Logat pe: {date}</Text>
-                          {isCurrent && <Text style={styles.currentBadge}>Dispozitivul curent</Text>}
+                          {isCurrent && (
+                            <Text style={styles.currentBadge}>Dispozitivul curent</Text>
+                          )}
                         </View>
                       </View>
                       {!isCurrent && (
-                        <TouchableOpacity style={styles.revokeBtn} onPress={() => handleRevokeSession(session.id)}>
+                        <TouchableOpacity
+                          style={styles.revokeBtn}
+                          onPress={() => handleRevokeSession(session.id)}
+                        >
                           <Text style={styles.revokeBtnText}>Ieși</Text>
                         </TouchableOpacity>
                       )}
@@ -323,7 +401,12 @@ export default function ProfileScreen() {
         </View>
       </Modal>
 
-      <Modal visible={isNotificationsModalVisible} animationType="fade" transparent={true} onRequestClose={() => setNotificationsModalVisible(false)}>
+      <Modal
+        visible={isNotificationsModalVisible}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setNotificationsModalVisible(false)}
+      >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
@@ -340,11 +423,15 @@ export default function ProfileScreen() {
                 <View style={styles.settingRow}>
                   <View style={styles.settingTextContainer}>
                     <Text style={styles.settingTitle}>Reacții la citate</Text>
-                    <Text style={styles.settingDescription}>Când cineva reacționează la postările tale.</Text>
+                    <Text style={styles.settingDescription}>
+                      Când cineva reacționează la postările tale.
+                    </Text>
                   </View>
                   <Switch
                     trackColor={{ false: colors.border, true: `${colors.primary}80` }}
-                    thumbColor={notificationSettings.notify_reactions ? colors.primary : colors.gray}
+                    thumbColor={
+                      notificationSettings.notify_reactions ? colors.primary : colors.gray
+                    }
                     onValueChange={(val) => handleToggleSetting('notify_reactions', val)}
                     value={notificationSettings.notify_reactions}
                   />
@@ -353,7 +440,9 @@ export default function ProfileScreen() {
                 <View style={styles.settingRow}>
                   <View style={styles.settingTextContainer}>
                     <Text style={styles.settingTitle}>Comentarii noi</Text>
-                    <Text style={styles.settingDescription}>Când cineva lasă un comentariu la citatul tău.</Text>
+                    <Text style={styles.settingDescription}>
+                      Când cineva lasă un comentariu la citatul tău.
+                    </Text>
                   </View>
                   <Switch
                     trackColor={{ false: colors.border, true: `${colors.primary}80` }}
@@ -366,11 +455,15 @@ export default function ProfileScreen() {
                 <View style={styles.settingRow}>
                   <View style={styles.settingTextContainer}>
                     <Text style={styles.settingTitle}>Cereri de prietenie</Text>
-                    <Text style={styles.settingDescription}>Când cineva dorește să se conecteze cu tine.</Text>
+                    <Text style={styles.settingDescription}>
+                      Când cineva dorește să se conecteze cu tine.
+                    </Text>
                   </View>
                   <Switch
                     trackColor={{ false: colors.border, true: `${colors.primary}80` }}
-                    thumbColor={notificationSettings.notify_friend_requests ? colors.primary : colors.gray}
+                    thumbColor={
+                      notificationSettings.notify_friend_requests ? colors.primary : colors.gray
+                    }
                     onValueChange={(val) => handleToggleSetting('notify_friend_requests', val)}
                     value={notificationSettings.notify_friend_requests}
                   />
@@ -379,11 +472,15 @@ export default function ProfileScreen() {
                 <View style={styles.settingRow}>
                   <View style={styles.settingTextContainer}>
                     <Text style={styles.settingTitle}>Cereri acceptate</Text>
-                    <Text style={styles.settingDescription}>Când cineva îți acceptă cererea trimisă.</Text>
+                    <Text style={styles.settingDescription}>
+                      Când cineva îți acceptă cererea trimisă.
+                    </Text>
                   </View>
                   <Switch
                     trackColor={{ false: colors.border, true: `${colors.primary}80` }}
-                    thumbColor={notificationSettings.notify_friend_accepted ? colors.primary : colors.gray}
+                    thumbColor={
+                      notificationSettings.notify_friend_accepted ? colors.primary : colors.gray
+                    }
                     onValueChange={(val) => handleToggleSetting('notify_friend_accepted', val)}
                     value={notificationSettings.notify_friend_accepted}
                   />
@@ -394,7 +491,12 @@ export default function ProfileScreen() {
         </View>
       </Modal>
 
-      <Modal visible={isThemeModalVisible} animationType="fade" transparent={true} onRequestClose={() => setThemeModalVisible(false)}>
+      <Modal
+        visible={isThemeModalVisible}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setThemeModalVisible(false)}
+      >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
@@ -407,83 +509,233 @@ export default function ProfileScreen() {
             <ScrollView style={styles.settingsContainer} showsVerticalScrollIndicator={false}>
               <TouchableOpacity style={styles.themeOption} onPress={() => setTheme('light')}>
                 <View style={styles.themeOptionLeft}>
-                  <Ionicons name="sunny" size={24} color={theme === 'light' ? colors.primary : colors.textLight} />
+                  <Ionicons
+                    name="sunny"
+                    size={24}
+                    color={theme === 'light' ? colors.primary : colors.textLight}
+                  />
                   <Text style={styles.settingTitle}>Deschisă</Text>
                 </View>
-                <Ionicons name={theme === 'light' ? 'radio-button-on' : 'radio-button-off'} size={24} color={theme === 'light' ? colors.primary : colors.textLight} />
+                <Ionicons
+                  name={theme === 'light' ? 'radio-button-on' : 'radio-button-off'}
+                  size={24}
+                  color={theme === 'light' ? colors.primary : colors.textLight}
+                />
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.themeOption} onPress={() => setTheme('dark')}>
                 <View style={styles.themeOptionLeft}>
-                  <Ionicons name="moon" size={24} color={theme === 'dark' ? colors.primary : colors.textLight} />
+                  <Ionicons
+                    name="moon"
+                    size={24}
+                    color={theme === 'dark' ? colors.primary : colors.textLight}
+                  />
                   <Text style={styles.settingTitle}>Întunecată</Text>
                 </View>
-                <Ionicons name={theme === 'dark' ? 'radio-button-on' : 'radio-button-off'} size={24} color={theme === 'dark' ? colors.primary : colors.textLight} />
+                <Ionicons
+                  name={theme === 'dark' ? 'radio-button-on' : 'radio-button-off'}
+                  size={24}
+                  color={theme === 'dark' ? colors.primary : colors.textLight}
+                />
               </TouchableOpacity>
             </ScrollView>
-
           </View>
         </View>
       </Modal>
-
     </View>
   );
 }
 
-const getStyles = (colors: ThemeColors) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background },
-  header: { backgroundColor: colors.card, padding: 20, alignItems: 'center', borderBottomWidth: 1, borderBottomColor: colors.border, elevation: 2, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 5 },
-  avatarContainer: { position: 'relative', marginBottom: 15 },
-  avatarImage: { width: 100, height: 100, borderRadius: 50 },
-  avatarPlaceholder: { width: 100, height: 100, borderRadius: 50, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' },
-  avatarOverlay: { position: 'absolute', right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: colors.card },
-  infoContainer: { alignItems: 'center' },
-  fullName: { fontSize: 20, fontWeight: 'bold', color: colors.textDark },
-  username: { fontSize: 14, color: colors.textLight, marginBottom: 10 },
-  bio: { fontSize: 15, color: colors.textLight, textAlign: 'center', marginBottom: 15, paddingHorizontal: 20 },
-  
-  actionButtonsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, flexWrap: 'wrap' },
-  editBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.primary, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20 },
-  actionBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.gray, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20 },
-  logoutBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderWidth: 1, borderColor: colors.error, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
-  btnText: { color: colors.white, fontWeight: 'bold', fontSize: 13 },
-  
-  editContainer: { width: '100%' },
-  input: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: 10, marginBottom: 10, backgroundColor: colors.background, color: colors.textDark },
-  actionButtons: { flexDirection: 'row', justifyContent: 'center', gap: 10 },
-  btn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8 },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', padding: 15, color: colors.textDark },
-  listContent: { paddingHorizontal: 15, paddingBottom: 20 },
-  
-  quoteCard: { backgroundColor: colors.card, padding: 15, borderRadius: 10, marginBottom: 10, borderLeftWidth: 4, borderLeftColor: colors.primary },
-  quoteCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 5 },
-  quoteText: { flex: 1, fontSize: 16, fontStyle: 'italic', color: colors.textDark, paddingRight: 10 },
-  deleteQuoteBtn: { padding: 5 },
-  quoteAuthor: { fontSize: 14, fontWeight: 'bold', color: colors.textLight, textAlign: 'right' },
-  emptyText: { textAlign: 'center', color: colors.textLight, marginTop: 20 },
+const getStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    centered: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: colors.background,
+    },
+    header: {
+      backgroundColor: colors.card,
+      padding: 20,
+      alignItems: 'center',
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      elevation: 2,
+      shadowColor: '#000',
+      shadowOpacity: 0.05,
+      shadowRadius: 5,
+    },
+    avatarContainer: { position: 'relative', marginBottom: 15 },
+    avatarImage: { width: 100, height: 100, borderRadius: 50 },
+    avatarPlaceholder: {
+      width: 100,
+      height: 100,
+      borderRadius: 50,
+      backgroundColor: colors.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    avatarOverlay: {
+      position: 'absolute',
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.6)',
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderWidth: 2,
+      borderColor: colors.card,
+    },
+    infoContainer: { alignItems: 'center' },
+    fullName: { fontSize: 20, fontWeight: 'bold', color: colors.textDark },
+    username: { fontSize: 14, color: colors.textLight, marginBottom: 10 },
+    bio: {
+      fontSize: 15,
+      color: colors.textLight,
+      textAlign: 'center',
+      marginBottom: 15,
+      paddingHorizontal: 20,
+    },
 
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  modalContent: { backgroundColor: colors.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, maxHeight: '80%' },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 15, borderBottomWidth: 1, borderBottomColor: colors.border, marginBottom: 10 },
-  modalTitle: { fontSize: 18, fontWeight: 'bold', color: colors.textDark },
-  
-  sessionsList: { paddingBottom: 20 },
-  sessionCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: colors.border },
-  sessionInfo: { flexDirection: 'row', alignItems: 'center', flex: 1 },
-  sessionDetails: { marginLeft: 15, flex: 1 },
-  deviceName: { fontSize: 15, fontWeight: 'bold', color: colors.textDark },
-  sessionDate: { fontSize: 13, color: colors.textLight, marginTop: 2 },
-  currentBadge: { color: colors.primary, fontSize: 12, fontWeight: 'bold', marginTop: 2 },
-  revokeBtn: { backgroundColor: colors.errorBg, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
-  revokeBtnText: { color: colors.error, fontWeight: 'bold', fontSize: 13 },
+    actionButtonsRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 10,
+      flexWrap: 'wrap',
+    },
+    editBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.primary,
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      borderRadius: 20,
+    },
+    actionBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.gray,
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      borderRadius: 20,
+    },
+    logoutBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.error,
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: 20,
+    },
+    btnText: { color: colors.white, fontWeight: 'bold', fontSize: 13 },
 
-  settingsContainer: { paddingBottom: 20 },
-  settingRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: colors.border },
-  settingTextContainer: { flex: 1, paddingRight: 15 },
-  settingTitle: { fontSize: 16, fontWeight: 'bold', color: colors.textDark, marginBottom: 4 },
-  settingDescription: { fontSize: 13, color: colors.textLight, lineHeight: 18 },
-  
-  themeOption: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: colors.border },
-  themeOptionLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-});
+    editContainer: { width: '100%' },
+    input: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      padding: 10,
+      marginBottom: 10,
+      backgroundColor: colors.background,
+      color: colors.textDark,
+    },
+    actionButtons: { flexDirection: 'row', justifyContent: 'center', gap: 10 },
+    btn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8 },
+    sectionTitle: { fontSize: 18, fontWeight: 'bold', padding: 15, color: colors.textDark },
+    listContent: { paddingHorizontal: 15, paddingBottom: 20 },
+
+    quoteCard: {
+      backgroundColor: colors.card,
+      padding: 15,
+      borderRadius: 10,
+      marginBottom: 10,
+      borderLeftWidth: 4,
+      borderLeftColor: colors.primary,
+    },
+    quoteCardHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      marginBottom: 5,
+    },
+    quoteText: {
+      flex: 1,
+      fontSize: 16,
+      fontStyle: 'italic',
+      color: colors.textDark,
+      paddingRight: 10,
+    },
+    deleteQuoteBtn: { padding: 5 },
+    quoteAuthor: { fontSize: 14, fontWeight: 'bold', color: colors.textLight, textAlign: 'right' },
+    emptyText: { textAlign: 'center', color: colors.textLight, marginTop: 20 },
+
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+    modalContent: {
+      backgroundColor: colors.card,
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      padding: 20,
+      maxHeight: '80%',
+    },
+    modalHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingBottom: 15,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      marginBottom: 10,
+    },
+    modalTitle: { fontSize: 18, fontWeight: 'bold', color: colors.textDark },
+
+    sessionsList: { paddingBottom: 20 },
+    sessionCard: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 15,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    sessionInfo: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+    sessionDetails: { marginLeft: 15, flex: 1 },
+    deviceName: { fontSize: 15, fontWeight: 'bold', color: colors.textDark },
+    sessionDate: { fontSize: 13, color: colors.textLight, marginTop: 2 },
+    currentBadge: { color: colors.primary, fontSize: 12, fontWeight: 'bold', marginTop: 2 },
+    revokeBtn: {
+      backgroundColor: colors.errorBg,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 8,
+    },
+    revokeBtnText: { color: colors.error, fontWeight: 'bold', fontSize: 13 },
+
+    settingsContainer: { paddingBottom: 20 },
+    settingRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 15,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    settingTextContainer: { flex: 1, paddingRight: 15 },
+    settingTitle: { fontSize: 16, fontWeight: 'bold', color: colors.textDark, marginBottom: 4 },
+    settingDescription: { fontSize: 13, color: colors.textLight, lineHeight: 18 },
+
+    themeOption: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 15,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    themeOptionLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  });

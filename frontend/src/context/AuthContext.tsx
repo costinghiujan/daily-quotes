@@ -9,7 +9,7 @@ interface AuthContextType {
   user: UserProfile | null;
   userToken: string | null;
   isLoading: boolean;
-  loginState: (token: string, userData: UserProfile) => Promise<void>; 
+  loginState: (token: string, userData: UserProfile) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -49,7 +49,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const loginState = async (token: string, userData: UserProfile) => {
     setUserToken(token);
     setUser(userData);
-    
+
     await AsyncStorage.setItem('userData', JSON.stringify(userData));
   };
 
@@ -57,7 +57,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(true);
     await storage.removeToken();
     await AsyncStorage.removeItem('userData');
-    
+
     setUserToken(null);
     setUser(null);
     setIsLoading(false);
@@ -69,15 +69,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       async (error) => {
         if (error.response && error.response.status === 401) {
           Alert.alert(
-            'Sesiune Inactivă', 
-            'Acest dispozitiv a fost deconectat de la distanță sau sesiunea a expirat.'
+            'Sesiune Inactivă',
+            'Acest dispozitiv a fost deconectat de la distanță sau sesiunea a expirat.',
           );
-          
+
           await logout();
         }
-        
+
         return Promise.reject(error);
-      }
+      },
     );
 
     return () => {

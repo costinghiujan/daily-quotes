@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import { storage } from '../utils/storage'; 
+import { storage } from '../utils/storage';
 
 export const authService = {
   register: async (userData: any) => {
@@ -18,7 +18,7 @@ export const authService = {
   login: async (credentials: { identifier: string; password: string }) => {
     try {
       const response = await apiClient.post('/auth/login', credentials);
-      
+
       const token = response.data.data.token;
 
       if (token) {
@@ -34,5 +34,5 @@ export const authService = {
       }
       throw new Error('Eroare de conexiune la server.');
     }
-  }
+  },
 };

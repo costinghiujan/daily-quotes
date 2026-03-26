@@ -18,7 +18,6 @@ const resetDatabase = async () => {
 
     console.log('✅ Baza de date a fost curățată complet!');
     console.log('La următoarea pornire a serverului, tabelele vor fi recreate cu schema nouă.');
-
   } catch (error) {
     console.error('❌ Eroare la curățarea bazei de date:', error);
   } finally {

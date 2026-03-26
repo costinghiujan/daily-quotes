@@ -1,7 +1,16 @@
 import React, { useState, useEffect, useContext, useMemo } from 'react';
-import { 
-  View, Text, TextInput, TouchableOpacity, FlatList, 
-  StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, Image, Alert 
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  FlatList,
+  StyleSheet,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Image,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { quoteService, Comment } from '../api/quoteService';
@@ -20,18 +29,19 @@ export default function CommentsScreen({ route, navigation }: any) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const fetchComments = async () => {
-    try {
-      const data = await quoteService.getComments(quoteId);
-      setComments(data);
-    } catch (error) {
-      Alert.alert('Eroare', 'Nu am putut încărca discuția.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   useEffect(() => {
+    const fetchComments = async () => {
+      try {
+        const data = await quoteService.getComments(quoteId);
+        setComments(data);
+      } catch (error) {
+        console.error(error);
+        Alert.alert('Eroare', 'Nu am putut încărca discuția.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
     fetchComments();
   }, [quoteId]);
 
@@ -44,6 +54,7 @@ export default function CommentsScreen({ route, navigation }: any) {
       setComments((prev) => [...prev, postedComment]);
       setNewComment('');
     } catch (error) {
+      console.error(error);
       Alert.alert('Eroare', 'Nu am putut posta comentariul.');
     } finally {
       setIsSubmitting(false);
@@ -51,7 +62,10 @@ export default function CommentsScreen({ route, navigation }: any) {
   };
 
   const renderComment = ({ item }: { item: Comment }) => {
-    const date = new Date(item.created_at).toLocaleDateString('ro-RO', { hour: '2-digit', minute: '2-digit' });
+    const date = new Date(item.created_at).toLocaleDateString('ro-RO', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
 
     return (
       <View style={styles.commentCard}>
@@ -74,13 +88,15 @@ export default function CommentsScreen({ route, navigation }: any) {
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
+    <KeyboardAvoidingView
+      style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
       {isLoading ? (
-        <View style={styles.centered}><ActivityIndicator size="large" color={colors.primary} /></View>
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
       ) : (
         <FlatList
           data={comments}
@@ -103,8 +119,8 @@ export default function CommentsScreen({ route, navigation }: any) {
           multiline
           maxLength={500}
         />
-        <TouchableOpacity 
-          style={[styles.sendButton, !newComment.trim() && { opacity: 0.5 }]} 
+        <TouchableOpacity
+          style={[styles.sendButton, !newComment.trim() && { opacity: 0.5 }]}
           onPress={handleSendComment}
           disabled={isSubmitting || !newComment.trim()}
         >
@@ -119,24 +135,68 @@ export default function CommentsScreen({ route, navigation }: any) {
   );
 }
 
-const getStyles = (colors: ThemeColors) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  listContent: { padding: 15, paddingBottom: 20 },
-  
-  commentCard: { flexDirection: 'row', marginBottom: 15 },
-  avatar: { width: 36, height: 36, borderRadius: 18, marginRight: 10 },
-  avatarPlaceholder: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center', marginRight: 10 },
-  
-  commentContent: { flex: 1, backgroundColor: colors.card, padding: 12, borderRadius: 12, borderTopLeftRadius: 2, borderWidth: 1, borderColor: colors.border },
-  commentHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
-  username: { fontWeight: 'bold', fontSize: 14, color: colors.textDark },
-  timeText: { fontSize: 11, color: colors.textLight },
-  commentText: { fontSize: 14, color: colors.textDark, lineHeight: 20 },
-  
-  emptyText: { textAlign: 'center', color: colors.textLight, marginTop: 40, fontSize: 15 },
-  
-  inputContainer: { flexDirection: 'row', padding: 10, backgroundColor: colors.card, borderTopWidth: 1, borderTopColor: colors.border, alignItems: 'center' },
-  input: { flex: 1, backgroundColor: colors.background, color: colors.textDark, borderRadius: 20, paddingHorizontal: 15, paddingTop: 10, paddingBottom: 10, minHeight: 40, maxHeight: 100, borderWidth: 1, borderColor: colors.border },
-  sendButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center', marginLeft: 10 },
-});
+const getStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    listContent: { padding: 15, paddingBottom: 20 },
+
+    commentCard: { flexDirection: 'row', marginBottom: 15 },
+    avatar: { width: 36, height: 36, borderRadius: 18, marginRight: 10 },
+    avatarPlaceholder: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: colors.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: 10,
+    },
+
+    commentContent: {
+      flex: 1,
+      backgroundColor: colors.card,
+      padding: 12,
+      borderRadius: 12,
+      borderTopLeftRadius: 2,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    commentHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
+    username: { fontWeight: 'bold', fontSize: 14, color: colors.textDark },
+    timeText: { fontSize: 11, color: colors.textLight },
+    commentText: { fontSize: 14, color: colors.textDark, lineHeight: 20 },
+
+    emptyText: { textAlign: 'center', color: colors.textLight, marginTop: 40, fontSize: 15 },
+
+    inputContainer: {
+      flexDirection: 'row',
+      padding: 10,
+      backgroundColor: colors.card,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      alignItems: 'center',
+    },
+    input: {
+      flex: 1,
+      backgroundColor: colors.background,
+      color: colors.textDark,
+      borderRadius: 20,
+      paddingHorizontal: 15,
+      paddingTop: 10,
+      paddingBottom: 10,
+      minHeight: 40,
+      maxHeight: 100,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    sendButton: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: colors.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginLeft: 10,
+    },
+  });

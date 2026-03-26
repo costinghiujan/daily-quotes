@@ -1,8 +1,15 @@
 import React, { useState, useContext, useMemo } from 'react';
-import { 
-  View, Text, TextInput, TouchableOpacity, Alert, 
-  KeyboardAvoidingView, Platform, Keyboard, ActivityIndicator,
-  StyleSheet 
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  Keyboard,
+  ActivityIndicator,
+  StyleSheet,
 } from 'react-native';
 import { authService } from '../api/authService';
 import { AuthContext } from '../context/AuthContext';
@@ -13,21 +20,21 @@ import { ThemeColors } from '../theme/colors';
 
 export default function LoginScreen({ navigation }: any) {
   const { loginState } = useContext(AuthContext);
-  
+
   const { colors } = useContext(ThemeContext);
   const styles = useMemo(() => getStyles(colors), [colors]);
-  
-  const [identifier, setIdentifier] = useState(''); 
+
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
   const [identifierError, setIdentifierError] = useState(false);
   const [passwordError, setPasswordError] = useState(false);
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleLogin = async () => {
-    Keyboard.dismiss(); 
+    Keyboard.dismiss();
     let isValid = true;
 
     setIdentifierError(false);
@@ -37,7 +44,7 @@ export default function LoginScreen({ navigation }: any) {
       setIdentifierError(true);
       isValid = false;
     }
-    
+
     if (!password.trim()) {
       setPasswordError(true);
       isValid = false;
@@ -46,16 +53,15 @@ export default function LoginScreen({ navigation }: any) {
     if (isValid) {
       try {
         setIsSubmitting(true);
-        
+
         const response = await authService.login({
           identifier: identifier.trim(),
-          password: password 
+          password: password,
         });
 
         console.log('[Login Reușit] Bine ai venit:', response.data.user.username);
-        
-        loginState(response.data.token, response.data.user);
 
+        loginState(response.data.token, response.data.user);
       } catch (error: any) {
         Alert.alert('Eroare de Autentificare', error.message);
       } finally {
@@ -65,8 +71,8 @@ export default function LoginScreen({ navigation }: any) {
   };
 
   return (
-    <KeyboardAvoidingView 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
       <View style={styles.formContainer}>
@@ -84,7 +90,9 @@ export default function LoginScreen({ navigation }: any) {
           }}
           autoCapitalize="none"
         />
-        {identifierError && <Text style={styles.errorText}>Introduceți un email sau un nume de utilizator.</Text>}
+        {identifierError && (
+          <Text style={styles.errorText}>Introduceți un email sau un nume de utilizator.</Text>
+        )}
 
         <View style={{ width: '100%', justifyContent: 'center' }}>
           <TextInput
@@ -100,22 +108,18 @@ export default function LoginScreen({ navigation }: any) {
             autoCapitalize="none"
           />
 
-          <TouchableOpacity 
-            style={{ position: 'absolute', right: 15 }} 
+          <TouchableOpacity
+            style={{ position: 'absolute', right: 15 }}
             onPress={() => setShowPassword(!showPassword)}
           >
-            <Ionicons 
-              name={showPassword ? "eye-off" : "eye"} 
-              size={24} 
-              color={colors.textLight} 
-            />
+            <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={24} color={colors.textLight} />
           </TouchableOpacity>
         </View>
 
         {passwordError && <Text style={styles.errorText}>Introduceți parola.</Text>}
 
-        <TouchableOpacity 
-          style={[styles.button, isSubmitting && { backgroundColor: colors.primary + '80' }]} 
+        <TouchableOpacity
+          style={[styles.button, isSubmitting && { backgroundColor: colors.primary + '80' }]}
           onPress={handleLogin}
           disabled={isSubmitting}
         >
@@ -137,81 +141,82 @@ export default function LoginScreen({ navigation }: any) {
   );
 }
 
-const getStyles = (colors: ThemeColors) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    justifyContent: 'center',
-    padding: 20,
-  },
-  formContainer: {
-    backgroundColor: colors.card,
-    padding: 20,
-    borderRadius: 15,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 5 },
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: colors.primary,
-    marginBottom: 5,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: colors.textLight,
-    marginBottom: 25,
-    textAlign: 'center',
-  },
-  input: {
-    backgroundColor: colors.background,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 10,
-    padding: 15,
-    marginBottom: 15,
-    fontSize: 16,
-    color: colors.textDark,
-  },
-  inputError: {
-    borderColor: colors.error,
-    borderWidth: 1.5,
-  },
-  errorText: {
-    color: colors.error,
-    fontSize: 12,
-    marginTop: -10,
-    marginBottom: 10,
-    marginLeft: 5,
-  },
-  button: {
-    backgroundColor: colors.primary,
-    paddingVertical: 15,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  buttonText: {
-    color: colors.white,
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 20,
-  },
-  footerText: {
-    color: colors.textDark,
-    fontSize: 14,
-  },
-  link: {
-    color: colors.primary,
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-});
+const getStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+      justifyContent: 'center',
+      padding: 20,
+    },
+    formContainer: {
+      backgroundColor: colors.card,
+      padding: 20,
+      borderRadius: 15,
+      elevation: 3,
+      shadowColor: '#000',
+      shadowOpacity: 0.1,
+      shadowRadius: 10,
+      shadowOffset: { width: 0, height: 5 },
+    },
+    title: {
+      fontSize: 28,
+      fontWeight: 'bold',
+      color: colors.primary,
+      marginBottom: 5,
+      textAlign: 'center',
+    },
+    subtitle: {
+      fontSize: 16,
+      color: colors.textLight,
+      marginBottom: 25,
+      textAlign: 'center',
+    },
+    input: {
+      backgroundColor: colors.background,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 10,
+      padding: 15,
+      marginBottom: 15,
+      fontSize: 16,
+      color: colors.textDark,
+    },
+    inputError: {
+      borderColor: colors.error,
+      borderWidth: 1.5,
+    },
+    errorText: {
+      color: colors.error,
+      fontSize: 12,
+      marginTop: -10,
+      marginBottom: 10,
+      marginLeft: 5,
+    },
+    button: {
+      backgroundColor: colors.primary,
+      paddingVertical: 15,
+      borderRadius: 10,
+      alignItems: 'center',
+      marginTop: 10,
+    },
+    buttonText: {
+      color: colors.white,
+      fontSize: 18,
+      fontWeight: 'bold',
+    },
+    footer: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      marginTop: 20,
+    },
+    footerText: {
+      color: colors.textDark,
+      fontSize: 14,
+    },
+    link: {
+      color: colors.primary,
+      fontSize: 14,
+      fontWeight: 'bold',
+    },
+  });

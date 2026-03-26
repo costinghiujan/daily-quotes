@@ -1,22 +1,25 @@
 import { Response } from 'express';
 import { query } from '../config/db';
-import { AuthRequest } from './authController';
+import { AuthRequest } from '../middleware/authMiddleware';
 
 export const getNotificationSettings = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user?.id;
-    if (!userId) { res.status(401).json({ status: 'error', message: 'Neautorizat.' }); return; }
+    if (!userId) {
+      res.status(401).json({ status: 'error', message: 'Neautorizat.' });
+      return;
+    }
 
     let result = await query(
       'SELECT notify_reactions, notify_comments, notify_friend_requests, notify_friend_accepted FROM notification_settings WHERE user_id = $1',
-      [userId]
+      [userId],
     );
 
     if (result.rows.length === 0) {
       await query('INSERT INTO notification_settings (user_id) VALUES ($1)', [userId]);
       result = await query(
         'SELECT notify_reactions, notify_comments, notify_friend_requests, notify_friend_accepted FROM notification_settings WHERE user_id = $1',
-        [userId]
+        [userId],
       );
     }
 
@@ -27,22 +30,31 @@ export const getNotificationSettings = async (req: AuthRequest, res: Response): 
   }
 };
 
-export const updateNotificationSettings = async (req: AuthRequest, res: Response): Promise<void> => {
+export const updateNotificationSettings = async (
+  req: AuthRequest,
+  res: Response,
+): Promise<void> => {
   try {
     const userId = req.user?.id;
-    const { notify_reactions, notify_comments, notify_friend_requests, notify_friend_accepted } = req.body;
+    const { notify_reactions, notify_comments, notify_friend_requests, notify_friend_accepted } =
+      req.body;
 
-    if (!userId) { res.status(401).json({ status: 'error', message: 'Neautorizat.' }); return; }
+    if (!userId) {
+      res.status(401).json({ status: 'error', message: 'Neautorizat.' });
+      return;
+    }
 
     const result = await query(
       `UPDATE notification_settings 
        SET notify_reactions = $1, notify_comments = $2, notify_friend_requests = $3, notify_friend_accepted = $4, updated_at = CURRENT_TIMESTAMP
        WHERE user_id = $5
        RETURNING notify_reactions, notify_comments, notify_friend_requests, notify_friend_accepted`,
-      [notify_reactions, notify_comments, notify_friend_requests, notify_friend_accepted, userId]
+      [notify_reactions, notify_comments, notify_friend_requests, notify_friend_accepted, userId],
     );
 
-    res.status(200).json({ status: 'success', message: 'Setările au fost salvate.', data: result.rows[0] });
+    res
+      .status(200)
+      .json({ status: 'success', message: 'Setările au fost salvate.', data: result.rows[0] });
   } catch (error) {
     console.error('[Eroare Controller] Actualizare Setări Notificări:', error);
     res.status(500).json({ status: 'error', message: 'Eroare internă a serverului.' });
@@ -52,15 +64,20 @@ export const updateNotificationSettings = async (req: AuthRequest, res: Response
 export const getNotifications = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user?.id;
-    if (!userId) { res.status(401).json({ status: 'error', message: 'Neautorizat.' }); return; }
+    if (!userId) {
+      res.status(401).json({ status: 'error', message: 'Neautorizat.' });
+      return;
+    }
 
     const result = await query(
       `SELECT n.id, n.type, n.reference_id, n.is_read, n.created_at, u.id AS sender_id, u.username, u.full_name, u.profile_picture_url
        FROM notifications n JOIN users u ON n.sender_id = u.id
-       WHERE n.recipient_id = $1 ORDER BY n.created_at DESC LIMIT 50`, [userId]
+       WHERE n.recipient_id = $1 ORDER BY n.created_at DESC LIMIT 50`,
+      [userId],
     );
     res.status(200).json({ status: 'success', data: result.rows });
   } catch (error) {
+    console.error('[Eroare Controller]:', error);
     res.status(500).json({ status: 'error', message: 'Eroare internă.' });
   }
 };
@@ -68,10 +85,19 @@ export const getNotifications = async (req: AuthRequest, res: Response): Promise
 export const markAllAsRead = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user?.id;
-    if (!userId) { res.status(401).json({ status: 'error', message: 'Neautorizat.' }); return; }
-    await query(`UPDATE notifications SET is_read = TRUE WHERE recipient_id = $1 AND is_read = FALSE`, [userId]);
-    res.status(200).json({ status: 'success', message: 'Toate notificările au fost marcate ca citite.' });
+    if (!userId) {
+      res.status(401).json({ status: 'error', message: 'Neautorizat.' });
+      return;
+    }
+    await query(
+      `UPDATE notifications SET is_read = TRUE WHERE recipient_id = $1 AND is_read = FALSE`,
+      [userId],
+    );
+    res
+      .status(200)
+      .json({ status: 'success', message: 'Toate notificările au fost marcate ca citite.' });
   } catch (error) {
+    console.error('[Eroare Controller]:', error);
     res.status(500).json({ status: 'error', message: 'Eroare internă a serverului.' });
   }
 };
@@ -79,10 +105,17 @@ export const markAllAsRead = async (req: AuthRequest, res: Response): Promise<vo
 export const getUnreadCount = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user?.id;
-    if (!userId) { res.status(401).json({ status: 'error', message: 'Neautorizat.' }); return; }
-    const result = await query(`SELECT COUNT(*) FROM notifications WHERE recipient_id = $1 AND is_read = FALSE`, [userId]);
+    if (!userId) {
+      res.status(401).json({ status: 'error', message: 'Neautorizat.' });
+      return;
+    }
+    const result = await query(
+      `SELECT COUNT(*) FROM notifications WHERE recipient_id = $1 AND is_read = FALSE`,
+      [userId],
+    );
     res.status(200).json({ status: 'success', count: parseInt(result.rows[0].count, 10) });
   } catch (error) {
+    console.error('[Eroare Controller]:', error);
     res.status(500).json({ status: 'error', message: 'Eroare internă a serverului.' });
   }
 };
@@ -91,10 +124,16 @@ export const savePushToken = async (req: AuthRequest, res: Response): Promise<vo
   try {
     const userId = req.user?.id;
     const { pushToken } = req.body;
-    if (!userId) { res.status(401).json({ status: 'error', message: 'Neautorizat.' }); return; }
+    if (!userId) {
+      res.status(401).json({ status: 'error', message: 'Neautorizat.' });
+      return;
+    }
     await query('UPDATE users SET expo_push_token = $1 WHERE id = $2', [pushToken, userId]);
-    res.status(200).json({ status: 'success', message: 'Token-ul de push a fost salvat cu succes.' });
+    res
+      .status(200)
+      .json({ status: 'success', message: 'Token-ul de push a fost salvat cu succes.' });
   } catch (error) {
+    console.error('[Eroare Controller]:', error);
     res.status(500).json({ status: 'error', message: 'Eroare internă a serverului.' });
   }
 };

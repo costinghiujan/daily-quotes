@@ -1,8 +1,6 @@
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { 
-  lightTheme, darkTheme, ThemeColors 
-} from '../theme/colors';
+import { lightTheme, darkTheme, ThemeColors } from '../theme/colors';
 
 export type ThemeType = 'light' | 'dark';
 
@@ -20,7 +18,7 @@ export const ThemeContext = createContext<ThemeContextProps>({
 
 const themeMap: Record<ThemeType, ThemeColors> = {
   light: lightTheme,
-  dark: darkTheme
+  dark: darkTheme,
 };
 
 interface ThemeProviderProps {
@@ -33,7 +31,7 @@ export const ThemeProvider = ({ children }: ThemeProviderProps) => {
   useEffect(() => {
     const loadTheme = async () => {
       try {
-        const savedTheme = await AsyncStorage.getItem('@app_theme') as ThemeType;
+        const savedTheme = (await AsyncStorage.getItem('@app_theme')) as ThemeType;
         if (savedTheme && themeMap[savedTheme]) {
           setThemeState(savedTheme);
         }

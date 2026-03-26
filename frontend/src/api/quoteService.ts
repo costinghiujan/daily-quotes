@@ -14,7 +14,7 @@ export interface Comment {
 interface ApiResponse {
   status: string;
   results?: number;
-  data: Quote[] | Quote; 
+  data: Quote[] | Quote;
   message?: string;
 }
 
@@ -48,10 +48,13 @@ export const quoteService = {
     }
   },
 
-  update: async (id: number, updatedQuote: Partial<Omit<Quote, 'id' | 'created_at'>>): Promise<Quote> => {
+  update: async (
+    id: number,
+    updatedQuote: Partial<Omit<Quote, 'id' | 'created_at'>>,
+  ): Promise<Quote> => {
     try {
       const response = await apiClient.put<ApiResponse>(`/quotes/${id}`, updatedQuote);
-      
+
       return response.data.data as Quote;
     } catch (error) {
       console.error(`[Eroare Frontend] Nu s-a putut actualiza citatul cu ID ${id}:`, error);

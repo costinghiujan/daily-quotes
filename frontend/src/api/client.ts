@@ -1,20 +1,18 @@
 import axios from 'axios';
-import { storage } from '../utils/storage'; 
+import { storage } from '../utils/storage';
 import Constants from 'expo-constants';
 
 const debuggerHost = Constants.expoConfig?.hostUri;
 
 const dynamicIp = debuggerHost ? debuggerHost.split(':')[0] : null;
 
-const BASE_URL = dynamicIp 
-  ? `http://${dynamicIp}:3000/api` 
-  : 'http://localhost:3000/api'; 
+const BASE_URL = dynamicIp ? `http://${dynamicIp}:3000/api` : 'http://localhost:3000/api';
 
 console.log('[Axios] Instanța a fost inițializată cu BASE_URL:', BASE_URL);
 
 export const apiClient = axios.create({
   baseURL: BASE_URL,
-  timeout: 5000, 
+  timeout: 5000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -34,5 +32,5 @@ apiClient.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );

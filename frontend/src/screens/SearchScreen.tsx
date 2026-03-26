@@ -1,7 +1,13 @@
 import React, { useState, useEffect, useContext, useMemo } from 'react';
-import { 
-  View, Text, TextInput, FlatList, TouchableOpacity, 
-  StyleSheet, ActivityIndicator, Alert
+import {
+  View,
+  Text,
+  TextInput,
+  FlatList,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { userService, UserProfile } from '../api/userService';
@@ -45,16 +51,16 @@ export default function SearchScreen() {
   }, [searchQuery]);
 
   const handleAddFriend = async (userId: number, username: string) => {
-    setResults(prev => prev.map(u => 
-      u.id === userId ? { ...u, friendship_status: 'pending' } : u
-    ));
+    setResults((prev) =>
+      prev.map((u) => (u.id === userId ? { ...u, friendship_status: 'pending' } : u)),
+    );
 
     try {
       await friendshipService.sendRequest(userId);
     } catch (error: any) {
-      setResults(prev => prev.map(u => 
-        u.id === userId ? { ...u, friendship_status: null } : u
-      ));
+      setResults((prev) =>
+        prev.map((u) => (u.id === userId ? { ...u, friendship_status: null } : u)),
+      );
       const errorMsg = error.response?.data?.message || 'Nu s-a putut trimite cererea.';
       Alert.alert('Eroare', errorMsg);
     }
@@ -86,7 +92,7 @@ export default function SearchScreen() {
             <Text style={[styles.statusText, { color: colors.secondary }]}>În așteptare</Text>
           </View>
         ) : (
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.addButton}
             onPress={() => handleAddFriend(item.id, item.username)}
           >
@@ -129,27 +135,68 @@ export default function SearchScreen() {
   );
 }
 
-const getStyles = (colors: ThemeColors) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, margin: 15, borderRadius: 10, paddingHorizontal: 15, elevation: 2, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 5 },
-  searchIcon: { marginRight: 10 },
-  searchInput: { flex: 1, height: 50, fontSize: 16, color: colors.textDark },
-  loader: { marginTop: 20 },
-  listContent: { paddingHorizontal: 15, paddingBottom: 20 },
-  userCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, padding: 15, marginBottom: 10, borderRadius: 10 },
-  avatarPlaceholder: { width: 50, height: 50, borderRadius: 25, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center', marginRight: 15 },
-  userInfo: { flex: 1 },
-  userName: { fontSize: 16, fontWeight: 'bold', color: colors.textDark },
-  userHandle: { fontSize: 14, color: colors.textLight, marginTop: 2 },
-  addButton: { backgroundColor: colors.primary, padding: 10, borderRadius: 20, justifyContent: 'center', alignItems: 'center', minWidth: 40 },
-  
-  statusBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, gap: 4 },
-  statusText: { fontSize: 13, fontWeight: 'bold' },
+const getStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    searchContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.card,
+      margin: 15,
+      borderRadius: 10,
+      paddingHorizontal: 15,
+      elevation: 2,
+      shadowColor: '#000',
+      shadowOpacity: 0.1,
+      shadowRadius: 5,
+    },
+    searchIcon: { marginRight: 10 },
+    searchInput: { flex: 1, height: 50, fontSize: 16, color: colors.textDark },
+    loader: { marginTop: 20 },
+    listContent: { paddingHorizontal: 15, paddingBottom: 20 },
+    userCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.card,
+      padding: 15,
+      marginBottom: 10,
+      borderRadius: 10,
+    },
+    avatarPlaceholder: {
+      width: 50,
+      height: 50,
+      borderRadius: 25,
+      backgroundColor: colors.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: 15,
+    },
+    userInfo: { flex: 1 },
+    userName: { fontSize: 16, fontWeight: 'bold', color: colors.textDark },
+    userHandle: { fontSize: 14, color: colors.textLight, marginTop: 2 },
+    addButton: {
+      backgroundColor: colors.primary,
+      padding: 10,
+      borderRadius: 20,
+      justifyContent: 'center',
+      alignItems: 'center',
+      minWidth: 40,
+    },
 
-  emptyText: {
-    textAlign: 'center',
-    marginTop: 20,
-    color: colors.textLight,
-    fontSize: 16,
-  }
-});
+    statusBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 20,
+      gap: 4,
+    },
+    statusText: { fontSize: 13, fontWeight: 'bold' },
+
+    emptyText: {
+      textAlign: 'center',
+      marginTop: 20,
+      color: colors.textLight,
+      fontSize: 16,
+    },
+  });

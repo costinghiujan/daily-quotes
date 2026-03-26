@@ -1,7 +1,14 @@
 import React, { useState, useEffect, useContext, useMemo, useRef } from 'react';
-import { 
-  View, Text, TextInput, FlatList, TouchableOpacity, 
-  StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator 
+import {
+  View,
+  Text,
+  TextInput,
+  FlatList,
+  TouchableOpacity,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,9 +25,7 @@ const debuggerHost = Constants.expoConfig?.hostUri;
 
 const dynamicIp = debuggerHost ? debuggerHost.split(':')[0] : null;
 
-const SOCKET_URL = dynamicIp 
-  ? `http://${dynamicIp}:3000` 
-  : 'http://localhost:3000';
+const SOCKET_URL = dynamicIp ? `http://${dynamicIp}:3000` : 'http://localhost:3000';
 
 export default function ChatScreen() {
   const route = useRoute<any>();
@@ -34,7 +39,7 @@ export default function ChatScreen() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  
+
   const socketRef = useRef<Socket | null>(null);
   const flatListRef = useRef<FlatList>(null);
 
@@ -68,23 +73,25 @@ export default function ChatScreen() {
     });
 
     socketRef.current.on('receive_message', (newMessage: Message) => {
-      const isRelevant = 
+      const isRelevant =
         (newMessage.sender_id === user?.id && newMessage.receiver_id === otherUserId) ||
         (newMessage.sender_id === otherUserId && newMessage.receiver_id === user?.id);
 
       if (isRelevant) {
-        setMessages(prev => [...prev, newMessage]);
+        setMessages((prev) => [...prev, newMessage]);
       }
     });
 
     return () => {
       socketRef.current?.disconnect();
     };
-  }, [otherUserId, user?.id]);
+  }, [otherUserId, user?.id, navigation, otherUsername]);
 
   const handleSendMessage = () => {
     console.log('[Debug Frontend] 1. Buton Send apăsat!');
-    console.log(`[Debug Frontend] 2. Date curente: Text="${inputText}", MyID=${user?.id}, OtherID=${otherUserId}`);
+    console.log(
+      `[Debug Frontend] 2. Date curente: Text="${inputText}", MyID=${user?.id}, OtherID=${otherUserId}`,
+    );
 
     if (inputText.trim() === '') {
       console.log('[Debug Frontend] 3. EȘEC: Textul este gol.');
@@ -102,7 +109,7 @@ export default function ChatScreen() {
     };
 
     console.log('[Debug Frontend] 4. Emitere payload către Socket:', messageData);
-    
+
     if (!socketRef.current?.connected) {
       console.log('[Debug Frontend] 5. AVERTISMENT: Socket-ul NU este conectat la server!');
     }
@@ -115,8 +122,12 @@ export default function ChatScreen() {
     const isMe = item.sender_id === user?.id;
 
     return (
-      <View style={[styles.messageWrapper, isMe ? styles.messageWrapperMe : styles.messageWrapperThem]}>
-        <View style={[styles.messageBubble, isMe ? styles.messageBubbleMe : styles.messageBubbleThem]}>
+      <View
+        style={[styles.messageWrapper, isMe ? styles.messageWrapperMe : styles.messageWrapperThem]}
+      >
+        <View
+          style={[styles.messageBubble, isMe ? styles.messageBubbleMe : styles.messageBubbleThem]}
+        >
           <Text style={[styles.messageText, isMe ? styles.messageTextMe : styles.messageTextThem]}>
             {item.text}
           </Text>
@@ -126,12 +137,16 @@ export default function ChatScreen() {
   };
 
   if (isLoading) {
-    return <View style={styles.centered}><ActivityIndicator size="large" color={colors.primary} /></View>;
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
   }
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
+    <KeyboardAvoidingView
+      style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
@@ -154,8 +169,8 @@ export default function ChatScreen() {
           onChangeText={setInputText}
           multiline
         />
-        <TouchableOpacity 
-          style={[styles.sendButton, inputText.trim() === '' && { opacity: 0.5 }]} 
+        <TouchableOpacity
+          style={[styles.sendButton, inputText.trim() === '' && { opacity: 0.5 }]}
           onPress={handleSendMessage}
           disabled={inputText.trim() === ''}
         >
@@ -166,24 +181,63 @@ export default function ChatScreen() {
   );
 }
 
-const getStyles = (colors: ThemeColors) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background },
-  listContent: { padding: 15, paddingBottom: 20 },
-  
-  messageWrapper: { marginBottom: 15, flexDirection: 'row' },
-  messageWrapperMe: { justifyContent: 'flex-end' },
-  messageWrapperThem: { justifyContent: 'flex-start' },
-  
-  messageBubble: { maxWidth: '75%', padding: 12, borderRadius: 16 },
-  messageBubbleMe: { backgroundColor: colors.primary, borderBottomRightRadius: 4 },
-  messageBubbleThem: { backgroundColor: colors.card, borderBottomLeftRadius: 4, borderWidth: 1, borderColor: colors.border },
-  
-  messageText: { fontSize: 16, lineHeight: 22 },
-  messageTextMe: { color: colors.white },
-  messageTextThem: { color: colors.textDark },
+const getStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    centered: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: colors.background,
+    },
+    listContent: { padding: 15, paddingBottom: 20 },
 
-  inputContainer: { flexDirection: 'row', alignItems: 'center', padding: 10, paddingBottom: Platform.OS === 'ios' ? 25 : 10, backgroundColor: colors.card, borderTopWidth: 1, borderTopColor: colors.border },
-  input: { flex: 1, backgroundColor: colors.background, color: colors.textDark, borderRadius: 20, paddingHorizontal: 15, paddingTop: 12, paddingBottom: 12, maxHeight: 100, fontSize: 16, borderWidth: 1, borderColor: colors.border },
-  sendButton: { backgroundColor: colors.primary, width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', marginLeft: 10 },
-});
+    messageWrapper: { marginBottom: 15, flexDirection: 'row' },
+    messageWrapperMe: { justifyContent: 'flex-end' },
+    messageWrapperThem: { justifyContent: 'flex-start' },
+
+    messageBubble: { maxWidth: '75%', padding: 12, borderRadius: 16 },
+    messageBubbleMe: { backgroundColor: colors.primary, borderBottomRightRadius: 4 },
+    messageBubbleThem: {
+      backgroundColor: colors.card,
+      borderBottomLeftRadius: 4,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+
+    messageText: { fontSize: 16, lineHeight: 22 },
+    messageTextMe: { color: colors.white },
+    messageTextThem: { color: colors.textDark },
+
+    inputContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 10,
+      paddingBottom: Platform.OS === 'ios' ? 25 : 10,
+      backgroundColor: colors.card,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    input: {
+      flex: 1,
+      backgroundColor: colors.background,
+      color: colors.textDark,
+      borderRadius: 20,
+      paddingHorizontal: 15,
+      paddingTop: 12,
+      paddingBottom: 12,
+      maxHeight: 100,
+      fontSize: 16,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    sendButton: {
+      backgroundColor: colors.primary,
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginLeft: 10,
+    },
+  });

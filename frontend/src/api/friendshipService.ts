@@ -17,7 +17,7 @@ export const friendshipService = {
     } catch (error: any) {
       const backendMessage = error.response?.data?.message || error.message;
       console.error('[Eroare Frontend] Trimitere cerere:', backendMessage);
-      throw new Error(backendMessage); 
+      throw new Error(backendMessage);
     }
   },
 
@@ -46,18 +46,24 @@ export const friendshipService = {
       const response = await apiClient.get('/friendships/requests');
       return response.data.data;
     } catch (error: any) {
-      console.error('[Eroare Frontend] Preluare cereri:', error.response?.data?.message || error.message);
+      console.error(
+        '[Eroare Frontend] Preluare cereri:',
+        error.response?.data?.message || error.message,
+      );
       throw error;
     }
-  }, 
+  },
 
   getFriends: async (): Promise<any[]> => {
     try {
       const response = await apiClient.get('/friendships/friends');
       return response.data.data;
     } catch (error: any) {
-      console.error('[Eroare Frontend] Preluare prieteni:', error.response?.data?.message || error.message);
+      console.error(
+        '[Eroare Frontend] Preluare prieteni:',
+        error.response?.data?.message || error.message,
+      );
       throw error;
     }
-  }
+  },
 };

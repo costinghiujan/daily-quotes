@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useCallback, useContext, useMemo } from 'react';
-import { 
-  View, 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
-  FlatList, 
-  StyleSheet, 
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  FlatList,
+  StyleSheet,
   ActivityIndicator,
   Alert,
   Image,
-  RefreshControl 
+  RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { quoteService } from '../api/quoteService';
@@ -77,8 +77,9 @@ export default function HomeScreen({ navigation }: any) {
       Alert.alert('Succes', 'Citatul a fost postat!');
       setNewText('');
       setNewAuthor('');
-      onRefresh(); 
+      onRefresh();
     } catch (error) {
+      console.error(error);
       Alert.alert('Eroare', 'Nu am putut posta citatul.');
     } finally {
       setIsSubmitting(false);
@@ -87,26 +88,32 @@ export default function HomeScreen({ navigation }: any) {
 
   const renderFeedItem = ({ item }: { item: any }) => {
     const handleToggleReaction = async (quoteId: number, reactionKey: string) => {
-      setFeedQuotes(prevQuotes => prevQuotes.map(quote => {
-        if (quote.id !== quoteId) return quote;
-  
-        const updatedQuote = { ...quote };
-        const currentReactions = Array.isArray(updatedQuote.user_reactions) ? updatedQuote.user_reactions : [];
-        const targetProp = reactionKey.toLowerCase() + '_count';
-        
-        const hasReacted = currentReactions.includes(reactionKey);
-  
-        if (hasReacted) {
-          updatedQuote[targetProp] = Math.max(0, parseInt(updatedQuote[targetProp] || 0) - 1);
-          updatedQuote.user_reactions = currentReactions.filter((key: string) => key !== reactionKey);
-        } else {
-          updatedQuote[targetProp] = parseInt(updatedQuote[targetProp] || 0) + 1;
-          updatedQuote.user_reactions = [...currentReactions, reactionKey];
-        }
-        
-        return updatedQuote;
-      }));
-  
+      setFeedQuotes((prevQuotes) =>
+        prevQuotes.map((quote) => {
+          if (quote.id !== quoteId) return quote;
+
+          const updatedQuote = { ...quote };
+          const currentReactions = Array.isArray(updatedQuote.user_reactions)
+            ? updatedQuote.user_reactions
+            : [];
+          const targetProp = reactionKey.toLowerCase() + '_count';
+
+          const hasReacted = currentReactions.includes(reactionKey);
+
+          if (hasReacted) {
+            updatedQuote[targetProp] = Math.max(0, parseInt(updatedQuote[targetProp] || 0) - 1);
+            updatedQuote.user_reactions = currentReactions.filter(
+              (key: string) => key !== reactionKey,
+            );
+          } else {
+            updatedQuote[targetProp] = parseInt(updatedQuote[targetProp] || 0) + 1;
+            updatedQuote.user_reactions = [...currentReactions, reactionKey];
+          }
+
+          return updatedQuote;
+        }),
+      );
+
       try {
         await quoteService.toggleReaction(quoteId, reactionKey);
       } catch (error) {
@@ -131,7 +138,7 @@ export default function HomeScreen({ navigation }: any) {
         </View>
 
         <View style={styles.quoteContent}>
-          <Text style={styles.quoteText}>"{item.text}"</Text>
+          <Text style={styles.quoteText}>&quot;{item.text}&quot;</Text>
           <Text style={styles.quoteAuthor}>— {item.original_author}</Text>
         </View>
 
@@ -139,11 +146,12 @@ export default function HomeScreen({ navigation }: any) {
           <View style={{ flexDirection: 'row', flex: 1, flexWrap: 'wrap', gap: 4 }}>
             {REACTIONS_CONFIG.map((reaction) => {
               const count = parseInt(item[reaction.prop] || 0);
-              const isSelected = Array.isArray(item.user_reactions) && item.user_reactions.includes(reaction.key);
+              const isSelected =
+                Array.isArray(item.user_reactions) && item.user_reactions.includes(reaction.key);
 
               return (
-                <TouchableOpacity 
-                  key={reaction.key} 
+                <TouchableOpacity
+                  key={reaction.key}
                   style={[styles.reactionBtn, isSelected && styles.reactionBtnActive]}
                   onPress={() => handleToggleReaction(item.id, reaction.key)}
                 >
@@ -158,7 +166,7 @@ export default function HomeScreen({ navigation }: any) {
             })}
           </View>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.commentIconBtn}
             onPress={() => navigation.navigate('Comments', { quoteId: item.id })}
           >
@@ -172,29 +180,37 @@ export default function HomeScreen({ navigation }: any) {
   const headerElement = (
     <View style={styles.createPostContainer}>
       <Text style={styles.createPostTitle}>Împarte un citat cu prietenii</Text>
-      <TextInput 
-        style={[styles.input, { height: 80 }]} 
-        placeholder="Scrie citatul aici..." 
+      <TextInput
+        style={[styles.input, { height: 80 }]}
+        placeholder="Scrie citatul aici..."
         placeholderTextColor={colors.textLight}
-        value={newText} 
-        onChangeText={setNewText} 
-        multiline 
+        value={newText}
+        onChangeText={setNewText}
+        multiline
       />
-      <TextInput 
-        style={styles.input} 
-        placeholder="Autorul citatului (ex: Albert Einstein)" 
+      <TextInput
+        style={styles.input}
+        placeholder="Autorul citatului (ex: Albert Einstein)"
         placeholderTextColor={colors.textLight}
-        value={newAuthor} 
-        onChangeText={setNewAuthor} 
+        value={newAuthor}
+        onChangeText={setNewAuthor}
       />
       <TouchableOpacity style={styles.postButton} onPress={handleAddQuote} disabled={isSubmitting}>
-        {isSubmitting ? <ActivityIndicator color={colors.white} size="small" /> : <Text style={styles.postButtonText}>Postează</Text>}
+        {isSubmitting ? (
+          <ActivityIndicator color={colors.white} size="small" />
+        ) : (
+          <Text style={styles.postButtonText}>Postează</Text>
+        )}
       </TouchableOpacity>
     </View>
   );
 
   if (isLoading && feedQuotes.length === 0) {
-    return <View style={styles.centered}><ActivityIndicator size="large" color={colors.primary} /></View>;
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
   }
 
   return (
@@ -205,12 +221,21 @@ export default function HomeScreen({ navigation }: any) {
         renderItem={renderFeedItem}
         ListHeaderComponent={headerElement}
         contentContainerStyle={styles.listContent}
-        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} colors={[colors.primary]} tintColor={colors.primary} />}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={onRefresh}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
+          />
+        }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Ionicons name="people-outline" size={64} color={colors.textLight} />
             <Text style={styles.emptyText}>Feed-ul tău este gol.</Text>
-            <Text style={styles.emptySubText}>Caută prieteni și acceptă cereri pentru a vedea citatele lor aici!</Text>
+            <Text style={styles.emptySubText}>
+              Caută prieteni și acceptă cereri pentru a vedea citatele lor aici!
+            </Text>
           </View>
         }
       />
@@ -218,36 +243,123 @@ export default function HomeScreen({ navigation }: any) {
   );
 }
 
-const getStyles = (colors: ThemeColors, theme: string) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background },
-  listContent: { padding: 15, paddingBottom: 30, paddingTop: 50 },
-  
-  createPostContainer: { backgroundColor: colors.card, padding: 15, borderRadius: 10, marginBottom: 20, elevation: 2, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 5 },
-  createPostTitle: { fontSize: 16, fontWeight: 'bold', color: colors.textDark, marginBottom: 10 },
-  input: { backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: 12, marginBottom: 10, fontSize: 15, color: colors.textDark },
-  postButton: { backgroundColor: colors.primary, padding: 12, borderRadius: 8, alignItems: 'center' },
-  postButtonText: { color: colors.white, fontWeight: 'bold', fontSize: 16 },
+const getStyles = (colors: ThemeColors, theme: string) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    centered: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: colors.background,
+    },
+    listContent: { padding: 15, paddingBottom: 30, paddingTop: 50 },
 
-  feedCard: { backgroundColor: colors.card, borderRadius: 10, padding: 15, marginBottom: 15, elevation: 2, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 4 },
-  postHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
-  avatarSmall: { width: 40, height: 40, borderRadius: 20, marginRight: 10 },
-  avatarPlaceholderSmall: { width: 40, height: 40, borderRadius: 20, marginRight: 10, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' },
-  postUserName: { fontSize: 15, fontWeight: 'bold', color: colors.textDark },
-  postUserHandle: { fontSize: 13, color: colors.textLight },
-  quoteContent: { borderLeftWidth: 3, borderLeftColor: colors.primary, paddingLeft: 10, marginTop: 5, marginBottom: 15 },
-  quoteText: { fontSize: 16, fontStyle: 'italic', color: colors.textDark, marginBottom: 8, lineHeight: 22 },
-  quoteAuthor: { fontSize: 14, fontWeight: 'bold', color: colors.textLight },
+    createPostContainer: {
+      backgroundColor: colors.card,
+      padding: 15,
+      borderRadius: 10,
+      marginBottom: 20,
+      elevation: 2,
+      shadowColor: '#000',
+      shadowOpacity: 0.05,
+      shadowRadius: 5,
+    },
+    createPostTitle: { fontSize: 16, fontWeight: 'bold', color: colors.textDark, marginBottom: 10 },
+    input: {
+      backgroundColor: colors.background,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      padding: 12,
+      marginBottom: 10,
+      fontSize: 15,
+      color: colors.textDark,
+    },
+    postButton: {
+      backgroundColor: colors.primary,
+      padding: 12,
+      borderRadius: 8,
+      alignItems: 'center',
+    },
+    postButtonText: { color: colors.white, fontWeight: 'bold', fontSize: 16 },
 
-  emptyContainer: { alignItems: 'center', marginTop: 40, paddingHorizontal: 20 },
-  emptyText: { fontSize: 18, fontWeight: 'bold', color: colors.textDark, marginTop: 15 },
-  emptySubText: { fontSize: 15, color: colors.textLight, textAlign: 'center', marginTop: 10, lineHeight: 22 },
+    feedCard: {
+      backgroundColor: colors.card,
+      borderRadius: 10,
+      padding: 15,
+      marginBottom: 15,
+      elevation: 2,
+      shadowColor: '#000',
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+    },
+    postHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+    avatarSmall: { width: 40, height: 40, borderRadius: 20, marginRight: 10 },
+    avatarPlaceholderSmall: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      marginRight: 10,
+      backgroundColor: colors.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    postUserName: { fontSize: 15, fontWeight: 'bold', color: colors.textDark },
+    postUserHandle: { fontSize: 13, color: colors.textLight },
+    quoteContent: {
+      borderLeftWidth: 3,
+      borderLeftColor: colors.primary,
+      paddingLeft: 10,
+      marginTop: 5,
+      marginBottom: 15,
+    },
+    quoteText: {
+      fontSize: 16,
+      fontStyle: 'italic',
+      color: colors.textDark,
+      marginBottom: 8,
+      lineHeight: 22,
+    },
+    quoteAuthor: { fontSize: 14, fontWeight: 'bold', color: colors.textLight },
 
-  reactionsBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 12 },
-  commentIconBtn: { padding: 8, marginLeft: 10, backgroundColor: colors.background, borderRadius: 20 },
-  reactionBtn: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 6, borderRadius: 20, backgroundColor: theme === 'dark' ? '#2c2c2c' : '#f9f9f9' },
-  reactionBtnActive: { backgroundColor: colors.primary + '30', borderWidth: 1, borderColor: colors.primary + '50' },
-  emojiText: { fontSize: 16 },
-  reactionCount: { fontSize: 13, fontWeight: 'bold', color: colors.textLight, marginLeft: 4 },
-  reactionCountActive: { color: colors.primary }
-});
+    emptyContainer: { alignItems: 'center', marginTop: 40, paddingHorizontal: 20 },
+    emptyText: { fontSize: 18, fontWeight: 'bold', color: colors.textDark, marginTop: 15 },
+    emptySubText: {
+      fontSize: 15,
+      color: colors.textLight,
+      textAlign: 'center',
+      marginTop: 10,
+      lineHeight: 22,
+    },
+
+    reactionsBar: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      paddingTop: 12,
+    },
+    commentIconBtn: {
+      padding: 8,
+      marginLeft: 10,
+      backgroundColor: colors.background,
+      borderRadius: 20,
+    },
+    reactionBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 8,
+      paddingVertical: 6,
+      borderRadius: 20,
+      backgroundColor: theme === 'dark' ? '#2c2c2c' : '#f9f9f9',
+    },
+    reactionBtnActive: {
+      backgroundColor: colors.primary + '30',
+      borderWidth: 1,
+      borderColor: colors.primary + '50',
+    },
+    emojiText: { fontSize: 16 },
+    reactionCount: { fontSize: 13, fontWeight: 'bold', color: colors.textLight, marginLeft: 4 },
+    reactionCountActive: { color: colors.primary },
+  });

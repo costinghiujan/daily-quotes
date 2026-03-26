@@ -29,5 +29,5 @@ export const sessionService = {
       console.error('[Eroare Frontend] Revocare sesiune:', error);
       throw error;
     }
-  }
+  },
 };

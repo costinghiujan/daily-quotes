@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import { protect } from '../middleware/authMiddleware';
-import { 
-  getNotificationSettings, 
+import {
+  getNotificationSettings,
   updateNotificationSettings,
   getNotifications,
   markAllAsRead,
   getUnreadCount,
-  savePushToken
+  savePushToken,
 } from '../controllers/notificationController';
 
 const router = Router();
@@ -15,7 +15,7 @@ router.use(protect);
 
 router.get('/settings', getNotificationSettings);
 router.put('/settings', updateNotificationSettings);
-router.get('/unread-count', getUnreadCount); 
+router.get('/unread-count', getUnreadCount);
 
 router.post('/push-token', savePushToken);
 

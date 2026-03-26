@@ -26,7 +26,7 @@ export const notificationService = {
       const data = response.data.data;
       return {
         ...data,
-        notify_comments: data.notify_comments !== false
+        notify_comments: data.notify_comments !== false,
       };
     } catch (error) {
       console.error('[Eroare Frontend] Preluare setări notificări:', error);
@@ -40,7 +40,7 @@ export const notificationService = {
         notify_reactions: settings.notify_reactions,
         notify_comments: settings.notify_comments,
         notify_friend_requests: settings.notify_friend_requests,
-        notify_friend_accepted: settings.notify_friend_accepted
+        notify_friend_accepted: settings.notify_friend_accepted,
       });
       return response.data.data;
     } catch (error) {
@@ -85,5 +85,5 @@ export const notificationService = {
       console.error('[Eroare Frontend] Salvare Push Token:', error);
       throw error;
     }
-  }
+  },
 };

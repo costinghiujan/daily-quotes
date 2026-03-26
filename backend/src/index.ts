@@ -25,7 +25,7 @@ app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 app.get('/', (req: Request, res: Response) => {
   res.status(200).json({
     message: 'Bine ai venit la API-ul pentru aplicația de citate!',
-    healthCheck: '/api/health'
+    healthCheck: '/api/health',
   });
 });
 
@@ -45,9 +45,9 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: '*', 
-    methods: ['GET', 'POST']
-  }
+    origin: '*',
+    methods: ['GET', 'POST'],
+  },
 });
 
 io.on('connection', (socket) => {
@@ -68,17 +68,21 @@ io.on('connection', (socket) => {
       console.log('[Debug Backend] 3. Încercare de salvare în DB...');
       const result = await pool.query(
         'INSERT INTO messages (sender_id, receiver_id, text) VALUES ($1, $2, $3) RETURNING *',
-        [senderId, receiverId, text]
+        [senderId, receiverId, text],
       );
       const savedMessage = result.rows[0];
       console.log('[Debug Backend] 4. Salvat cu succes in DB:', savedMessage.id);
 
       io.to(`room_${receiverId}`).emit('receive_message', savedMessage);
       io.to(`room_${senderId}`).emit('receive_message', savedMessage);
-      console.log('[Debug Backend] 5. Ecou trimis înapoi către camerele', `room_${receiverId}`, 'și', `room_${senderId}`);
+      console.log(
+        '[Debug Backend] 5. Ecou trimis înapoi către camerele',
+        `room_${receiverId}`,
+        'și',
+        `room_${senderId}`,
+      );
 
-      sendMessagePushNotification(senderId, receiverId, text).catch(err => console.error(err));
-      
+      sendMessagePushNotification(senderId, receiverId, text).catch((err) => console.error(err));
     } catch (error) {
       console.error('[Debug Backend - EROARE CRITICĂ] Nu s-a putut salva mesajul:', error);
     }
@@ -94,16 +98,19 @@ const startServer = async () => {
     await testConnection();
     await initDB();
 
-    server.listen(PORT, () => {
-      console.log(`[Server] Pornește pe portul ${PORT} (Express + WebSockets)`);
-    }).on('error', (err: NodeJS.ErrnoException) => {
-      if (err.code === 'EADDRINUSE') {
-        console.error(`[Eroare] Portul ${PORT} este ocupat. Te rugăm să eliberezi portul sau să folosești altul.`);
-      } else {
-        console.error(err);
-      }
-    });
-
+    server
+      .listen(PORT, () => {
+        console.log(`[Server] Pornește pe portul ${PORT} (Express + WebSockets)`);
+      })
+      .on('error', (err: NodeJS.ErrnoException) => {
+        if (err.code === 'EADDRINUSE') {
+          console.error(
+            `[Eroare] Portul ${PORT} este ocupat. Te rugăm să eliberezi portul sau să folosești altul.`,
+          );
+        } else {
+          console.error(err);
+        }
+      });
   } catch (error) {
     console.error('[Eroare Critică] Nu s-a putut porni serverul din cauza bazei de date:', error);
     process.exit(1);

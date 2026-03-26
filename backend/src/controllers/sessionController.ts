@@ -17,15 +17,15 @@ export const getActiveSessions = async (req: AuthRequest, res: Response): Promis
        FROM sessions 
        WHERE user_id = $1 
        ORDER BY created_at DESC;`,
-      [userId]
+      [userId],
     );
 
-    res.status(200).json({ 
-      status: 'success', 
+    res.status(200).json({
+      status: 'success',
       data: {
-        currentSessionId: currentSessionId, 
-        sessions: result.rows
-      }
+        currentSessionId: currentSessionId,
+        sessions: result.rows,
+      },
     });
   } catch (error) {
     console.error('[Eroare Controller] Preluare sesiuni:', error);
@@ -47,13 +47,13 @@ export const revokeSession = async (req: AuthRequest, res: Response): Promise<vo
       `DELETE FROM sessions 
        WHERE id = $1 AND user_id = $2 
        RETURNING id;`,
-      [sessionId, userId]
+      [sessionId, userId],
     );
 
     if (result.rows.length === 0) {
-      res.status(404).json({ 
-        status: 'error', 
-        message: 'Sesiunea nu a fost găsită sau nu îți aparține.' 
+      res.status(404).json({
+        status: 'error',
+        message: 'Sesiunea nu a fost găsită sau nu îți aparține.',
       });
       return;
     }

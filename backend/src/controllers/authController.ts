@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import { query } from '../config/db';
 
 export interface AuthRequest extends Request {
-  user?: any;
+  user?: unknown;
   sessionId?: number;
 }
 
@@ -17,13 +17,15 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
       return;
     }
 
-    const userExists = await query(
-      'SELECT id FROM users WHERE email = $1 OR username = $2',
-      [email, username]
-    );
+    const userExists = await query('SELECT id FROM users WHERE email = $1 OR username = $2', [
+      email,
+      username,
+    ]);
 
     if (userExists.rows.length > 0) {
-      res.status(409).json({ status: 'error', message: 'Email-ul sau username-ul este deja folosit.' });
+      res
+        .status(409)
+        .json({ status: 'error', message: 'Email-ul sau username-ul este deja folosit.' });
       return;
     }
 
@@ -33,22 +35,18 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
     const result = await query(
       `INSERT INTO users (username, email, password_hash) 
        VALUES ($1, $2, $3) RETURNING id, username, email, created_at`,
-      [username, email, passwordHash]
+      [username, email, passwordHash],
     );
 
     const newUser = result.rows[0];
 
-    await query(
-      `INSERT INTO notification_settings (user_id) VALUES ($1)`,
-      [newUser.id]
-    );
+    await query(`INSERT INTO notification_settings (user_id) VALUES ($1)`, [newUser.id]);
 
     res.status(201).json({
       status: 'success',
       message: 'Contul a fost creat cu succes!',
-      data: newUser
+      data: newUser,
     });
-
   } catch (error) {
     console.error('[Eroare Controller] Register:', error);
     res.status(500).json({ status: 'error', message: 'Eroare internă la înregistrare.' });
@@ -66,7 +64,7 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
 
     const result = await query(
       'SELECT id, username, email, password_hash FROM users WHERE email = $1 OR username = $1',
-      [identifier]
+      [identifier],
     );
 
     const user = result.rows[0];
@@ -80,7 +78,7 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
 
     const sessionResult = await query(
       'INSERT INTO sessions (user_id, device_name) VALUES ($1, $2) RETURNING id',
-      [user.id, userAgent]
+      [user.id, userAgent],
     );
     const sessionId = sessionResult.rows[0].id;
 
@@ -88,20 +86,17 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
       throw new Error('JWT_SECRET lipsă!');
     }
 
-    const token = jwt.sign(
-      { id: user.id, sessionId: sessionId },
-      process.env.JWT_SECRET,
-      { expiresIn: '30d' }
-    );
+    const token = jwt.sign({ id: user.id, sessionId: sessionId }, process.env.JWT_SECRET, {
+      expiresIn: '30d',
+    });
 
-    const { password_hash, ...safeUserData } = user;
+    const { ...safeUserData } = user;
 
     res.status(200).json({
       status: 'success',
       message: 'Autentificare reușită!',
-      data: { user: safeUserData, token }
+      data: { user: safeUserData, token },
     });
-
   } catch (error) {
     console.error('[Eroare Controller] Login:', error);
     res.status(500).json({ status: 'error', message: 'Eroare internă la autentificare.' });
@@ -110,7 +105,7 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
 
 export const logoutUser = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const sessionId = req.sessionId; 
+    const sessionId = req.sessionId;
 
     if (!sessionId) {
       res.status(400).json({ status: 'error', message: 'Nicio sesiune activă detectată.' });

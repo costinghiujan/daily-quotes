@@ -8,11 +8,14 @@ export const searchUsers = async (req: AuthRequest, res: Response): Promise<void
     const currentUserId = req.user?.id;
 
     if (!searchQuery || searchQuery.trim() === '') {
-      res.status(400).json({ status: 'error', message: 'Te rugăm să introduci un termen de căutare.' });
+      res
+        .status(400)
+        .json({ status: 'error', message: 'Te rugăm să introduci un termen de căutare.' });
       return;
     }
 
-    const result = await query(`
+    const result = await query(
+      `
       SELECT 
         u.id, 
         u.username, 
@@ -27,7 +30,9 @@ export const searchUsers = async (req: AuthRequest, res: Response): Promise<void
       WHERE (u.username ILIKE $1 OR u.full_name ILIKE $1) 
         AND u.id != $2
       LIMIT 20;
-    `, [`%${searchQuery}%`, currentUserId]);
+    `,
+      [`%${searchQuery}%`, currentUserId],
+    );
 
     res.status(200).json({ status: 'success', data: result.rows });
   } catch (error) {
@@ -45,19 +50,22 @@ export const getMyProfile = async (req: AuthRequest, res: Response): Promise<voi
       return;
     }
 
-    const userResult = await query(`
+    const userResult = await query(
+      `
       SELECT id, username, full_name, bio, profile_picture_url, created_at 
       FROM users WHERE id = $1;
-    `, [currentUserId]);
-
-    const quotesResult = await query(
-      'SELECT * FROM quotes WHERE user_id = $1 ORDER BY created_at DESC;', 
-      [currentUserId]
+    `,
+      [currentUserId],
     );
 
-    res.status(200).json({ 
-      status: 'success', 
-      data: { profile: userResult.rows[0], quotes: quotesResult.rows }
+    const quotesResult = await query(
+      'SELECT * FROM quotes WHERE user_id = $1 ORDER BY created_at DESC;',
+      [currentUserId],
+    );
+
+    res.status(200).json({
+      status: 'success',
+      data: { profile: userResult.rows[0], quotes: quotesResult.rows },
     });
   } catch (error) {
     console.error('[Eroare Controller] Nu s-a putut încărca profilul propriu:', error);
@@ -69,11 +77,14 @@ export const getUserProfile = async (req: AuthRequest, res: Response): Promise<v
   try {
     const { id } = req.params;
 
-    const userResult = await query(`
+    const userResult = await query(
+      `
       SELECT id, username, full_name, bio, profile_picture_url, created_at 
       FROM users 
       WHERE id = $1;
-    `, [id]);
+    `,
+      [id],
+    );
 
     if (userResult.rows.length === 0) {
       res.status(404).json({ status: 'error', message: 'Utilizatorul nu a fost găsit.' });
@@ -83,16 +94,16 @@ export const getUserProfile = async (req: AuthRequest, res: Response): Promise<v
     const userProfile = userResult.rows[0];
 
     const quotesResult = await query(
-      'SELECT * FROM quotes WHERE user_id = $1 ORDER BY created_at DESC;', 
-      [id]
+      'SELECT * FROM quotes WHERE user_id = $1 ORDER BY created_at DESC;',
+      [id],
     );
 
-    res.status(200).json({ 
-      status: 'success', 
+    res.status(200).json({
+      status: 'success',
       data: {
         profile: userProfile,
-        quotes: quotesResult.rows
-      }
+        quotes: quotesResult.rows,
+      },
     });
   } catch (error) {
     console.error('[Eroare Controller] Nu s-a putut încărca profilul:', error);
@@ -110,15 +121,20 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
       return;
     }
 
-    const result = await query(`
+    const result = await query(
+      `
       UPDATE users 
       SET full_name = COALESCE($1, full_name), 
           bio = COALESCE($2, bio)
       WHERE id = $3
       RETURNING id, username, full_name, bio, profile_picture_url;
-    `, [full_name, bio, userId]);
+    `,
+      [full_name, bio, userId],
+    );
 
-    res.status(200).json({ status: 'success', message: 'Profil actualizat!', data: result.rows[0] });
+    res
+      .status(200)
+      .json({ status: 'success', message: 'Profil actualizat!', data: result.rows[0] });
   } catch (error) {
     console.error('[Eroare Controller] Nu s-a putut actualiza profilul:', error);
     res.status(500).json({ status: 'error', message: 'Eroare internă.' });
@@ -130,22 +146,31 @@ export const uploadAvatar = async (req: AuthRequest, res: Response): Promise<voi
     const userId = req.user?.id;
 
     if (!userId) {
-      res.status(401).json({ status: 'error', message: 'Neautorizat.' }); return;
+      res.status(401).json({ status: 'error', message: 'Neautorizat.' });
+      return;
     }
     if (!req.file) {
-      res.status(400).json({ status: 'error', message: 'Niciun fișier nu a fost recepționat.' }); return;
+      res.status(400).json({ status: 'error', message: 'Niciun fișier nu a fost recepționat.' });
+      return;
     }
 
     const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
 
-    const result = await query(`
+    const result = await query(
+      `
       UPDATE users 
       SET profile_picture_url = $1
       WHERE id = $2
       RETURNING id, username, full_name, bio, profile_picture_url;
-    `, [fileUrl, userId]);
+    `,
+      [fileUrl, userId],
+    );
 
-    res.status(200).json({ status: 'success', message: 'Fotografie de profil actualizată!', data: result.rows[0] });
+    res.status(200).json({
+      status: 'success',
+      message: 'Fotografie de profil actualizată!',
+      data: result.rows[0],
+    });
   } catch (error) {
     console.error('[Eroare Controller] Încărcare avatar:', error);
     res.status(500).json({ status: 'error', message: 'Eroare internă la salvarea pozei.' });
