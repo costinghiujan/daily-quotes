@@ -72,7 +72,6 @@ export const sendFriendRequest = async (req: AuthRequest, res: Response): Promis
         pushError,
       );
     }
-    // ==========================================
 
     res.status(201).json({ status: 'success', message: 'Cererea de prietenie a fost trimisă.' });
   } catch (error) {
@@ -159,24 +158,24 @@ export const acceptFriendRequest = async (req: AuthRequest, res: Response): Prom
 export const removeFriendOrRequest = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user?.id;
-    const friendshipId = parseInt(req.params.id as string, 10);
+    const targetUserId = parseInt(req.params.id as string, 10);
 
-    if (!userId) {
-      res.status(401).json({ status: 'error', message: 'Neautorizat.' });
+    if (!userId || isNaN(targetUserId)) {
+      res.status(400).json({ status: 'error', message: 'ID invalid.' });
       return;
     }
 
-    if (!friendshipId || isNaN(friendshipId)) {
-      res.status(400).json({ status: 'error', message: 'ID-ul interacțiunii este invalid.' });
-      return;
-    }
-
-    const checkQuery = await query(
-      'SELECT id FROM friendships WHERE id = $1 AND (requester_id = $2 OR receiver_id = $2)',
-      [friendshipId, userId],
+    const result = await query(
+      `
+      DELETE FROM friendships 
+      WHERE (requester_id = $1 AND receiver_id = $2) 
+         OR (requester_id = $2 AND receiver_id = $1)
+      RETURNING *
+    `,
+      [userId, targetUserId],
     );
 
-    if (checkQuery.rows.length === 0) {
+    if (result.rowCount === 0) {
       res.status(404).json({
         status: 'error',
         message: 'Cererea sau prietenia nu există (a fost deja ștearsă).',
@@ -184,16 +183,9 @@ export const removeFriendOrRequest = async (req: AuthRequest, res: Response): Pr
       return;
     }
 
-    await query('DELETE FROM friendships WHERE id = $1', [friendshipId]);
-
-    await query(
-      `DELETE FROM notifications WHERE reference_id = $1 AND type IN ('FRIEND_REQUEST', 'FRIEND_ACCEPTED')`,
-      [friendshipId],
-    );
-
-    res.status(200).json({ status: 'success', message: 'Interacțiunea a fost ștearsă cu succes.' });
+    res.status(200).json({ status: 'success', message: 'Cererea sau prietenia a fost ștearsă.' });
   } catch (error) {
-    console.error('[Eroare Controller] Ștergere Prietenie:', error);
+    console.error('[Eroare Controller] Respingere cerere/prietenie:', error);
     res.status(500).json({ status: 'error', message: 'Eroare internă a serverului.' });
   }
 };
@@ -266,8 +258,8 @@ export const blockUser = async (req: AuthRequest, res: Response): Promise<void> 
     await query(
       `
       DELETE FROM friendships 
-      WHERE (user_id1 = $1 AND user_id2 = $2) 
-         OR (user_id1 = $2 AND user_id2 = $1)
+      WHERE (requester_id = $1 AND receiver_id = $2) 
+         OR (requester_id = $2 AND receiver_id = $1)
     `,
       [blockerId, blockedId],
     );
@@ -337,5 +329,54 @@ export const getBlockedUsers = async (req: AuthRequest, res: Response): Promise<
   } catch (error) {
     console.error('[Eroare Controller] Preluare lista blocati:', error);
     res.status(500).json({ status: 'error', message: 'Eroare internă.' });
+  }
+};
+
+export const checkRelationshipStatus = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const myId = req.user?.id;
+    const otherId = parseInt(req.params.id as string, 10);
+
+    if (!myId || isNaN(otherId)) {
+      res.status(400).json({ status: 'error', message: 'ID invalid.' });
+      return;
+    }
+
+    const blockedByMe = await query(
+      'SELECT 1 FROM blocks WHERE blocker_id = $1 AND blocked_id = $2',
+      [myId, otherId],
+    );
+    if (blockedByMe.rows.length > 0) {
+      res.status(200).json({ status: 'success', data: 'BLOCKED_BY_ME' });
+      return;
+    }
+
+    const blockedByThem = await query(
+      'SELECT 1 FROM blocks WHERE blocker_id = $1 AND blocked_id = $2',
+      [otherId, myId],
+    );
+    if (blockedByThem.rows.length > 0) {
+      res.status(200).json({ status: 'success', data: 'BLOCKED_BY_THEM' });
+      return;
+    }
+
+    const friendship = await query(
+      `
+      SELECT 1 FROM friendships 
+      WHERE ((requester_id = $1 AND receiver_id = $2) OR (requester_id = $2 AND receiver_id = $1))
+        AND status = 'accepted'
+    `,
+      [myId, otherId],
+    );
+
+    if (friendship.rows.length > 0) {
+      res.status(200).json({ status: 'success', data: 'FRIENDS' });
+      return;
+    }
+
+    res.status(200).json({ status: 'success', data: 'NOT_FRIENDS' });
+  } catch (error) {
+    console.error('[Eroare Controller] Verificare status relatie:', error);
+    res.status(500).json({ status: 'error', message: 'Eroare internă a serverului.' });
   }
 };

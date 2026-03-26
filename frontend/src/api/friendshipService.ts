@@ -107,4 +107,19 @@ export const friendshipService = {
       throw new Error(backendMessage);
     }
   },
+
+  checkStatus: async (
+    userId: number,
+  ): Promise<'FRIENDS' | 'BLOCKED_BY_ME' | 'BLOCKED_BY_THEM' | 'NOT_FRIENDS'> => {
+    try {
+      const response = await apiClient.get(`/friendships/status/${userId}`);
+      return response.data.data;
+    } catch (error: any) {
+      console.error(
+        '[Eroare Frontend] Status relație:',
+        error.response?.data?.message || error.message,
+      );
+      return 'NOT_FRIENDS';
+    }
+  },
 };

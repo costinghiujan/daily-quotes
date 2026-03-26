@@ -19,6 +19,8 @@ import { ThemeContext } from '../context/ThemeContext';
 import { ThemeColors } from '../theme/colors';
 import { messageService, Message } from '../api/messageService';
 
+import { friendshipService } from '../api/friendshipService';
+
 import Constants from 'expo-constants';
 
 const debuggerHost = Constants.expoConfig?.hostUri;
@@ -40,6 +42,10 @@ export default function ChatScreen() {
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
+  const [relationshipStatus, setRelationshipStatus] = useState<
+    'FRIENDS' | 'BLOCKED_BY_ME' | 'BLOCKED_BY_THEM' | 'NOT_FRIENDS'
+  >('FRIENDS');
+
   const socketRef = useRef<Socket | null>(null);
   const flatListRef = useRef<FlatList>(null);
 
@@ -48,8 +54,12 @@ export default function ChatScreen() {
 
     const fetchHistory = async () => {
       try {
-        const history = await messageService.getHistory(otherUserId);
+        const [history, status] = await Promise.all([
+          messageService.getHistory(otherUserId),
+          friendshipService.checkStatus(otherUserId),
+        ]);
         setMessages(history);
+        setRelationshipStatus(status);
       } catch (error) {
         console.error('Eroare la istoricul chat-ului:', error);
       } finally {
@@ -160,23 +170,39 @@ export default function ChatScreen() {
         onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
       />
 
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder="Scrie un mesaj..."
-          placeholderTextColor={colors.textLight}
-          value={inputText}
-          onChangeText={setInputText}
-          multiline
-        />
-        <TouchableOpacity
-          style={[styles.sendButton, inputText.trim() === '' && { opacity: 0.5 }]}
-          onPress={handleSendMessage}
-          disabled={inputText.trim() === ''}
-        >
-          <Ionicons name="send" size={20} color={colors.white} />
-        </TouchableOpacity>
-      </View>
+      {relationshipStatus === 'FRIENDS' ? (
+        <View style={styles.inputContainer}>
+          <TextInput
+            style={styles.input}
+            placeholder="Scrie un mesaj..."
+            placeholderTextColor={colors.textLight}
+            value={inputText}
+            onChangeText={setInputText}
+            multiline
+          />
+          <TouchableOpacity
+            style={[styles.sendButton, inputText.trim() === '' && { opacity: 0.5 }]}
+            onPress={handleSendMessage}
+            disabled={inputText.trim() === ''}
+          >
+            <Ionicons name="send" size={20} color={colors.white} />
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <View style={styles.disabledContainer}>
+          <Ionicons
+            name={relationshipStatus.includes('BLOCKED') ? 'ban' : 'information-circle-outline'}
+            size={24}
+            color={colors.textLight}
+            style={{ marginBottom: 5 }}
+          />
+          <Text style={styles.disabledText}>
+            {relationshipStatus === 'BLOCKED_BY_ME' && 'Ai blocat această persoană.'}
+            {relationshipStatus === 'BLOCKED_BY_THEM' && 'Nu poți trimite mesaje acestui cont.'}
+            {relationshipStatus === 'NOT_FRIENDS' && 'Nu mai ești prieten cu această persoană.'}
+          </Text>
+        </View>
+      )}
     </KeyboardAvoidingView>
   );
 }
@@ -239,5 +265,21 @@ const getStyles = (colors: ThemeColors) =>
       justifyContent: 'center',
       alignItems: 'center',
       marginLeft: 10,
+    },
+
+    disabledContainer: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 20,
+      paddingBottom: Platform.OS === 'ios' ? 35 : 20,
+      backgroundColor: colors.card,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    disabledText: {
+      color: colors.textLight,
+      fontSize: 14,
+      fontStyle: 'italic',
+      textAlign: 'center',
     },
   });

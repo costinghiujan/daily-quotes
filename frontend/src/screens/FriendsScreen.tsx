@@ -93,8 +93,6 @@ export default function FriendsScreen() {
   const renderFriendItem = ({ item }: { item: any }) => {
     const displayName = item.full_name || item.username;
 
-    const friendshipId = item.friendship_id || item.id;
-
     return (
       <View style={styles.friendCard}>
         <View style={styles.friendInfo}>
@@ -116,7 +114,7 @@ export default function FriendsScreen() {
         <View style={styles.actionButtons}>
           <TouchableOpacity
             style={styles.unfriendBtn}
-            onPress={() => handleUnfriend(friendshipId, displayName)}
+            onPress={() => handleUnfriend(item.id, displayName)}
           >
             <Text style={styles.unfriendBtnText}>Șterge</Text>
           </TouchableOpacity>

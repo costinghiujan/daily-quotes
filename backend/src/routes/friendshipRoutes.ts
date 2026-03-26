@@ -8,6 +8,7 @@ import {
   getBlockedUsers,
   blockUser,
   unblockUser,
+  checkRelationshipStatus,
 } from '../controllers/friendshipController';
 
 const router = Router();
@@ -27,5 +28,7 @@ router.get('/blocks', getBlockedUsers);
 router.post('/blocks/:id', blockUser);
 
 router.delete('/blocks/:id', unblockUser);
+
+router.get('/status/:id', checkRelationshipStatus);
 
 export default router;
