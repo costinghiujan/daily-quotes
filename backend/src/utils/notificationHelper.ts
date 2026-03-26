@@ -92,3 +92,36 @@ export const removeNotification = async (
     console.error('[Eroare Helper Ștergere Notificări]:', error);
   }
 };
+
+export const sendMessagePushNotification = async (
+  senderId: number,
+  recipientId: number,
+  messageText: string
+): Promise<void> => {
+  try {
+    const recipientResult = await query(
+      'SELECT expo_push_token FROM users WHERE id = $1',
+      [recipientId]
+    );
+
+    const pushToken = recipientResult.rows[0]?.expo_push_token;
+    if (!pushToken) return;
+
+    const senderResult = await query(
+      'SELECT username, full_name FROM users WHERE id = $1',
+      [senderId]
+    );
+    const senderName = senderResult.rows[0]?.full_name || senderResult.rows[0]?.username || 'Un prieten';
+
+    const title = `Mesaj nou de la ${senderName} 💬`;
+    const body = messageText.length > 60 ? `${messageText.substring(0, 60)}...` : messageText;
+
+    await sendPushNotification(pushToken, title, body, { 
+      type: 'NEW_MESSAGE', 
+      senderId: senderId 
+    });
+
+  } catch (error) {
+    console.error('[Eroare Helper Push Mesaje]:', error);
+  }
+};

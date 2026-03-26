@@ -13,6 +13,7 @@ import notificationRoutes from './routes/notificationRoutes';
 import messageRoutes from './routes/messageRoutes';
 
 import { testConnection, initDB, pool } from './config/db';
+import { sendMessagePushNotification } from './utils/notificationHelper';
 
 const app = express();
 const PORT = parseInt(process.env.PORT || '5000', 10);
@@ -75,6 +76,8 @@ io.on('connection', (socket) => {
       io.to(`room_${receiverId}`).emit('receive_message', savedMessage);
       io.to(`room_${senderId}`).emit('receive_message', savedMessage);
       console.log('[Debug Backend] 5. Ecou trimis înapoi către camerele', `room_${receiverId}`, 'și', `room_${senderId}`);
+
+      sendMessagePushNotification(senderId, receiverId, text).catch(err => console.error(err));
       
     } catch (error) {
       console.error('[Debug Backend - EROARE CRITICĂ] Nu s-a putut salva mesajul:', error);
