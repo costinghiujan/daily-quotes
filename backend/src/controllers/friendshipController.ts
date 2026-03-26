@@ -247,3 +247,83 @@ export const getFriends = async (req: AuthRequest, res: Response): Promise<void>
     res.status(500).json({ status: 'error', message: 'Eroare internă.' });
   }
 };
+
+export const blockUser = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const blockerId = req.user?.id;
+    const blockedId = parseInt(req.params.id as string, 10);
+
+    if (!blockerId) {
+      res.status(401).json({ status: 'error', message: 'Neautorizat.' });
+      return;
+    }
+
+    if (isNaN(blockedId) || blockerId === blockedId) {
+      res.status(400).json({ status: 'error', message: 'ID invalid sau acțiune nepermisă.' });
+      return;
+    }
+
+    await query(`
+      DELETE FROM friendships 
+      WHERE (user_id1 = $1 AND user_id2 = $2) 
+         OR (user_id1 = $2 AND user_id2 = $1)
+    `, [blockerId, blockedId]);
+
+    await query(`
+      INSERT INTO blocks (blocker_id, blocked_id) 
+      VALUES ($1, $2)
+      ON CONFLICT (blocker_id, blocked_id) DO NOTHING
+    `, [blockerId, blockedId]);
+
+    res.status(200).json({ status: 'success', message: 'Utilizatorul a fost blocat.' });
+  } catch (error) {
+    console.error('[Eroare Controller] Blocare utilizator:', error);
+    res.status(500).json({ status: 'error', message: 'Eroare internă a serverului.' });
+  }
+};
+
+export const unblockUser = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const blockerId = req.user?.id;
+    const blockedId = parseInt(req.params.id as string, 10);
+
+    if (!blockerId || isNaN(blockedId)) {
+      res.status(400).json({ status: 'error', message: 'Date invalide.' });
+      return;
+    }
+
+    await query(`
+      DELETE FROM blocks 
+      WHERE blocker_id = $1 AND blocked_id = $2
+    `, [blockerId, blockedId]);
+
+    res.status(200).json({ status: 'success', message: 'Utilizatorul a fost deblocat.' });
+  } catch (error) {
+    console.error('[Eroare Controller] Deblocare utilizator:', error);
+    res.status(500).json({ status: 'error', message: 'Eroare internă a serverului.' });
+  }
+};
+
+export const getBlockedUsers = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      res.status(401).json({ status: 'error', message: 'Neautorizat.' });
+      return;
+    }
+
+    const result = await query(`
+      SELECT u.id, u.username, u.full_name, u.profile_picture_url, b.created_at as blocked_at
+      FROM blocks b
+      JOIN users u ON b.blocked_id = u.id
+      WHERE b.blocker_id = $1
+      ORDER BY b.created_at DESC
+    `, [userId]);
+
+    res.status(200).json({ status: 'success', data: result.rows });
+  } catch (error) {
+    console.error('[Eroare Controller] Preluare lista blocati:', error);
+    res.status(500).json({ status: 'error', message: 'Eroare internă.' });
+  }
+};

@@ -132,6 +132,15 @@ export const initDB = async () => {
       );
     `);
 
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS blocks (
+        blocker_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        blocked_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (blocker_id, blocked_id)
+      );
+    `);
+
     await pool.query(
       `CREATE INDEX IF NOT EXISTS idx_messages_participants ON messages(sender_id, receiver_id);`,
     );
