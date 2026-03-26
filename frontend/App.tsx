@@ -28,6 +28,8 @@ import { notificationService } from './src/api/notificationService';
 
 import { messageService } from './src/api/messageService';
 import SettingsScreen from './src/screens/SettingsScreen';
+import FriendsScreen from './src/screens/FriendsScreen';
+import BlockedUsersScreen from './src/screens/BlockedUsersScreen';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -240,6 +242,16 @@ const RootNavigator = () => {
               options={{ 
                 title: 'Setări' 
               }} 
+            />
+            <Stack.Screen 
+              name="FriendsScreen" 
+              component={FriendsScreen} 
+              options={{ title: 'Lista de Prieteni' }} 
+            />
+            <Stack.Screen 
+              name="BlockedUsersScreen" 
+              component={BlockedUsersScreen} 
+              options={{ title: 'Persoane Blocate' }} 
             />
           </>
         )}

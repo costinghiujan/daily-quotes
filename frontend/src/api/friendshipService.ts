@@ -10,6 +10,14 @@ export interface FriendRequest {
   profile_picture_url: string;
 }
 
+export interface BlockedUser {
+  id: number;
+  username: string;
+  full_name: string;
+  profile_picture_url: string;
+  blocked_at: string;
+}
+
 export const friendshipService = {
   sendRequest: async (receiverId: number): Promise<void> => {
     try {
@@ -64,6 +72,39 @@ export const friendshipService = {
         error.response?.data?.message || error.message,
       );
       throw error;
+    }
+  },
+
+  getBlockedUsers: async (): Promise<BlockedUser[]> => {
+    try {
+      const response = await apiClient.get('/friendships/blocks');
+      return response.data.data;
+    } catch (error: any) {
+      console.error(
+        '[Eroare Frontend] Preluare blocați:',
+        error.response?.data?.message || error.message,
+      );
+      throw error;
+    }
+  },
+
+  blockUser: async (userId: number): Promise<void> => {
+    try {
+      await apiClient.post(`/friendships/blocks/${userId}`);
+    } catch (error: any) {
+      const backendMessage = error.response?.data?.message || error.message;
+      console.error('[Eroare Frontend] Blocare utilizator:', backendMessage);
+      throw new Error(backendMessage);
+    }
+  },
+
+  unblockUser: async (userId: number): Promise<void> => {
+    try {
+      await apiClient.delete(`/friendships/blocks/${userId}`);
+    } catch (error: any) {
+      const backendMessage = error.response?.data?.message || error.message;
+      console.error('[Eroare Frontend] Deblocare utilizator:', backendMessage);
+      throw new Error(backendMessage);
     }
   },
 };
