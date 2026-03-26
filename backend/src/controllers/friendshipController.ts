@@ -263,17 +263,23 @@ export const blockUser = async (req: AuthRequest, res: Response): Promise<void> 
       return;
     }
 
-    await query(`
+    await query(
+      `
       DELETE FROM friendships 
       WHERE (user_id1 = $1 AND user_id2 = $2) 
          OR (user_id1 = $2 AND user_id2 = $1)
-    `, [blockerId, blockedId]);
+    `,
+      [blockerId, blockedId],
+    );
 
-    await query(`
+    await query(
+      `
       INSERT INTO blocks (blocker_id, blocked_id) 
       VALUES ($1, $2)
       ON CONFLICT (blocker_id, blocked_id) DO NOTHING
-    `, [blockerId, blockedId]);
+    `,
+      [blockerId, blockedId],
+    );
 
     res.status(200).json({ status: 'success', message: 'Utilizatorul a fost blocat.' });
   } catch (error) {
@@ -292,10 +298,13 @@ export const unblockUser = async (req: AuthRequest, res: Response): Promise<void
       return;
     }
 
-    await query(`
+    await query(
+      `
       DELETE FROM blocks 
       WHERE blocker_id = $1 AND blocked_id = $2
-    `, [blockerId, blockedId]);
+    `,
+      [blockerId, blockedId],
+    );
 
     res.status(200).json({ status: 'success', message: 'Utilizatorul a fost deblocat.' });
   } catch (error) {
@@ -313,13 +322,16 @@ export const getBlockedUsers = async (req: AuthRequest, res: Response): Promise<
       return;
     }
 
-    const result = await query(`
+    const result = await query(
+      `
       SELECT u.id, u.username, u.full_name, u.profile_picture_url, b.created_at as blocked_at
       FROM blocks b
       JOIN users u ON b.blocked_id = u.id
       WHERE b.blocker_id = $1
       ORDER BY b.created_at DESC
-    `, [userId]);
+    `,
+      [userId],
+    );
 
     res.status(200).json({ status: 'success', data: result.rows });
   } catch (error) {

@@ -27,6 +27,7 @@ import { ThemeColors } from './src/theme/colors';
 import { notificationService } from './src/api/notificationService';
 
 import { messageService } from './src/api/messageService';
+import SettingsScreen from './src/screens/SettingsScreen';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -231,6 +232,13 @@ const RootNavigator = () => {
               component={ChatScreen} 
               options={{ 
                 headerBackTitle: 'Înapoi',
+              }} 
+            />
+            <Stack.Screen 
+              name="SettingsScreen" 
+              component={SettingsScreen} 
+              options={{ 
+                title: 'Setări' 
               }} 
             />
           </>
