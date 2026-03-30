@@ -126,11 +126,24 @@ export const initDB = async () => {
         id SERIAL PRIMARY KEY,
         sender_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         receiver_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        text TEXT NOT NULL,
+        text TEXT, -- Am eliminat NOT NULL pentru a permite mesaje exclusiv media
+        message_type VARCHAR(20) DEFAULT 'TEXT', -- Poate fi: TEXT, IMAGE, DOCUMENT
+        media_url TEXT, -- Calea sau URL-ul către fișier
+        file_name VARCHAR(255), -- Numele original al documentului (ex: contract.pdf)
         is_read BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
+
+    try {
+      await pool.query(`ALTER TABLE messages ALTER COLUMN text DROP NOT NULL;`);
+      await pool.query(`ALTER TABLE messages ADD COLUMN IF NOT EXISTS message_type VARCHAR(20) DEFAULT 'TEXT';`);
+      await pool.query(`ALTER TABLE messages ADD COLUMN IF NOT EXISTS media_url TEXT;`);
+      await pool.query(`ALTER TABLE messages ADD COLUMN IF NOT EXISTS file_name VARCHAR(255);`);
+      console.log('[Bază de Date] Migrarea tabelei "messages" a rulat cu succes.');
+    } catch (migError) {
+      console.log('[Bază de Date] Notă migrare messages:', migError);
+    }
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS blocks (
