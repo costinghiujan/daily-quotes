@@ -30,14 +30,14 @@ import { messageService } from './src/api/messageService';
 import SettingsScreen from './src/screens/SettingsScreen';
 import FriendsScreen from './src/screens/FriendsScreen';
 import BlockedUsersScreen from './src/screens/BlockedUsersScreen';
+import ExploreScreen from './src/screens/ExploreScreen';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
     shouldShowBanner: true,
     shouldShowList: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
   }),
 });
 
@@ -152,6 +152,7 @@ const MainTabNavigator = () => {
     >
       <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Feed' }} />
       <Tab.Screen name="Search" component={SearchScreen} options={{ title: 'Caută' }} />
+      <Tab.Screen name="Explore" component={ExploreScreen} options={{ title: 'Descoperă' }} />  
       <Tab.Screen 
         name="Notifications" 
         component={NotificationsScreen} 

@@ -100,4 +100,24 @@ export const quoteService = {
       throw error;
     }
   },
+
+  getExploreFeed: async (): Promise<any[]> => {
+    try {
+      const response = await apiClient.get('/quotes/explore');
+      return response.data.data;
+    } catch (error) {
+      console.error('[Eroare Frontend] Preluare Explore:', error);
+      throw error;
+    }
+  },
+
+  searchQuotes: async (query: string): Promise<any[]> => {
+    try {
+      const response = await apiClient.get(`/quotes/search?q=${encodeURIComponent(query)}`);
+      return response.data.data;
+    } catch (error) {
+      console.error('[Eroare Frontend] Căutare citate:', error);
+      throw error;
+    }
+  },
 };

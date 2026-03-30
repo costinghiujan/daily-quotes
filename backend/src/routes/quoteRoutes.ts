@@ -9,12 +9,16 @@ import {
   getFeedQuotes,
   addComment,
   getCommentsForQuote,
+  searchQuotes,
+  getExploreFeed
 } from '../controllers/quoteController';
 import { protect } from '../middleware/authMiddleware';
 
 const router = Router();
 
 router.get('/feed', protect, getFeedQuotes);
+router.get('/explore', protect, getExploreFeed);
+router.get('/search', protect, searchQuotes);
 
 router.post('/', protect, createQuote);
 router.get('/', protect, getAllQuotes);
