@@ -14,7 +14,10 @@ export interface Message {
   id: number;
   sender_id: number;
   receiver_id: number;
-  text: string;
+  text: string | null;
+  message_type?: string;
+  media_url?: string;
+  file_name?: string;
   is_read: boolean;
   created_at: string;
 }

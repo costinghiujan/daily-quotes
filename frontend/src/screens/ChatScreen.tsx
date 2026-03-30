@@ -1,62 +1,65 @@
-import React, { useState, useEffect, useContext, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext, useMemo } from 'react';
 import {
   View,
   Text,
   TextInput,
   FlatList,
   TouchableOpacity,
-  StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  StyleSheet,
   ActivityIndicator,
+  Image,
+  Linking,
+  Alert,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { io, Socket } from 'socket.io-client';
+import io, { Socket } from 'socket.io-client';
+import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
+import Constants from 'expo-constants';
 
 import { AuthContext } from '../context/AuthContext';
 import { ThemeContext } from '../context/ThemeContext';
 import { ThemeColors } from '../theme/colors';
 import { messageService, Message } from '../api/messageService';
-
 import { friendshipService } from '../api/friendshipService';
+import { storage } from '../utils/storage'; // Pentru token
+import { apiClient } from '../api/client';
 
-import Constants from 'expo-constants';
-
+// Folosim IP-ul dinamic exact ca în api/client.ts
 const debuggerHost = Constants.expoConfig?.hostUri;
-
-const dynamicIp = debuggerHost ? debuggerHost.split(':')[0] : null;
-
-const SOCKET_URL = dynamicIp ? `http://${dynamicIp}:3000` : 'http://localhost:3000';
+const dynamicIp = debuggerHost ? debuggerHost.split(':')[0] : 'localhost';
+const SOCKET_URL = `http://${dynamicIp}:5 000`; // Asigură-te că portul e corect (5000 sau 3000)
 
 export default function ChatScreen() {
   const route = useRoute<any>();
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const { user } = useContext(AuthContext);
   const { colors } = useContext(ThemeContext);
   const styles = useMemo(() => getStyles(colors), [colors]);
 
-  const { userId: otherUserId, username: otherUsername } = route.params;
+  const { otherUserId, otherUsername, otherUserAvatar } = route.params;
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-
-  const [relationshipStatus, setRelationshipStatus] = useState<
-    'FRIENDS' | 'BLOCKED_BY_ME' | 'BLOCKED_BY_THEM' | 'NOT_FRIENDS'
-  >('FRIENDS');
+  const [isUploading, setIsUploading] = useState(false);
+  const [relationshipStatus, setRelationshipStatus] = useState<'FRIENDS' | 'BLOCKED_BY_ME' | 'BLOCKED_BY_THEM' | 'NOT_FRIENDS'>('FRIENDS');
 
   const socketRef = useRef<Socket | null>(null);
   const flatListRef = useRef<FlatList>(null);
 
+  // --- Inițializare și WebSockets ---
   useEffect(() => {
     navigation.setOptions({ title: otherUsername });
 
-    const fetchHistory = async () => {
+    const fetchData = async () => {
       try {
         const [history, status] = await Promise.all([
           messageService.getHistory(otherUserId),
-          friendshipService.checkStatus(otherUserId),
+          friendshipService.checkStatus(otherUserId)
         ]);
         setMessages(history);
         setRelationshipStatus(status);
@@ -67,79 +70,160 @@ export default function ChatScreen() {
       }
     };
 
-    fetchHistory();
+    fetchData();
 
     socketRef.current = io(SOCKET_URL);
-
-    socketRef.current.on('connect', () => {
-      console.log(`[Debug Frontend] Socket CONECTAT cu succes la: ${SOCKET_URL}`);
-      if (user?.id) {
-        socketRef.current?.emit('join_own_room', user.id);
-      }
-    });
-
-    socketRef.current.on('connect_error', (error) => {
-      console.log('[Debug Frontend] EROARE de conexiune Socket:', error.message);
-    });
+    if (user?.id) {
+      socketRef.current.emit('join_own_room', user.id);
+    }
 
     socketRef.current.on('receive_message', (newMessage: Message) => {
-      const isRelevant =
+      // Adăugăm mesajul doar dacă este din conversația curentă
+      if (
         (newMessage.sender_id === user?.id && newMessage.receiver_id === otherUserId) ||
-        (newMessage.sender_id === otherUserId && newMessage.receiver_id === user?.id);
-
-      if (isRelevant) {
+        (newMessage.sender_id === otherUserId && newMessage.receiver_id === user?.id)
+      ) {
         setMessages((prev) => [...prev, newMessage]);
+        setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
       }
     });
 
     return () => {
       socketRef.current?.disconnect();
     };
-  }, [otherUserId, user?.id, navigation, otherUsername]);
+  }, [navigation, otherUserId, otherUsername, user?.id]);
 
+  // --- Trimitere Mesaj Simplu (Text) ---
   const handleSendMessage = () => {
-    console.log('[Debug Frontend] 1. Buton Send apăsat!');
-    console.log(
-      `[Debug Frontend] 2. Date curente: Text="${inputText}", MyID=${user?.id}, OtherID=${otherUserId}`,
-    );
-
-    if (inputText.trim() === '') {
-      console.log('[Debug Frontend] 3. EȘEC: Textul este gol.');
-      return;
-    }
-    if (!user?.id) {
-      console.log('[Debug Frontend] 3. EȘEC: user.id lipsește din AuthContext!');
-      return;
-    }
+    if (inputText.trim() === '' || !user?.id) return;
 
     const messageData = {
       senderId: user.id,
       receiverId: otherUserId,
       text: inputText.trim(),
+      messageType: 'TEXT',
     };
-
-    console.log('[Debug Frontend] 4. Emitere payload către Socket:', messageData);
-
-    if (!socketRef.current?.connected) {
-      console.log('[Debug Frontend] 5. AVERTISMENT: Socket-ul NU este conectat la server!');
-    }
 
     socketRef.current?.emit('send_message', messageData);
     setInputText('');
   };
 
+  // --- Trimitere Atașament (Upload HTTP -> Socket Emit) ---
+  const handleSendAttachment = async (type: 'image' | 'document') => {
+    try {
+      let fileResult;
+
+      // 1. Deschidem galeria sau managerul de fișiere
+      if (type === 'image') {
+        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (permissionResult.granted === false) {
+          Alert.alert('Eroare', 'Avem nevoie de permisiunea ta pentru a accesa fotografiile!');
+          return;
+        }
+        fileResult = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          quality: 0.7, // Comprimăm puțin pentru viteză
+        });
+      } else {
+        fileResult = await DocumentPicker.getDocumentAsync({
+          type: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+        });
+      }
+
+      if (fileResult.canceled || !fileResult.assets || fileResult.assets.length === 0) return;
+
+      const fileAsset = fileResult.assets[0];
+      
+      const formData = new FormData();
+      formData.append('file', {
+        uri: Platform.OS === 'ios' ? fileAsset.uri.replace('file://', '') : fileAsset.uri,
+        name: (fileAsset as any).name || (fileAsset as any).fileName || 'upload.jpg',
+        type: fileAsset.mimeType || 'image/jpeg',
+      } as any);
+
+      setIsUploading(true);
+
+      // 3. Trimitem fișierul către noul nostru endpoint de backend
+      const token = await storage.getToken();
+      const uploadResponse = await fetch(`${apiClient.defaults.baseURL}/messages/attachment`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          // Nu seta Content-Type manual la FormData, se ocupă React Native
+        },
+        body: formData,
+      });
+
+      const responseData = await uploadResponse.json();
+
+      if (!uploadResponse.ok) {
+        throw new Error(responseData.message || 'Eroare la încărcarea fișierului');
+      }
+
+      // 4. Fișierul e pe server! Acum trimitem un mesaj prin Socket.io ca să-l vadă prietenul
+      const messageData = {
+        senderId: user?.id,
+        receiverId: otherUserId,
+        text: null, // Fără text
+        messageType: responseData.data.messageType,
+        mediaUrl: responseData.data.mediaUrl,
+        fileName: responseData.data.fileName,
+      };
+
+      socketRef.current?.emit('send_message', messageData);
+
+    } catch (error: any) {
+      console.error('[Upload Eroare]', error);
+      Alert.alert('Eroare', error.message || 'Nu am putut trimite fișierul.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  // --- Afișarea Opțiunilor de Atașament ---
+  const showAttachmentOptions = () => {
+    Alert.alert('Trimite fișier', 'Alege tipul de fișier', [
+      { text: 'Fotografie', onPress: () => handleSendAttachment('image') },
+      { text: 'Document (PDF, DOC)', onPress: () => handleSendAttachment('document') },
+      { text: 'Anulează', style: 'cancel' },
+    ]);
+  };
+
+  // --- Randarea unui singur Mesaj (Polimorfic) ---
   const renderMessage = ({ item }: { item: Message }) => {
-    const isMe = item.sender_id === user?.id;
+    const isMyMessage = item.sender_id === user?.id;
 
     return (
-      <View
-        style={[styles.messageWrapper, isMe ? styles.messageWrapperMe : styles.messageWrapperThem]}
-      >
-        <View
-          style={[styles.messageBubble, isMe ? styles.messageBubbleMe : styles.messageBubbleThem]}
-        >
-          <Text style={[styles.messageText, isMe ? styles.messageTextMe : styles.messageTextThem]}>
-            {item.text}
+      <View style={[styles.messageRow, isMyMessage ? styles.myMessageRow : styles.otherMessageRow]}>
+        {!isMyMessage && (
+          <Image
+            source={{ uri: otherUserAvatar || 'https://via.placeholder.com/40' }}
+            style={styles.avatar}
+          />
+        )}
+        <View style={[styles.messageBubble, isMyMessage ? styles.myBubble : styles.otherBubble]}>
+          
+          {/* Randare în funcție de TYPE */}
+          {item.message_type === 'IMAGE' && item.media_url ? (
+            <Image source={{ uri: item.media_url }} style={styles.imageAttachment} resizeMode="cover" />
+          ) : item.message_type === 'DOCUMENT' && item.media_url ? (
+            <TouchableOpacity 
+              style={styles.documentAttachment}
+              onPress={() => Linking.openURL(item.media_url!)}
+            >
+              <Ionicons name="document-text" size={32} color={isMyMessage ? colors.white : colors.primary} />
+              <Text style={[styles.documentName, { color: isMyMessage ? colors.white : colors.textDark }]} numberOfLines={2}>
+                {item.file_name || 'Document'}
+              </Text>
+            </TouchableOpacity>
+          ) : (
+            <Text style={[styles.messageText, isMyMessage ? styles.myMessageText : styles.otherMessageText]}>
+              {item.text}
+            </Text>
+          )}
+
+          <Text style={[styles.timeText, isMyMessage ? styles.myTimeText : styles.otherTimeText]}>
+            {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </Text>
         </View>
       </View>
@@ -163,15 +247,27 @@ export default function ChatScreen() {
       <FlatList
         ref={flatListRef}
         data={messages}
-        keyExtractor={(item) => item.id.toString()}
+        keyExtractor={(item, index) => item.id ? item.id.toString() : index.toString()}
         renderItem={renderMessage}
         contentContainerStyle={styles.listContent}
         onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-        onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
       />
 
       {relationshipStatus === 'FRIENDS' ? (
         <View style={styles.inputContainer}>
+          {/* Butonul de Atașament (Agrafa) */}
+          <TouchableOpacity 
+            style={styles.attachButton} 
+            onPress={showAttachmentOptions}
+            disabled={isUploading}
+          >
+            {isUploading ? (
+               <ActivityIndicator size="small" color={colors.primary} />
+            ) : (
+               <Ionicons name="attach" size={28} color={colors.textLight} />
+            )}
+          </TouchableOpacity>
+
           <TextInput
             style={styles.input}
             placeholder="Scrie un mesaj..."
@@ -179,7 +275,9 @@ export default function ChatScreen() {
             value={inputText}
             onChangeText={setInputText}
             multiline
+            maxLength={500}
           />
+
           <TouchableOpacity
             style={[styles.sendButton, inputText.trim() === '' && { opacity: 0.5 }]}
             onPress={handleSendMessage}
@@ -190,10 +288,10 @@ export default function ChatScreen() {
         </View>
       ) : (
         <View style={styles.disabledContainer}>
-          <Ionicons
-            name={relationshipStatus.includes('BLOCKED') ? 'ban' : 'information-circle-outline'}
-            size={24}
-            color={colors.textLight}
+          <Ionicons 
+            name={relationshipStatus.includes('BLOCKED') ? "ban" : "information-circle-outline"} 
+            size={24} 
+            color={colors.textLight} 
             style={{ marginBottom: 5 }}
           />
           <Text style={styles.disabledText}>
@@ -207,79 +305,43 @@ export default function ChatScreen() {
   );
 }
 
+// --- Stilizare ---
 const getStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
-    centered: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: colors.background,
-    },
+    centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     listContent: { padding: 15, paddingBottom: 20 },
-
-    messageWrapper: { marginBottom: 15, flexDirection: 'row' },
-    messageWrapperMe: { justifyContent: 'flex-end' },
-    messageWrapperThem: { justifyContent: 'flex-start' },
-
+    
+    messageRow: { flexDirection: 'row', alignItems: 'flex-end', marginBottom: 12 },
+    myMessageRow: { justifyContent: 'flex-end' },
+    otherMessageRow: { justifyContent: 'flex-start' },
+    
+    avatar: { width: 30, height: 30, borderRadius: 15, marginRight: 8 },
+    
     messageBubble: { maxWidth: '75%', padding: 12, borderRadius: 16 },
-    messageBubbleMe: { backgroundColor: colors.primary, borderBottomRightRadius: 4 },
-    messageBubbleThem: {
-      backgroundColor: colors.card,
-      borderBottomLeftRadius: 4,
-      borderWidth: 1,
-      borderColor: colors.border,
-    },
-
+    myBubble: { backgroundColor: colors.primary, borderBottomRightRadius: 4 },
+    otherBubble: { backgroundColor: colors.card, borderBottomLeftRadius: 4, borderWidth: 1, borderColor: colors.border },
+    
     messageText: { fontSize: 16, lineHeight: 22 },
-    messageTextMe: { color: colors.white },
-    messageTextThem: { color: colors.textDark },
+    myMessageText: { color: colors.white },
+    otherMessageText: { color: colors.textDark },
+    
+    // Stiluri NOI pentru Media
+    imageAttachment: { width: 200, height: 250, borderRadius: 10, marginBottom: 5 },
+    documentAttachment: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.1)', padding: 10, borderRadius: 10, width: 200 },
+    documentName: { marginLeft: 10, fontSize: 14, fontWeight: '500', flex: 1 },
 
-    inputContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      padding: 10,
-      paddingBottom: Platform.OS === 'ios' ? 25 : 10,
-      backgroundColor: colors.card,
-      borderTopWidth: 1,
-      borderTopColor: colors.border,
-    },
-    input: {
-      flex: 1,
-      backgroundColor: colors.background,
-      color: colors.textDark,
-      borderRadius: 20,
-      paddingHorizontal: 15,
-      paddingTop: 12,
-      paddingBottom: 12,
-      maxHeight: 100,
-      fontSize: 16,
-      borderWidth: 1,
-      borderColor: colors.border,
-    },
-    sendButton: {
-      backgroundColor: colors.primary,
-      width: 44,
-      height: 44,
-      borderRadius: 22,
-      justifyContent: 'center',
-      alignItems: 'center',
-      marginLeft: 10,
-    },
-
-    disabledContainer: {
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: 20,
-      paddingBottom: Platform.OS === 'ios' ? 35 : 20,
-      backgroundColor: colors.card,
-      borderTopWidth: 1,
-      borderTopColor: colors.border,
-    },
-    disabledText: {
-      color: colors.textLight,
-      fontSize: 14,
-      fontStyle: 'italic',
-      textAlign: 'center',
-    },
+    timeText: { fontSize: 11, marginTop: 4, alignSelf: 'flex-end' },
+    myTimeText: { color: 'rgba(255,255,255,0.7)' },
+    otherTimeText: { color: colors.textLight },
+    
+    inputContainer: { flexDirection: 'row', alignItems: 'flex-end', padding: 10, paddingBottom: Platform.OS === 'ios' ? 30 : 10, backgroundColor: colors.card, borderTopWidth: 1, borderTopColor: colors.border },
+    
+    attachButton: { padding: 10, justifyContent: 'center', alignItems: 'center' },
+    
+    input: { flex: 1, minHeight: 40, maxHeight: 100, backgroundColor: colors.background, borderRadius: 20, paddingHorizontal: 15, paddingTop: 10, paddingBottom: 10, fontSize: 16, color: colors.textDark, borderWidth: 1, borderColor: colors.border },
+    sendButton: { backgroundColor: colors.primary, width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', marginLeft: 10, marginBottom: 2 },
+    
+    disabledContainer: { alignItems: 'center', justifyContent: 'center', padding: 20, paddingBottom: Platform.OS === 'ios' ? 35 : 20, backgroundColor: colors.card, borderTopWidth: 1, borderTopColor: colors.border },
+    disabledText: { color: colors.textLight, fontSize: 14, fontStyle: 'italic', textAlign: 'center' },
   });

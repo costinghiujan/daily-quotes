@@ -79,7 +79,14 @@ export default function ConversationsScreen() {
           const updatedConversations = [...prevConversations];
           const conversationToMove = updatedConversations[existingIndex];
 
-          conversationToMove.last_message = newMessage.text;
+          let displayMessage = newMessage.text;
+          if (!displayMessage) {
+            if (newMessage.message_type === 'IMAGE') displayMessage = '📷 Fotografie';
+            else if (newMessage.message_type === 'DOCUMENT') displayMessage = '📄 Document';
+            else displayMessage = 'Atașament';
+          }
+
+          conversationToMove.last_message = displayMessage;
           conversationToMove.last_message_date = newMessage.created_at;
           conversationToMove.is_read = newMessage.sender_id === user?.id;
 
