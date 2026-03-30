@@ -28,10 +28,9 @@ import { friendshipService } from '../api/friendshipService';
 import { storage } from '../utils/storage'; // Pentru token
 import { apiClient } from '../api/client';
 
-// Folosim IP-ul dinamic exact ca în api/client.ts
 const debuggerHost = Constants.expoConfig?.hostUri;
 const dynamicIp = debuggerHost ? debuggerHost.split(':')[0] : 'localhost';
-const SOCKET_URL = `http://${dynamicIp}:5 000`; // Asigură-te că portul e corect (5000 sau 3000)
+const SOCKET_URL = `http://${dynamicIp}:3000`;
 
 export default function ChatScreen() {
   const route = useRoute<any>();
@@ -40,7 +39,13 @@ export default function ChatScreen() {
   const { colors } = useContext(ThemeContext);
   const styles = useMemo(() => getStyles(colors), [colors]);
 
-  const { otherUserId, otherUsername, otherUserAvatar } = route.params;
+  const params = route.params || {};
+  
+  const otherUserId = params.otherUserId || params.userId || params.id;
+  
+  const otherUsername = params.otherUsername || params.username || params.full_name || 'Conversație';
+  
+  const otherUserAvatar = params.otherUserAvatar || params.avatar || params.profile_picture_url;
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
@@ -51,7 +56,6 @@ export default function ChatScreen() {
   const socketRef = useRef<Socket | null>(null);
   const flatListRef = useRef<FlatList>(null);
 
-  // --- Inițializare și WebSockets ---
   useEffect(() => {
     navigation.setOptions({ title: otherUsername });
 
@@ -93,7 +97,6 @@ export default function ChatScreen() {
     };
   }, [navigation, otherUserId, otherUsername, user?.id]);
 
-  // --- Trimitere Mesaj Simplu (Text) ---
   const handleSendMessage = () => {
     if (inputText.trim() === '' || !user?.id) return;
 
@@ -108,12 +111,10 @@ export default function ChatScreen() {
     setInputText('');
   };
 
-  // --- Trimitere Atașament (Upload HTTP -> Socket Emit) ---
   const handleSendAttachment = async (type: 'image' | 'document') => {
     try {
       let fileResult;
 
-      // 1. Deschidem galeria sau managerul de fișiere
       if (type === 'image') {
         const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (permissionResult.granted === false) {
@@ -143,13 +144,11 @@ export default function ChatScreen() {
 
       setIsUploading(true);
 
-      // 3. Trimitem fișierul către noul nostru endpoint de backend
       const token = await storage.getToken();
       const uploadResponse = await fetch(`${apiClient.defaults.baseURL}/messages/attachment`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
-          // Nu seta Content-Type manual la FormData, se ocupă React Native
         },
         body: formData,
       });
@@ -160,7 +159,6 @@ export default function ChatScreen() {
         throw new Error(responseData.message || 'Eroare la încărcarea fișierului');
       }
 
-      // 4. Fișierul e pe server! Acum trimitem un mesaj prin Socket.io ca să-l vadă prietenul
       const messageData = {
         senderId: user?.id,
         receiverId: otherUserId,
@@ -180,7 +178,6 @@ export default function ChatScreen() {
     }
   };
 
-  // --- Afișarea Opțiunilor de Atașament ---
   const showAttachmentOptions = () => {
     Alert.alert('Trimite fișier', 'Alege tipul de fișier', [
       { text: 'Fotografie', onPress: () => handleSendAttachment('image') },
@@ -189,7 +186,6 @@ export default function ChatScreen() {
     ]);
   };
 
-  // --- Randarea unui singur Mesaj (Polimorfic) ---
   const renderMessage = ({ item }: { item: Message }) => {
     const isMyMessage = item.sender_id === user?.id;
 
@@ -203,7 +199,6 @@ export default function ChatScreen() {
         )}
         <View style={[styles.messageBubble, isMyMessage ? styles.myBubble : styles.otherBubble]}>
           
-          {/* Randare în funcție de TYPE */}
           {item.message_type === 'IMAGE' && item.media_url ? (
             <Image source={{ uri: item.media_url }} style={styles.imageAttachment} resizeMode="cover" />
           ) : item.message_type === 'DOCUMENT' && item.media_url ? (
@@ -255,7 +250,6 @@ export default function ChatScreen() {
 
       {relationshipStatus === 'FRIENDS' ? (
         <View style={styles.inputContainer}>
-          {/* Butonul de Atașament (Agrafa) */}
           <TouchableOpacity 
             style={styles.attachButton} 
             onPress={showAttachmentOptions}
@@ -305,7 +299,6 @@ export default function ChatScreen() {
   );
 }
 
-// --- Stilizare ---
 const getStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
