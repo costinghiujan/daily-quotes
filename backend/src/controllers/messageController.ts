@@ -72,7 +72,7 @@ export const getMessageHistory = async (req: AuthRequest, res: Response): Promis
 
     const result = await query(
       `
-      SELECT id, sender_id, receiver_id, text, is_read, created_at
+      SELECT id, sender_id, receiver_id, text, message_type, media_url, file_name, is_read, created_at
       FROM messages
       WHERE (sender_id = $1 AND receiver_id = $2)
          OR (sender_id = $2 AND receiver_id = $1)

@@ -62,14 +62,26 @@ io.on('connection', (socket) => {
     console.log('\n[Debug Backend] 1. Eveniment "send_message" PRIMIT!');
     console.log('[Debug Backend] 2. Date primite:', data);
 
-    const { senderId, receiverId, text } = data;
+    const { 
+      senderId, 
+      receiverId, 
+      text, 
+      messageType = 'TEXT', 
+      mediaUrl = null, 
+      fileName = null 
+    } = data;
 
     try {
       console.log('[Debug Backend] 3. Încercare de salvare în DB...');
+      
       const result = await pool.query(
-        'INSERT INTO messages (sender_id, receiver_id, text) VALUES ($1, $2, $3) RETURNING *',
-        [senderId, receiverId, text],
+        `INSERT INTO messages 
+        (sender_id, receiver_id, text, message_type, media_url, file_name) 
+        VALUES ($1, $2, $3, $4, $5, $6) 
+        RETURNING *`,
+        [senderId, receiverId, text || null, messageType, mediaUrl, fileName],
       );
+      
       const savedMessage = result.rows[0];
       console.log('[Debug Backend] 4. Salvat cu succes in DB:', savedMessage.id);
 
@@ -82,7 +94,14 @@ io.on('connection', (socket) => {
         `room_${senderId}`,
       );
 
-      sendMessagePushNotification(senderId, receiverId, text).catch((err) => console.error(err));
+      let notificationText = text;
+      if (!text || text.trim() === '') {
+        if (messageType === 'IMAGE') notificationText = '📷 A trimis o fotografie';
+        else if (messageType === 'DOCUMENT') notificationText = '📄 A trimis un document';
+        else notificationText = 'A trimis un mesaj nou';
+      }
+
+      sendMessagePushNotification(senderId, receiverId, notificationText).catch((err) => console.error(err));
     } catch (error) {
       console.error('[Debug Backend - EROARE CRITICĂ] Nu s-a putut salva mesajul:', error);
     }
