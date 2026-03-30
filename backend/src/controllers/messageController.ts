@@ -113,3 +113,29 @@ export const getUnreadMessagesCount = async (req: AuthRequest, res: Response): P
     res.status(500).json({ status: 'error', message: 'Eroare internă.' });
   }
 };
+
+export const uploadChatFile = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.file) {
+      res.status(400).json({ status: 'error', message: 'Niciun fișier recepționat.' });
+      return;
+    }
+
+    const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+    const originalName = req.file.originalname;
+
+    const messageType = req.file.mimetype.startsWith('image/') ? 'IMAGE' : 'DOCUMENT';
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        mediaUrl: fileUrl,
+        fileName: originalName,
+        messageType: messageType,
+      },
+    });
+  } catch (error) {
+    console.error('[Eroare Controller] Upload atașament chat:', error);
+    res.status(500).json({ status: 'error', message: 'Eroare internă la procesarea fișierului.' });
+  }
+};

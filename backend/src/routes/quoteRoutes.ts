@@ -10,7 +10,7 @@ import {
   addComment,
   getCommentsForQuote,
   searchQuotes,
-  getExploreFeed
+  getExploreFeed,
 } from '../controllers/quoteController';
 import { protect } from '../middleware/authMiddleware';
 

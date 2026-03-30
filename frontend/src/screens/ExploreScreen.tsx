@@ -65,7 +65,11 @@ export default function ExploreScreen() {
           </Text>
         );
       }
-      return <Text key={index} style={styles.quoteTextNormal}>{part}</Text>;
+      return (
+        <Text key={index} style={styles.quoteTextNormal}>
+          {part}
+        </Text>
+      );
     });
   };
 
@@ -81,9 +85,7 @@ export default function ExploreScreen() {
         </View>
       </View>
 
-      <Text style={styles.quoteTextContainer}>
-        &quot;{renderTextWithHashtags(item.text)}&quot;
-      </Text>
+      <Text style={styles.quoteTextContainer}>&quot;{renderTextWithHashtags(item.text)}&quot;</Text>
       <Text style={styles.quoteAuthor}>— {item.original_author}</Text>
 
       <View style={styles.reactionsBar}>
@@ -144,14 +146,24 @@ export default function ExploreScreen() {
 const getStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
-    centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background },
-    
-    headerTitleContainer: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 10, backgroundColor: colors.background },
+    centered: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: colors.background,
+    },
+
+    headerTitleContainer: {
+      paddingHorizontal: 20,
+      paddingTop: 20,
+      paddingBottom: 10,
+      backgroundColor: colors.background,
+    },
     headerTitle: { fontSize: 28, fontWeight: 'bold', color: colors.textDark },
     headerSubtitle: { fontSize: 15, color: colors.textLight, marginTop: 4 },
 
     listContent: { padding: 15, paddingBottom: 30 },
-    
+
     quoteCard: {
       backgroundColor: colors.card,
       borderRadius: 12,
@@ -165,22 +177,62 @@ const getStyles = (colors: ThemeColors) =>
       borderColor: colors.border,
     },
     quoteHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-    avatarPlaceholderSmall: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center', marginRight: 10 },
+    avatarPlaceholderSmall: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: colors.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: 10,
+    },
     quoteUserName: { fontSize: 15, fontWeight: 'bold', color: colors.textDark },
     quoteUserHandle: { fontSize: 13, color: colors.textLight },
-    
+
     quoteTextContainer: { fontSize: 17, lineHeight: 26, marginBottom: 12 },
     quoteTextNormal: { color: colors.textDark, fontStyle: 'italic' },
     hashtag: { color: colors.primary, fontWeight: 'bold', fontStyle: 'normal' },
-    
-    quoteAuthor: { fontSize: 14, fontWeight: 'bold', color: colors.textLight, textAlign: 'right', marginBottom: 15 },
-    
-    reactionsBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 12 },
-    reactionBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.primary + '15', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 20 },
+
+    quoteAuthor: {
+      fontSize: 14,
+      fontWeight: 'bold',
+      color: colors.textLight,
+      textAlign: 'right',
+      marginBottom: 15,
+    },
+
+    reactionsBar: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      paddingTop: 12,
+    },
+    reactionBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.primary + '15',
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderRadius: 20,
+    },
     reactionCount: { fontSize: 14, fontWeight: 'bold', color: colors.primary, marginLeft: 6 },
     commentBtn: { padding: 5 },
 
     emptyContainer: { alignItems: 'center', marginTop: 60, paddingHorizontal: 20 },
-    emptyText: { marginTop: 15, fontSize: 18, fontWeight: 'bold', color: colors.textDark, textAlign: 'center' },
-    emptySubText: { fontSize: 15, color: colors.textLight, textAlign: 'center', marginTop: 10, lineHeight: 22 },
+    emptyText: {
+      marginTop: 15,
+      fontSize: 18,
+      fontWeight: 'bold',
+      color: colors.textDark,
+      textAlign: 'center',
+    },
+    emptySubText: {
+      fontSize: 15,
+      color: colors.textLight,
+      textAlign: 'center',
+      marginTop: 10,
+      lineHeight: 22,
+    },
   });

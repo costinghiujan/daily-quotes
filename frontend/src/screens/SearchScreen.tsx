@@ -34,19 +34,19 @@ export default function SearchScreen() {
 
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [activeTab, setActiveTab] = useState<'users' | 'quotes'>('users');
-  
+
   const [userResults, setUserResults] = useState<SearchResultUser[]>([]);
   const [quoteResults, setQuoteResults] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const incomingQuery = route?.params?.initialQuery;
-    
+
     if (incomingQuery) {
       setSearchQuery(incomingQuery);
       setActiveTab('quotes');
-      
-      navigation.setParams({ initialQuery: undefined }); 
+
+      navigation.setParams({ initialQuery: undefined });
     }
   }, [route?.params?.initialQuery, navigation]);
 
@@ -114,7 +114,11 @@ export default function SearchScreen() {
           </Text>
         );
       }
-      return <Text key={index} style={styles.quoteTextNormal}>{part}</Text>;
+      return (
+        <Text key={index} style={styles.quoteTextNormal}>
+          {part}
+        </Text>
+      );
     });
   };
 
@@ -158,12 +162,10 @@ export default function SearchScreen() {
         </View>
         <Text style={styles.quoteUser}>@{item.username}</Text>
       </View>
-      
-      <Text style={styles.quoteTextContainer}>
-        &quot;{renderTextWithHashtags(item.text)}&quot;
-      </Text>
+
+      <Text style={styles.quoteTextContainer}>&quot;{renderTextWithHashtags(item.text)}&quot;</Text>
       <Text style={styles.quoteAuthor}>— {item.original_author}</Text>
-      
+
       <View style={styles.quoteFooter}>
         <Ionicons name="heart" size={16} color={colors.primary} />
         <Text style={styles.reactionCount}>{item.blue_heart_count || 0}</Text>
@@ -177,7 +179,9 @@ export default function SearchScreen() {
         <Ionicons name="search" size={20} color={colors.textLight} style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
-          placeholder={activeTab === 'users' ? "Caută utilizatori..." : "Caută cuvinte sau #hashtag-uri..."}
+          placeholder={
+            activeTab === 'users' ? 'Caută utilizatori...' : 'Caută cuvinte sau #hashtag-uri...'
+          }
           placeholderTextColor={colors.textLight}
           value={searchQuery}
           onChangeText={setSearchQuery}
@@ -196,13 +200,17 @@ export default function SearchScreen() {
           style={[styles.tab, activeTab === 'users' && styles.activeTab]}
           onPress={() => setActiveTab('users')}
         >
-          <Text style={[styles.tabText, activeTab === 'users' && styles.activeTabText]}>Utilizatori</Text>
+          <Text style={[styles.tabText, activeTab === 'users' && styles.activeTabText]}>
+            Utilizatori
+          </Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'quotes' && styles.activeTab]}
           onPress={() => setActiveTab('quotes')}
         >
-          <Text style={[styles.tabText, activeTab === 'quotes' && styles.activeTabText]}>Citate</Text>
+          <Text style={[styles.tabText, activeTab === 'quotes' && styles.activeTabText]}>
+            Citate
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -215,7 +223,9 @@ export default function SearchScreen() {
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
           !isLoading && searchQuery.trim() !== '' ? (
-            <Text style={styles.emptyText}>Nu am găsit rezultate pentru &quot;{searchQuery}&quot;.</Text>
+            <Text style={styles.emptyText}>
+              Nu am găsit rezultate pentru &quot;{searchQuery}&quot;.
+            </Text>
           ) : null
         }
       />
@@ -226,39 +236,115 @@ export default function SearchScreen() {
 const getStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
-    searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, margin: 15, marginBottom: 10, borderRadius: 10, paddingHorizontal: 15, elevation: 2, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 5 },
+    searchContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.card,
+      margin: 15,
+      marginBottom: 10,
+      borderRadius: 10,
+      paddingHorizontal: 15,
+      elevation: 2,
+      shadowColor: '#000',
+      shadowOpacity: 0.1,
+      shadowRadius: 5,
+    },
     searchIcon: { marginRight: 10 },
     searchInput: { flex: 1, height: 50, fontSize: 16, color: colors.textDark },
-    
+
     tabsContainer: { flexDirection: 'row', paddingHorizontal: 15, marginBottom: 10, gap: 10 },
-    tab: { flex: 1, paddingVertical: 10, alignItems: 'center', borderBottomWidth: 2, borderBottomColor: 'transparent' },
+    tab: {
+      flex: 1,
+      paddingVertical: 10,
+      alignItems: 'center',
+      borderBottomWidth: 2,
+      borderBottomColor: 'transparent',
+    },
     activeTab: { borderBottomColor: colors.primary },
     tabText: { fontSize: 15, fontWeight: '600', color: colors.textLight },
     activeTabText: { color: colors.primary },
 
     loader: { marginTop: 20 },
     listContent: { paddingHorizontal: 15, paddingBottom: 20 },
-    
-    card: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, padding: 15, marginBottom: 10, borderRadius: 10, borderWidth: 1, borderColor: colors.border },
-    avatarPlaceholder: { width: 50, height: 50, borderRadius: 25, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center', marginRight: 15 },
+
+    card: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.card,
+      padding: 15,
+      marginBottom: 10,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    avatarPlaceholder: {
+      width: 50,
+      height: 50,
+      borderRadius: 25,
+      backgroundColor: colors.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: 15,
+    },
     infoContainer: { flex: 1 },
     mainText: { fontSize: 16, fontWeight: 'bold', color: colors.textDark },
     subText: { fontSize: 14, color: colors.textLight, marginTop: 2 },
-    actionBtn: { backgroundColor: colors.primary, padding: 10, borderRadius: 20, justifyContent: 'center', alignItems: 'center', minWidth: 40 },
-    badge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, gap: 4 },
+    actionBtn: {
+      backgroundColor: colors.primary,
+      padding: 10,
+      borderRadius: 20,
+      justifyContent: 'center',
+      alignItems: 'center',
+      minWidth: 40,
+    },
+    badge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 20,
+      gap: 4,
+    },
     badgeText: { fontSize: 13, fontWeight: 'bold' },
 
-    quoteCard: { backgroundColor: colors.card, padding: 15, marginBottom: 15, borderRadius: 12, borderWidth: 1, borderColor: colors.border },
+    quoteCard: {
+      backgroundColor: colors.card,
+      padding: 15,
+      marginBottom: 15,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
     quoteHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
-    avatarPlaceholderSmall: { width: 24, height: 24, borderRadius: 12, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center', marginRight: 8 },
+    avatarPlaceholderSmall: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      backgroundColor: colors.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: 8,
+    },
     quoteUser: { fontSize: 14, fontWeight: '600', color: colors.textDark },
-    
+
     quoteTextContainer: { fontSize: 16, lineHeight: 24, marginBottom: 8 },
     quoteTextNormal: { color: colors.textDark, fontStyle: 'italic' },
     hashtag: { color: colors.primary, fontWeight: 'bold', fontStyle: 'normal' },
-    
-    quoteAuthor: { fontSize: 13, fontWeight: 'bold', color: colors.textLight, textAlign: 'right', marginBottom: 10 },
-    quoteFooter: { flexDirection: 'row', alignItems: 'center', borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 10 },
+
+    quoteAuthor: {
+      fontSize: 13,
+      fontWeight: 'bold',
+      color: colors.textLight,
+      textAlign: 'right',
+      marginBottom: 10,
+    },
+    quoteFooter: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      paddingTop: 10,
+    },
     reactionCount: { fontSize: 14, color: colors.textLight, marginLeft: 6, fontWeight: 'bold' },
 
     emptyText: { textAlign: 'center', marginTop: 40, color: colors.textLight, fontSize: 16 },

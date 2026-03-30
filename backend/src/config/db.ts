@@ -137,7 +137,9 @@ export const initDB = async () => {
 
     try {
       await pool.query(`ALTER TABLE messages ALTER COLUMN text DROP NOT NULL;`);
-      await pool.query(`ALTER TABLE messages ADD COLUMN IF NOT EXISTS message_type VARCHAR(20) DEFAULT 'TEXT';`);
+      await pool.query(
+        `ALTER TABLE messages ADD COLUMN IF NOT EXISTS message_type VARCHAR(20) DEFAULT 'TEXT';`,
+      );
       await pool.query(`ALTER TABLE messages ADD COLUMN IF NOT EXISTS media_url TEXT;`);
       await pool.query(`ALTER TABLE messages ADD COLUMN IF NOT EXISTS file_name VARCHAR(255);`);
       console.log('[Bază de Date] Migrarea tabelei "messages" a rulat cu succes.');
