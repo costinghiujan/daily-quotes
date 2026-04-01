@@ -33,6 +33,9 @@ export const initDB = async () => {
         bio TEXT,
         profile_picture_url TEXT,
         expo_push_token VARCHAR(255),
+        xp INTEGER DEFAULT 0,
+        level INTEGER DEFAULT 1,
+        last_daily_prompt_date DATE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
@@ -54,6 +57,8 @@ export const initDB = async () => {
         requester_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         receiver_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         status VARCHAR(20) DEFAULT 'pending', 
+        streak_count INTEGER DEFAULT 0,
+        last_interaction_date TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         UNIQUE(requester_id, receiver_id)
       );
@@ -119,33 +124,19 @@ export const initDB = async () => {
     `);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_comments_quote_id ON comments(quote_id);`);
 
-    console.log('[Bază de Date] Toate tabelele și indecșii sunt inițializați cu succes.');
-
     await pool.query(`
       CREATE TABLE IF NOT EXISTS messages (
         id SERIAL PRIMARY KEY,
         sender_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         receiver_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        text TEXT, -- Am eliminat NOT NULL pentru a permite mesaje exclusiv media
-        message_type VARCHAR(20) DEFAULT 'TEXT', -- Poate fi: TEXT, IMAGE, DOCUMENT
-        media_url TEXT, -- Calea sau URL-ul către fișier
-        file_name VARCHAR(255), -- Numele original al documentului (ex: contract.pdf)
+        text TEXT,
+        message_type VARCHAR(20) DEFAULT 'TEXT',
+        media_url TEXT,
+        file_name VARCHAR(255),
         is_read BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
-
-    try {
-      await pool.query(`ALTER TABLE messages ALTER COLUMN text DROP NOT NULL;`);
-      await pool.query(
-        `ALTER TABLE messages ADD COLUMN IF NOT EXISTS message_type VARCHAR(20) DEFAULT 'TEXT';`,
-      );
-      await pool.query(`ALTER TABLE messages ADD COLUMN IF NOT EXISTS media_url TEXT;`);
-      await pool.query(`ALTER TABLE messages ADD COLUMN IF NOT EXISTS file_name VARCHAR(255);`);
-      console.log('[Bază de Date] Migrarea tabelei "messages" a rulat cu succes.');
-    } catch (migError) {
-      console.log('[Bază de Date] Notă migrare messages:', migError);
-    }
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS blocks (
@@ -162,6 +153,58 @@ export const initDB = async () => {
     await pool.query(
       `CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at DESC);`,
     );
+
+    try {
+      // Mesaje
+      await pool.query(`ALTER TABLE messages ALTER COLUMN text DROP NOT NULL;`);
+      await pool.query(`ALTER TABLE messages ADD COLUMN IF NOT EXISTS message_type VARCHAR(20) DEFAULT 'TEXT';`);
+      await pool.query(`ALTER TABLE messages ADD COLUMN IF NOT EXISTS media_url TEXT;`);
+      await pool.query(`ALTER TABLE messages ADD COLUMN IF NOT EXISTS file_name VARCHAR(255);`);
+      
+      await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS xp INTEGER DEFAULT 0;`);
+      await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS level INTEGER DEFAULT 1;`);
+      await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_daily_prompt_date DATE;`);
+      
+      await pool.query(`ALTER TABLE friendships ADD COLUMN IF NOT EXISTS streak_count INTEGER DEFAULT 0;`);
+      await pool.query(`ALTER TABLE friendships ADD COLUMN IF NOT EXISTS last_interaction_date TIMESTAMP;`);
+      
+      console.log('[Bază de Date] Toate migrările pe tabelele vechi au rulat cu succes.');
+    } catch (migError) {
+      console.log('[Bază de Date] Notă migrare (posibil rulezi o bază de date proaspătă):', migError);
+    }
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS badges (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(100) UNIQUE NOT NULL,
+        description TEXT NOT NULL,
+        icon_name VARCHAR(50) NOT NULL,
+        requirement_type VARCHAR(50) NOT NULL,
+        requirement_value INTEGER NOT NULL
+      );
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS user_badges (
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        badge_id INTEGER REFERENCES badges(id) ON DELETE CASCADE,
+        earned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (user_id, badge_id)
+      );
+    `);
+
+    await pool.query(`
+      INSERT INTO badges (name, description, icon_name, requirement_type, requirement_value)
+      VALUES 
+        ('Scriitor Începător', 'Ai adăugat primele 5 citate.', 'pencil', 'QUOTES_COUNT', 5),
+        ('Social Butterfly', 'Ai adunat 10 prieteni.', 'people', 'FRIENDS_COUNT', 10),
+        ('Critic Literar', 'Ai lăsat 10 comentarii pe platformă.', 'chatbubbles', 'COMMENTS_COUNT', 10),
+        ('Trendsetter', 'Un citat de-al tău a primit 50 de aprecieri.', 'star', 'QUOTE_LIKES', 50)
+      ON CONFLICT (name) DO NOTHING;
+    `);
+
+    console.log('[Bază de Date] Tabelele de Gamificare și Insignele au fost inițializate cu succes.');
+
   } catch (error) {
     console.error('[Eroare Bază de Date] Inițializarea tabelelor a eșuat:', error);
     throw error;
