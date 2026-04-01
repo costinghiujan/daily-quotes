@@ -3,10 +3,14 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { query } from '../config/db';
 
-export interface AuthRequest extends Request {
-  user?: unknown;
+export type AuthRequest = Request & {
+  user?: {
+    id: number;
+    username: string;
+    email: string;
+  };
   sessionId?: number;
-}
+};
 
 export const registerUser = async (req: Request, res: Response): Promise<void> => {
   try {

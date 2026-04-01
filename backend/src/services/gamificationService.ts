@@ -8,10 +8,13 @@ export const XP_VALUES = {
 };
 
 export const GamificationService = {
-  async addXp(userId: number, xpAmount: number): Promise<{ newXp: number; newLevel: number; leveledUp: boolean }> {
+  async addXp(
+    userId: number,
+    xpAmount: number,
+  ): Promise<{ newXp: number; newLevel: number; leveledUp: boolean }> {
     try {
       const userRes = await query('SELECT xp, level FROM users WHERE id = $1', [userId]);
-      
+
       if (userRes.rowCount === 0) {
         throw new Error('Utilizatorul nu a fost găsit.');
       }
@@ -22,16 +25,19 @@ export const GamificationService = {
       const newXp = currentXp + xpAmount;
 
       const calculatedLevel = Math.floor(newXp / 50) + 1;
-      
+
       const leveledUp = calculatedLevel > currentLevel;
 
-      await query(
-        'UPDATE users SET xp = $1, level = $2 WHERE id = $3',
-        [newXp, calculatedLevel, userId]
-      );
+      await query('UPDATE users SET xp = $1, level = $2 WHERE id = $3', [
+        newXp,
+        calculatedLevel,
+        userId,
+      ]);
 
       if (leveledUp) {
-        console.log(`[Gamification] Utilizatorul ${userId} a crescut la nivelul ${calculatedLevel}! 🥳`);
+        console.log(
+          `[Gamification] Utilizatorul ${userId} a crescut la nivelul ${calculatedLevel}! 🥳`,
+        );
       }
 
       return { newXp, newLevel: calculatedLevel, leveledUp };
@@ -43,12 +49,15 @@ export const GamificationService = {
 
   async evaluateBadges(userId: number): Promise<void> {
     try {
-      const availableBadgesRes = await query(`
+      const availableBadgesRes = await query(
+        `
         SELECT b.id, b.name, b.requirement_type, b.requirement_value 
         FROM badges b
         LEFT JOIN user_badges ub ON b.id = ub.badge_id AND ub.user_id = $1
         WHERE ub.badge_id IS NULL
-      `, [userId]);
+      `,
+        [userId],
+      );
 
       const availableBadges = availableBadgesRes.rows;
       if (availableBadges.length === 0) return;
@@ -57,35 +66,50 @@ export const GamificationService = {
         let criteriaMet = false;
 
         switch (badge.requirement_type) {
-          case 'QUOTES_COUNT':
-            { const quotesRes = await query('SELECT COUNT(*) FROM quotes WHERE user_id = $1', [userId]);
-            if (parseInt(quotesRes.rows[0].count, 10) >= badge.requirement_value) criteriaMet = true;
-            break; }
+          case 'QUOTES_COUNT': {
+            const quotesRes = await query('SELECT COUNT(*) FROM quotes WHERE user_id = $1', [
+              userId,
+            ]);
+            if (parseInt(quotesRes.rows[0].count, 10) >= badge.requirement_value)
+              criteriaMet = true;
+            break;
+          }
 
-          case 'COMMENTS_COUNT':
-            { const commentsRes = await query('SELECT COUNT(*) FROM comments WHERE user_id = $1', [userId]);
-            if (parseInt(commentsRes.rows[0].count, 10) >= badge.requirement_value) criteriaMet = true;
-            break; }
+          case 'COMMENTS_COUNT': {
+            const commentsRes = await query('SELECT COUNT(*) FROM comments WHERE user_id = $1', [
+              userId,
+            ]);
+            if (parseInt(commentsRes.rows[0].count, 10) >= badge.requirement_value)
+              criteriaMet = true;
+            break;
+          }
 
-          case 'FRIENDS_COUNT':
-            { const friendsRes = await query(`
+          case 'FRIENDS_COUNT': {
+            const friendsRes = await query(
+              `
               SELECT COUNT(*) FROM friendships 
               WHERE (requester_id = $1 OR receiver_id = $1) AND status = 'accepted'
-            `, [userId]);
-            if (parseInt(friendsRes.rows[0].count, 10) >= badge.requirement_value) criteriaMet = true;
-            break; }
+            `,
+              [userId],
+            );
+            if (parseInt(friendsRes.rows[0].count, 10) >= badge.requirement_value)
+              criteriaMet = true;
+            break;
+          }
         }
 
         if (criteriaMet) {
-          await query(
-            'INSERT INTO user_badges (user_id, badge_id) VALUES ($1, $2)',
-            [userId, badge.id]
+          await query('INSERT INTO user_badges (user_id, badge_id) VALUES ($1, $2)', [
+            userId,
+            badge.id,
+          ]);
+          console.log(
+            `[Gamification] Utilizatorul ${userId} a deblocat insigna: "${badge.name}"! 🏅`,
           );
-          console.log(`[Gamification] Utilizatorul ${userId} a deblocat insigna: "${badge.name}"! 🏅`);
         }
       }
     } catch (error) {
       console.error('[Eroare GamificationService] Evaluare insigne eșuată:', error);
     }
-  }
+  },
 };

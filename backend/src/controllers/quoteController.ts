@@ -1,48 +1,46 @@
 import { Request, Response } from 'express';
 import { query } from '../config/db';
-import { Quote } from '../models/Quote';
 import { sendNotification } from '../utils/notificationHelper';
+import { GamificationService, XP_VALUES } from '../services/gamificationService';
 
-export interface AuthRequest extends Request {
+export type AuthRequest = Request & {
   user?: {
     id: number;
     username: string;
     email: string;
   };
-}
+  sessionId?: number;
+};
 
 export const createQuote = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { text, author, category } = req.body;
     const userId = req.user?.id;
 
-    if (!userId) {
-      res.status(401).json({ status: 'error', message: 'Neautorizat.' });
-      return;
-    }
-
     if (!text || !author) {
-      res
-        .status(400)
-        .json({ status: 'error', message: 'Câmpurile "text" și "author" sunt obligatorii.' });
+      res.status(400).json({ status: 'error', message: 'Textul și autorul sunt obligatorii.' });
       return;
     }
 
-    const insertQuery = `
-        INSERT INTO quotes (text, author, category, user_id)
-        VALUES ($1, $2, $3, $4)
-        RETURNING *;
-      `;
-    const values = [text, author, category || null, userId];
+    const result = await query(
+      'INSERT INTO quotes (text, author, category, user_id) VALUES ($1, $2, $3, $4) RETURNING *',
+      [text, author, category, userId],
+    );
 
-    const result = await query(insertQuery, values);
-    const newQuote: Quote = result.rows[0];
+    // --- LOGICA DE GAMIFICARE ---
+    if (userId) {
+      try {
+        await GamificationService.addXp(userId, XP_VALUES.ADD_QUOTE);
+        await GamificationService.evaluateBadges(userId);
+      } catch (gamificationError) {
+        console.error('[Avertisment] Eroare la gamificare (createQuote):', gamificationError);
+      }
+    }
+    // ----------------------------
 
-    res
-      .status(201)
-      .json({ status: 'success', message: 'Citat adăugat cu succes!', data: newQuote });
+    res.status(201).json({ status: 'success', data: result.rows[0] });
   } catch (error) {
-    console.error('[Eroare Controller] Nu s-a putut crea citatul:', error);
+    console.error('[Eroare Controller] creare citat:', error);
     res.status(500).json({ status: 'error', message: 'Eroare internă a serverului.' });
   }
 };
@@ -259,6 +257,15 @@ export const addComment = async (req: AuthRequest, res: Response): Promise<void>
 
       await sendNotification(quoteOwnerId, userId, 'COMMENT_ADDED', quoteId);
     }
+
+    // --- NOU: LOGICA DE GAMIFICARE PENTRU COMENTARII ---
+    try {
+      await GamificationService.addXp(userId, XP_VALUES.ADD_COMMENT);
+      await GamificationService.evaluateBadges(userId);
+    } catch (gamificationError) {
+      console.error('[Avertisment] Eroare la gamificare (addComment):', gamificationError);
+    }
+    // ---------------------------------------------------
 
     const userQuery = `SELECT username, full_name, profile_picture_url FROM users WHERE id = $1;`;
     const userResult = await query(userQuery, [userId]);
