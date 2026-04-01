@@ -32,6 +32,8 @@ import FriendsScreen from './src/screens/FriendsScreen';
 import BlockedUsersScreen from './src/screens/BlockedUsersScreen';
 import ExploreScreen from './src/screens/ExploreScreen';
 
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowBanner: true,
@@ -263,11 +265,13 @@ const RootNavigator = () => {
 
 export default function App() {
   return (
-    <AuthProvider>
+    <SafeAreaProvider>
       <ThemeProvider>
-        <RootNavigator />
+        <AuthProvider>
+          <RootNavigator />
+        </AuthProvider>
       </ThemeProvider>
-    </AuthProvider>
+    </SafeAreaProvider>
   );
 }
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, useMemo } from 'react';
+import React, { useState, useEffect, useContext, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   Platform,
   Image,
   Alert,
+  Keyboard,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { quoteService, Comment } from '../api/quoteService';
@@ -18,16 +19,46 @@ import { quoteService, Comment } from '../api/quoteService';
 import { ThemeContext } from '../context/ThemeContext';
 import { ThemeColors } from '../theme/colors';
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useHeaderHeight } from '@react-navigation/elements';
+
 export default function CommentsScreen({ route, navigation }: any) {
   const { quoteId } = route.params;
 
   const { colors } = useContext(ThemeContext);
   const styles = useMemo(() => getStyles(colors), [colors]);
 
+  const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
+  const flatListRef = useRef<FlatList>(null);
+
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // --- CONTROL MANUAL AL TASTATURII PENTRU ANDROID ---
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      (e) => {
+        setKeyboardHeight(e.endCoordinates.height);
+        setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 150);
+      },
+    );
+
+    const hideSubscription = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => setKeyboardHeight(0),
+    );
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
 
   useEffect(() => {
     const fetchComments = async () => {
@@ -53,6 +84,8 @@ export default function CommentsScreen({ route, navigation }: any) {
       const postedComment = await quoteService.addComment(quoteId, newComment.trim());
       setComments((prev) => [...prev, postedComment]);
       setNewComment('');
+      // Scroll automat la adăugarea unui comentariu nou
+      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
     } catch (error) {
       console.error(error);
       Alert.alert('Eroare', 'Nu am putut posta comentariul.');
@@ -87,18 +120,16 @@ export default function CommentsScreen({ route, navigation }: any) {
     );
   };
 
-  return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-    >
+  // --- ÎMPACHETĂM CONȚINUTUL (DRY PRINCIPLE) ---
+  const commentsContent = (
+    <>
       {isLoading ? (
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : (
         <FlatList
+          ref={flatListRef}
           data={comments}
           keyExtractor={(item) => item.id.toString()}
           renderItem={renderComment}
@@ -106,10 +137,12 @@ export default function CommentsScreen({ route, navigation }: any) {
           ListEmptyComponent={
             <Text style={styles.emptyText}>Fii primul care lasă un comentariu!</Text>
           }
+          onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
         />
       )}
 
-      <View style={styles.inputContainer}>
+      {/* Spațiu de siguranță adăugat prin insets.bottom pentru navigarea nativă */}
+      <View style={[styles.inputContainer, { paddingBottom: Math.max(10, insets.bottom) }]}>
         <TextInput
           style={styles.input}
           placeholder="Adaugă un comentariu..."
@@ -118,6 +151,9 @@ export default function CommentsScreen({ route, navigation }: any) {
           onChangeText={setNewComment}
           multiline
           maxLength={500}
+          onFocus={() => {
+            setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 200);
+          }}
         />
         <TouchableOpacity
           style={[styles.sendButton, !newComment.trim() && { opacity: 0.5 }]}
@@ -131,7 +167,24 @@ export default function CommentsScreen({ route, navigation }: any) {
           )}
         </TouchableOpacity>
       </View>
-    </KeyboardAvoidingView>
+    </>
+  );
+
+  // --- LOGICA DE RANDARE BAZATĂ PE PLATFORMĂ ---
+  if (Platform.OS === 'ios') {
+    return (
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior="padding"
+        keyboardVerticalOffset={headerHeight}
+      >
+        {commentsContent}
+      </KeyboardAvoidingView>
+    );
+  }
+
+  return (
+    <View style={[styles.container, { paddingBottom: keyboardHeight }]}>{commentsContent}</View>
   );
 }
 

@@ -4,7 +4,7 @@ import {
   getConversations,
   getMessageHistory,
   getUnreadMessagesCount,
-  uploadChatFile
+  uploadChatFile,
 } from '../controllers/messageController';
 import { uploadAttachment } from '../middleware/uploadMiddleware';
 

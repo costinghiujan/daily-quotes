@@ -5,13 +5,14 @@ import {
   TextInput,
   FlatList,
   TouchableOpacity,
-  KeyboardAvoidingView,
   Platform,
   StyleSheet,
   ActivityIndicator,
   Image,
   Linking,
   Alert,
+  Keyboard,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -25,8 +26,11 @@ import { ThemeContext } from '../context/ThemeContext';
 import { ThemeColors } from '../theme/colors';
 import { messageService, Message } from '../api/messageService';
 import { friendshipService } from '../api/friendshipService';
-import { storage } from '../utils/storage'; // Pentru token
+import { storage } from '../utils/storage';
 import { apiClient } from '../api/client';
+
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useHeaderHeight } from '@react-navigation/elements';
 
 const debuggerHost = Constants.expoConfig?.hostUri;
 const dynamicIp = debuggerHost ? debuggerHost.split(':')[0] : 'localhost';
@@ -39,19 +43,47 @@ export default function ChatScreen() {
   const { colors } = useContext(ThemeContext);
   const styles = useMemo(() => getStyles(colors), [colors]);
 
+  const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
+
   const params = route.params || {};
-  
+
   const otherUserId = params.otherUserId || params.userId || params.id;
-  
-  const otherUsername = params.otherUsername || params.username || params.full_name || 'Conversație';
-  
+  const otherUsername =
+    params.otherUsername || params.username || params.full_name || 'Conversație';
   const otherUserAvatar = params.otherUserAvatar || params.avatar || params.profile_picture_url;
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
+
+  // --- CONTROL MANUAL AL TASTATURII PENTRU ANDROID ---
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      (e) => {
+        setKeyboardHeight(e.endCoordinates.height);
+        setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 150);
+      },
+    );
+
+    const hideSubscription = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => setKeyboardHeight(0),
+    );
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
+
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
-  const [relationshipStatus, setRelationshipStatus] = useState<'FRIENDS' | 'BLOCKED_BY_ME' | 'BLOCKED_BY_THEM' | 'NOT_FRIENDS'>('FRIENDS');
+  const [relationshipStatus, setRelationshipStatus] = useState<
+    'FRIENDS' | 'BLOCKED_BY_ME' | 'BLOCKED_BY_THEM' | 'NOT_FRIENDS'
+  >('FRIENDS');
 
   const socketRef = useRef<Socket | null>(null);
   const flatListRef = useRef<FlatList>(null);
@@ -63,7 +95,7 @@ export default function ChatScreen() {
       try {
         const [history, status] = await Promise.all([
           messageService.getHistory(otherUserId),
-          friendshipService.checkStatus(otherUserId)
+          friendshipService.checkStatus(otherUserId),
         ]);
         setMessages(history);
         setRelationshipStatus(status);
@@ -82,7 +114,6 @@ export default function ChatScreen() {
     }
 
     socketRef.current.on('receive_message', (newMessage: Message) => {
-      // Adăugăm mesajul doar dacă este din conversația curentă
       if (
         (newMessage.sender_id === user?.id && newMessage.receiver_id === otherUserId) ||
         (newMessage.sender_id === otherUserId && newMessage.receiver_id === user?.id)
@@ -123,18 +154,22 @@ export default function ChatScreen() {
         }
         fileResult = await ImagePicker.launchImageLibraryAsync({
           mediaTypes: ImagePicker.MediaTypeOptions.Images,
-          quality: 0.7, // Comprimăm puțin pentru viteză
+          quality: 0.7,
         });
       } else {
         fileResult = await DocumentPicker.getDocumentAsync({
-          type: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+          type: [
+            'application/pdf',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          ],
         });
       }
 
       if (fileResult.canceled || !fileResult.assets || fileResult.assets.length === 0) return;
 
       const fileAsset = fileResult.assets[0];
-      
+
       const formData = new FormData();
       formData.append('file', {
         uri: Platform.OS === 'ios' ? fileAsset.uri.replace('file://', '') : fileAsset.uri,
@@ -148,7 +183,7 @@ export default function ChatScreen() {
       const uploadResponse = await fetch(`${apiClient.defaults.baseURL}/messages/attachment`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: formData,
       });
@@ -162,14 +197,13 @@ export default function ChatScreen() {
       const messageData = {
         senderId: user?.id,
         receiverId: otherUserId,
-        text: null, // Fără text
+        text: null,
         messageType: responseData.data.messageType,
         mediaUrl: responseData.data.mediaUrl,
         fileName: responseData.data.fileName,
       };
 
       socketRef.current?.emit('send_message', messageData);
-
     } catch (error: any) {
       console.error('[Upload Eroare]', error);
       Alert.alert('Eroare', error.message || 'Nu am putut trimite fișierul.');
@@ -198,27 +232,48 @@ export default function ChatScreen() {
           />
         )}
         <View style={[styles.messageBubble, isMyMessage ? styles.myBubble : styles.otherBubble]}>
-          
           {item.message_type === 'IMAGE' && item.media_url ? (
-            <Image source={{ uri: item.media_url }} style={styles.imageAttachment} resizeMode="cover" />
+            <Image
+              source={{ uri: item.media_url }}
+              style={styles.imageAttachment}
+              resizeMode="cover"
+            />
           ) : item.message_type === 'DOCUMENT' && item.media_url ? (
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.documentAttachment}
               onPress={() => Linking.openURL(item.media_url!)}
             >
-              <Ionicons name="document-text" size={32} color={isMyMessage ? colors.white : colors.primary} />
-              <Text style={[styles.documentName, { color: isMyMessage ? colors.white : colors.textDark }]} numberOfLines={2}>
+              <Ionicons
+                name="document-text"
+                size={32}
+                color={isMyMessage ? colors.white : colors.primary}
+              />
+              <Text
+                style={[
+                  styles.documentName,
+                  { color: isMyMessage ? colors.white : colors.textDark },
+                ]}
+                numberOfLines={2}
+              >
                 {item.file_name || 'Document'}
               </Text>
             </TouchableOpacity>
           ) : (
-            <Text style={[styles.messageText, isMyMessage ? styles.myMessageText : styles.otherMessageText]}>
+            <Text
+              style={[
+                styles.messageText,
+                isMyMessage ? styles.myMessageText : styles.otherMessageText,
+              ]}
+            >
               {item.text}
             </Text>
           )}
 
           <Text style={[styles.timeText, isMyMessage ? styles.myTimeText : styles.otherTimeText]}>
-            {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            {new Date(item.created_at).toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
           </Text>
         </View>
       </View>
@@ -233,32 +288,29 @@ export default function ChatScreen() {
     );
   }
 
-  return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-    >
+  // --- NOU: ÎMPACHETĂM CONȚINUTUL (DRY PRINCIPLE) ---
+  const chatContent = (
+    <>
       <FlatList
         ref={flatListRef}
         data={messages}
-        keyExtractor={(item, index) => item.id ? item.id.toString() : index.toString()}
+        keyExtractor={(item, index) => (item.id ? item.id.toString() : index.toString())}
         renderItem={renderMessage}
         contentContainerStyle={styles.listContent}
         onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
       />
 
       {relationshipStatus === 'FRIENDS' ? (
-        <View style={styles.inputContainer}>
-          <TouchableOpacity 
-            style={styles.attachButton} 
+        <View style={[styles.inputContainer, { paddingBottom: Math.max(10, insets.bottom) }]}>
+          <TouchableOpacity
+            style={styles.attachButton}
             onPress={showAttachmentOptions}
             disabled={isUploading}
           >
             {isUploading ? (
-               <ActivityIndicator size="small" color={colors.primary} />
+              <ActivityIndicator size="small" color={colors.primary} />
             ) : (
-               <Ionicons name="attach" size={28} color={colors.textLight} />
+              <Ionicons name="attach" size={28} color={colors.textLight} />
             )}
           </TouchableOpacity>
 
@@ -270,6 +322,9 @@ export default function ChatScreen() {
             onChangeText={setInputText}
             multiline
             maxLength={500}
+            onFocus={() => {
+              setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 200);
+            }}
           />
 
           <TouchableOpacity
@@ -282,10 +337,10 @@ export default function ChatScreen() {
         </View>
       ) : (
         <View style={styles.disabledContainer}>
-          <Ionicons 
-            name={relationshipStatus.includes('BLOCKED') ? "ban" : "information-circle-outline"} 
-            size={24} 
-            color={colors.textLight} 
+          <Ionicons
+            name={relationshipStatus.includes('BLOCKED') ? 'ban' : 'information-circle-outline'}
+            size={24}
+            color={colors.textLight}
             style={{ marginBottom: 5 }}
           />
           <Text style={styles.disabledText}>
@@ -295,8 +350,24 @@ export default function ChatScreen() {
           </Text>
         </View>
       )}
-    </KeyboardAvoidingView>
+    </>
   );
+
+  // --- LOGICA DE RANDARE BAZATĂ PE PLATFORMĂ ---
+
+  if (Platform.OS === 'ios') {
+    return (
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior="padding"
+        keyboardVerticalOffset={headerHeight}
+      >
+        {chatContent}
+      </KeyboardAvoidingView>
+    );
+  }
+
+  return <View style={[styles.container, { paddingBottom: keyboardHeight }]}>{chatContent}</View>;
 }
 
 const getStyles = (colors: ThemeColors) =>
@@ -304,37 +375,90 @@ const getStyles = (colors: ThemeColors) =>
     container: { flex: 1, backgroundColor: colors.background },
     centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     listContent: { padding: 15, paddingBottom: 20 },
-    
+
     messageRow: { flexDirection: 'row', alignItems: 'flex-end', marginBottom: 12 },
     myMessageRow: { justifyContent: 'flex-end' },
     otherMessageRow: { justifyContent: 'flex-start' },
-    
+
     avatar: { width: 30, height: 30, borderRadius: 15, marginRight: 8 },
-    
+
     messageBubble: { maxWidth: '75%', padding: 12, borderRadius: 16 },
     myBubble: { backgroundColor: colors.primary, borderBottomRightRadius: 4 },
-    otherBubble: { backgroundColor: colors.card, borderBottomLeftRadius: 4, borderWidth: 1, borderColor: colors.border },
-    
+    otherBubble: {
+      backgroundColor: colors.card,
+      borderBottomLeftRadius: 4,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+
     messageText: { fontSize: 16, lineHeight: 22 },
     myMessageText: { color: colors.white },
     otherMessageText: { color: colors.textDark },
-    
-    // Stiluri NOI pentru Media
+
     imageAttachment: { width: 200, height: 250, borderRadius: 10, marginBottom: 5 },
-    documentAttachment: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.1)', padding: 10, borderRadius: 10, width: 200 },
+    documentAttachment: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: 'rgba(0,0,0,0.1)',
+      padding: 10,
+      borderRadius: 10,
+      width: 200,
+    },
     documentName: { marginLeft: 10, fontSize: 14, fontWeight: '500', flex: 1 },
 
     timeText: { fontSize: 11, marginTop: 4, alignSelf: 'flex-end' },
     myTimeText: { color: 'rgba(255,255,255,0.7)' },
     otherTimeText: { color: colors.textLight },
-    
-    inputContainer: { flexDirection: 'row', alignItems: 'flex-end', padding: 10, paddingBottom: Platform.OS === 'ios' ? 30 : 10, backgroundColor: colors.card, borderTopWidth: 1, borderTopColor: colors.border },
-    
+
+    inputContainer: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      padding: 10,
+      backgroundColor: colors.card,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+
     attachButton: { padding: 10, justifyContent: 'center', alignItems: 'center' },
-    
-    input: { flex: 1, minHeight: 40, maxHeight: 100, backgroundColor: colors.background, borderRadius: 20, paddingHorizontal: 15, paddingTop: 10, paddingBottom: 10, fontSize: 16, color: colors.textDark, borderWidth: 1, borderColor: colors.border },
-    sendButton: { backgroundColor: colors.primary, width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', marginLeft: 10, marginBottom: 2 },
-    
-    disabledContainer: { alignItems: 'center', justifyContent: 'center', padding: 20, paddingBottom: Platform.OS === 'ios' ? 35 : 20, backgroundColor: colors.card, borderTopWidth: 1, borderTopColor: colors.border },
-    disabledText: { color: colors.textLight, fontSize: 14, fontStyle: 'italic', textAlign: 'center' },
+
+    input: {
+      flex: 1,
+      minHeight: 40,
+      maxHeight: 100,
+      backgroundColor: colors.background,
+      borderRadius: 20,
+      paddingHorizontal: 15,
+      paddingTop: 10,
+      paddingBottom: 10,
+      fontSize: 16,
+      color: colors.textDark,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    sendButton: {
+      backgroundColor: colors.primary,
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginLeft: 10,
+      marginBottom: 2,
+    },
+
+    disabledContainer: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 20,
+      paddingBottom: Platform.OS === 'ios' ? 35 : 20,
+      backgroundColor: colors.card,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    disabledText: {
+      color: colors.textLight,
+      fontSize: 14,
+      fontStyle: 'italic',
+      textAlign: 'center',
+    },
   });

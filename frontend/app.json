@@ -23,7 +23,8 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.cox_teen.frontend",
-      "googleServicesFile": "./google-services.json" 
+      "googleServicesFile": "./google-services.json",
+      "softwareKeyboardLayoutMode": "resize"
     },
     
     "web": {

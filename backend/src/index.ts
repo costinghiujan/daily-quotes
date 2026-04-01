@@ -62,18 +62,18 @@ io.on('connection', (socket) => {
     console.log('\n[Debug Backend] 1. Eveniment "send_message" PRIMIT!');
     console.log('[Debug Backend] 2. Date primite:', data);
 
-    const { 
-      senderId, 
-      receiverId, 
-      text, 
-      messageType = 'TEXT', 
-      mediaUrl = null, 
-      fileName = null 
+    const {
+      senderId,
+      receiverId,
+      text,
+      messageType = 'TEXT',
+      mediaUrl = null,
+      fileName = null,
     } = data;
 
     try {
       console.log('[Debug Backend] 3. Încercare de salvare în DB...');
-      
+
       const result = await pool.query(
         `INSERT INTO messages 
         (sender_id, receiver_id, text, message_type, media_url, file_name) 
@@ -81,7 +81,7 @@ io.on('connection', (socket) => {
         RETURNING *`,
         [senderId, receiverId, text || null, messageType, mediaUrl, fileName],
       );
-      
+
       const savedMessage = result.rows[0];
       console.log('[Debug Backend] 4. Salvat cu succes in DB:', savedMessage.id);
 
@@ -101,7 +101,9 @@ io.on('connection', (socket) => {
         else notificationText = 'A trimis un mesaj nou';
       }
 
-      sendMessagePushNotification(senderId, receiverId, notificationText).catch((err) => console.error(err));
+      sendMessagePushNotification(senderId, receiverId, notificationText).catch((err) =>
+        console.error(err),
+      );
     } catch (error) {
       console.error('[Debug Backend - EROARE CRITICĂ] Nu s-a putut salva mesajul:', error);
     }
