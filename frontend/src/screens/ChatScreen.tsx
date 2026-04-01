@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import io, { Socket } from 'socket.io-client';
+import { io, Socket } from 'socket.io-client';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import Constants from 'expo-constants';
