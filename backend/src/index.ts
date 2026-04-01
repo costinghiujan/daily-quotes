@@ -14,6 +14,7 @@ import messageRoutes from './routes/messageRoutes';
 
 import { testConnection, initDB, pool } from './config/db';
 import { sendMessagePushNotification } from './utils/notificationHelper';
+import { initCronJobs } from './services/cronService';
 
 const app = express();
 const PORT = parseInt(process.env.PORT || '5000', 10);
@@ -118,6 +119,8 @@ const startServer = async () => {
   try {
     await testConnection();
     await initDB();
+
+    initCronJobs();
 
     server
       .listen(PORT, () => {
