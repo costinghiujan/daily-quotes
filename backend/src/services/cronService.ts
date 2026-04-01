@@ -26,7 +26,6 @@ export const initCronJobs = () => {
         WHERE created_at < NOW() - INTERVAL '60 DAYS';
       `);
       console.log(`[Cron] 🧹 S-au curățat ${cleanupSessions.rowCount} sesiuni inactive.`);
-
     } catch (error) {
       console.error('[Eroare Cron] Mentenanța de noapte a eșuat:', error);
     }

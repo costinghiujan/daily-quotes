@@ -1,5 +1,13 @@
 import { apiClient } from './client';
 
+export interface Badge {
+  id: number;
+  name: string;
+  description: string;
+  icon_name: string;
+  earned_at?: string;
+}
+
 export interface UserProfile {
   id: number;
   username: string;
@@ -7,6 +15,9 @@ export interface UserProfile {
   bio: string | null;
   profile_picture_url: string | null;
   created_at?: string;
+  xp?: number;
+  level?: number;
+  badges?: Badge[];
 }
 
 export const userService = {

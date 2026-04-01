@@ -52,9 +52,25 @@ export const getMyProfile = async (req: AuthRequest, res: Response): Promise<voi
 
     const userResult = await query(
       `
-      SELECT id, username, full_name, bio, profile_picture_url, created_at 
+      SELECT id, username, full_name, bio, profile_picture_url, created_at, xp, level 
       FROM users WHERE id = $1;
     `,
+      [currentUserId],
+    );
+
+    if (userResult.rowCount === 0) {
+      res.status(404).json({ status: 'error', message: 'Utilizatorul nu a fost găsit.' });
+      return;
+    }
+
+    const badgesResult = await query(
+      `
+      SELECT b.id, b.name, b.description, b.icon_name, ub.earned_at
+      FROM badges b
+      JOIN user_badges ub ON b.id = ub.badge_id
+      WHERE ub.user_id = $1
+      ORDER BY ub.earned_at DESC;
+      `,
       [currentUserId],
     );
 
@@ -63,9 +79,14 @@ export const getMyProfile = async (req: AuthRequest, res: Response): Promise<voi
       [currentUserId],
     );
 
+    const profileData = {
+      ...userResult.rows[0],
+      badges: badgesResult.rows,
+    };
+
     res.status(200).json({
       status: 'success',
-      data: { profile: userResult.rows[0], quotes: quotesResult.rows },
+      data: { profile: profileData, quotes: quotesResult.rows },
     });
   } catch (error) {
     console.error('[Eroare Controller] Nu s-a putut încărca profilul propriu:', error);
@@ -79,19 +100,30 @@ export const getUserProfile = async (req: AuthRequest, res: Response): Promise<v
 
     const userResult = await query(
       `
-      SELECT id, username, full_name, bio, profile_picture_url, created_at 
+      SELECT id, username, full_name, bio, profile_picture_url, created_at, xp, level 
       FROM users 
       WHERE id = $1;
     `,
       [id],
     );
 
-    if (userResult.rows.length === 0) {
+    if (userResult.rowCount === 0) {
       res.status(404).json({ status: 'error', message: 'Utilizatorul nu a fost găsit.' });
       return;
     }
 
     const userProfile = userResult.rows[0];
+
+    const badgesResult = await query(
+      `
+      SELECT b.id, b.name, b.description, b.icon_name, ub.earned_at
+      FROM badges b
+      JOIN user_badges ub ON b.id = ub.badge_id
+      WHERE ub.user_id = $1
+      ORDER BY ub.earned_at DESC;
+      `,
+      [id],
+    );
 
     const quotesResult = await query(
       'SELECT * FROM quotes WHERE user_id = $1 ORDER BY created_at DESC;',
@@ -101,7 +133,10 @@ export const getUserProfile = async (req: AuthRequest, res: Response): Promise<v
     res.status(200).json({
       status: 'success',
       data: {
-        profile: userProfile,
+        profile: {
+          ...userProfile,
+          badges: badgesResult.rows,
+        },
         quotes: quotesResult.rows,
       },
     });
