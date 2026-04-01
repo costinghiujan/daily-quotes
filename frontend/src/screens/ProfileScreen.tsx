@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  ScrollView,
 } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -61,7 +62,7 @@ export default function ProfileScreen() {
         full_name: editFullName,
         bio: editBio,
       });
-      setProfile(updatedData);
+      setProfile((prev) => (prev ? { ...prev, ...updatedData } : null));
       setIsEditing(false);
       Alert.alert('Succes', 'Profilul a fost actualizat!');
     } catch (error) {
@@ -88,7 +89,7 @@ export default function ProfileScreen() {
       setIsUploading(true);
       try {
         const updatedProfile = await userService.uploadAvatar(pickerResult.assets[0].uri);
-        setProfile(updatedProfile);
+        setProfile((prev) => (prev ? { ...prev, profile_picture_url: updatedProfile.profile_picture_url } : null));
         Alert.alert('Succes', 'Fotografia de profil a fost actualizată!');
       } catch (error) {
         console.error(error);
@@ -122,6 +123,11 @@ export default function ProfileScreen() {
     );
   };
 
+  const currentXp = profile?.xp || 0;
+  const currentLevel = profile?.level || 1;
+  const xpInCurrentLevel = currentXp % 50;
+  const progressPercentage = (xpInCurrentLevel / 50) * 100;
+
   const renderQuoteItem = ({ item }: { item: any }) => (
     <View style={styles.quoteCard}>
       <View style={styles.quoteCardHeader}>
@@ -131,6 +137,120 @@ export default function ProfileScreen() {
         </TouchableOpacity>
       </View>
       <Text style={styles.quoteAuthor}>— {item.author}</Text>
+    </View>
+  );
+
+  const renderProfileHeader = () => (
+    <View style={styles.header}>
+      <TouchableOpacity
+        style={styles.settingsBtn}
+        onPress={() => navigation.navigate('SettingsScreen')}
+      >
+        <Ionicons name="settings-outline" size={26} color={colors.textDark} />
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        onPress={handlePickImage}
+        disabled={isUploading}
+        style={styles.avatarContainer}
+      >
+        {profile?.profile_picture_url ? (
+          <Image source={{ uri: profile.profile_picture_url }} style={styles.avatarImage} />
+        ) : (
+          <View style={styles.avatarPlaceholder}>
+            <Ionicons name="person" size={40} color={colors.white} />
+          </View>
+        )}
+        <View style={styles.avatarOverlay}>
+          {isUploading ? (
+            <ActivityIndicator size="small" color={colors.white} />
+          ) : (
+            <Ionicons name="camera" size={16} color={colors.white} />
+          )}
+        </View>
+      </TouchableOpacity>
+
+      {isEditing ? (
+        <View style={styles.editContainer}>
+          <TextInput
+            style={styles.input}
+            placeholder="Nume Complet"
+            placeholderTextColor={colors.textLight}
+            value={editFullName}
+            onChangeText={setEditFullName}
+          />
+          <TextInput
+            style={[styles.input, { height: 60 }]}
+            placeholder="O scurtă descriere (Bio)"
+            placeholderTextColor={colors.textLight}
+            value={editBio}
+            onChangeText={setEditBio}
+            multiline
+          />
+          <View style={styles.actionButtons}>
+            <TouchableOpacity
+              style={[styles.btn, { backgroundColor: colors.success }]}
+              onPress={handleSaveProfile}
+            >
+              <Text style={styles.btnText}>Salvează</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.btn, { backgroundColor: colors.error }]}
+              onPress={() => setIsEditing(false)}
+            >
+              <Text style={styles.btnText}>Anulează</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      ) : (
+        <View style={styles.infoContainer}>
+          <View style={styles.nameLevelRow}>
+            <Text style={styles.fullName}>{profile?.full_name || 'Nume nesetat'}</Text>
+            <View style={styles.levelBadge}>
+              <Text style={styles.levelBadgeText}>Lvl {currentLevel}</Text>
+            </View>
+          </View>
+          <Text style={styles.username}>@{profile?.username}</Text>
+          {profile?.bio && <Text style={styles.bio}>{profile.bio}</Text>}
+
+          {/* BARA DE XP */}
+          <View style={styles.xpContainer}>
+            <View style={styles.xpHeader}>
+              <Text style={styles.xpLabel}>Progres Nivel</Text>
+              <Text style={styles.xpNumbers}>{xpInCurrentLevel} / 50 XP</Text>
+            </View>
+            <View style={styles.progressBarBackground}>
+              <View style={[styles.progressBarFill, { width: `${progressPercentage}%` }]} />
+            </View>
+          </View>
+
+          <View style={styles.actionButtonsRow}>
+            <TouchableOpacity style={styles.editBtn} onPress={() => setIsEditing(true)}>
+              <Ionicons name="pencil" size={16} color={colors.white} />
+              <Text style={[styles.btnText, { marginLeft: 6 }]}>Editează Profilul</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {/* SECȚIUNEA DE INSIGNE (Apare doar dacă nu suntem în modul editare) */}
+      {!isEditing && profile?.badges && profile.badges.length > 0 && (
+        <View style={styles.badgesSection}>
+          <Text style={styles.badgesSectionTitle}>Insigne Deblocate</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.badgesScroll}>
+            {profile.badges.map((badge) => (
+              <View key={badge.id} style={styles.badgeItem}>
+                <View style={styles.badgeIconContainer}>
+                  <Ionicons name={badge.icon_name as any} size={28} color={colors.white} />
+                </View>
+                <Text style={styles.badgeName} numberOfLines={2}>
+                  {badge.name}
+                </Text>
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+      )}
     </View>
   );
 
@@ -144,90 +264,15 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.settingsBtn}
-          onPress={() => navigation.navigate('SettingsScreen')}
-        >
-          <Ionicons name="settings-outline" size={26} color={colors.textDark} />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={handlePickImage}
-          disabled={isUploading}
-          style={styles.avatarContainer}
-        >
-          {profile?.profile_picture_url ? (
-            <Image source={{ uri: profile.profile_picture_url }} style={styles.avatarImage} />
-          ) : (
-            <View style={styles.avatarPlaceholder}>
-              <Ionicons name="person" size={40} color={colors.white} />
-            </View>
-          )}
-          <View style={styles.avatarOverlay}>
-            {isUploading ? (
-              <ActivityIndicator size="small" color={colors.white} />
-            ) : (
-              <Ionicons name="camera" size={16} color={colors.white} />
-            )}
-          </View>
-        </TouchableOpacity>
-
-        {isEditing ? (
-          <View style={styles.editContainer}>
-            <TextInput
-              style={styles.input}
-              placeholder="Nume Complet"
-              placeholderTextColor={colors.textLight}
-              value={editFullName}
-              onChangeText={setEditFullName}
-            />
-            <TextInput
-              style={[styles.input, { height: 60 }]}
-              placeholder="O scurtă descriere (Bio)"
-              placeholderTextColor={colors.textLight}
-              value={editBio}
-              onChangeText={setEditBio}
-              multiline
-            />
-            <View style={styles.actionButtons}>
-              <TouchableOpacity
-                style={[styles.btn, { backgroundColor: colors.success }]}
-                onPress={handleSaveProfile}
-              >
-                <Text style={styles.btnText}>Salvează</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.btn, { backgroundColor: colors.error }]}
-                onPress={() => setIsEditing(false)}
-              >
-                <Text style={styles.btnText}>Anulează</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        ) : (
-          <View style={styles.infoContainer}>
-            <Text style={styles.fullName}>{profile?.full_name || 'Nume nesetat'}</Text>
-            <Text style={styles.username}>@{profile?.username}</Text>
-            {profile?.bio && <Text style={styles.bio}>{profile.bio}</Text>}
-
-            <View style={styles.actionButtonsRow}>
-              <TouchableOpacity style={styles.editBtn} onPress={() => setIsEditing(true)}>
-                <Ionicons name="pencil" size={16} color={colors.white} />
-                <Text style={[styles.btnText, { marginLeft: 6 }]}>Editează Profilul</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-      </View>
-
-      <Text style={styles.sectionTitle}>Citatele Mele ({quotes.length})</Text>
       <FlatList
         data={quotes}
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderQuoteItem}
+        ListHeaderComponent={renderProfileHeader}
         contentContainerStyle={styles.listContent}
-        ListEmptyComponent={<Text style={styles.emptyText}>Nu ai adăugat niciun citat încă.</Text>}
+        ListEmptyComponent={
+          <Text style={styles.emptyText}>Nu ai adăugat niciun citat încă.</Text>
+        }
       />
     </View>
   );
@@ -244,14 +289,11 @@ const getStyles = (colors: ThemeColors) =>
     },
     header: {
       backgroundColor: colors.card,
-      padding: 20,
+      paddingTop: 20,
+      paddingBottom: 25,
       alignItems: 'center',
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
-      elevation: 2,
-      shadowColor: '#000',
-      shadowOpacity: 0.05,
-      shadowRadius: 5,
       position: 'relative',
     },
     settingsBtn: {
@@ -284,15 +326,58 @@ const getStyles = (colors: ThemeColors) =>
       borderWidth: 2,
       borderColor: colors.card,
     },
-    infoContainer: { alignItems: 'center' },
-    fullName: { fontSize: 20, fontWeight: 'bold', color: colors.textDark },
+    infoContainer: { alignItems: 'center', width: '100%', paddingHorizontal: 20 },
+    nameLevelRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
+    fullName: { fontSize: 20, fontWeight: 'bold', color: colors.textDark, marginRight: 8 },
+    
+    levelBadge: {
+      backgroundColor: colors.primary,
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: 10,
+    },
+    levelBadgeText: { color: colors.white, fontSize: 12, fontWeight: 'bold' },
+    xpContainer: { width: '100%', marginVertical: 15 },
+    xpHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 5 },
+    xpLabel: { fontSize: 12, color: colors.textLight, fontWeight: '600' },
+    xpNumbers: { fontSize: 12, color: colors.primary, fontWeight: 'bold' },
+    progressBarBackground: {
+      height: 8,
+      backgroundColor: colors.border,
+      borderRadius: 4,
+      overflow: 'hidden',
+    },
+    progressBarFill: {
+      height: '100%',
+      backgroundColor: colors.primary,
+      borderRadius: 4,
+    },
+    badgesSection: { width: '100%', marginTop: 25, paddingLeft: 20 },
+    badgesSectionTitle: { fontSize: 14, fontWeight: 'bold', color: colors.textDark, marginBottom: 10 },
+    badgesScroll: { paddingRight: 20 },
+    badgeItem: { alignItems: 'center', marginRight: 15, width: 70 },
+    badgeIconContainer: {
+      width: 50,
+      height: 50,
+      borderRadius: 25,
+      backgroundColor: colors.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 6,
+      elevation: 3,
+      shadowColor: colors.primary,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.3,
+      shadowRadius: 3,
+    },
+    badgeName: { fontSize: 11, color: colors.textDark, textAlign: 'center', fontWeight: '500' },
+
     username: { fontSize: 14, color: colors.textLight, marginBottom: 10 },
     bio: {
       fontSize: 15,
       color: colors.textLight,
       textAlign: 'center',
-      marginBottom: 15,
-      paddingHorizontal: 20,
+      marginBottom: 10,
     },
 
     actionButtonsRow: {
@@ -312,7 +397,7 @@ const getStyles = (colors: ThemeColors) =>
     },
     btnText: { color: colors.white, fontWeight: 'bold', fontSize: 13 },
 
-    editContainer: { width: '100%' },
+    editContainer: { width: '100%', paddingHorizontal: 20 },
     input: {
       borderWidth: 1,
       borderColor: colors.border,
@@ -324,14 +409,14 @@ const getStyles = (colors: ThemeColors) =>
     },
     actionButtons: { flexDirection: 'row', justifyContent: 'center', gap: 10 },
     btn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8 },
-    sectionTitle: { fontSize: 18, fontWeight: 'bold', padding: 15, color: colors.textDark },
-    listContent: { paddingHorizontal: 15, paddingBottom: 20 },
+    listContent: { paddingBottom: 20 },
 
     quoteCard: {
       backgroundColor: colors.card,
       padding: 15,
       borderRadius: 10,
       marginBottom: 10,
+      marginHorizontal: 15,
       borderLeftWidth: 4,
       borderLeftColor: colors.primary,
     },
