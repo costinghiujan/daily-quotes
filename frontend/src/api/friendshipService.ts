@@ -18,6 +18,15 @@ export interface BlockedUser {
   blocked_at: string;
 }
 
+export interface Friend {
+  id: number;
+  username: string;
+  full_name: string | null;
+  profile_picture_url: string | null;
+  friendship_id: number;
+  streak_count?: number; 
+}
+
 export const friendshipService = {
   sendRequest: async (receiverId: number): Promise<void> => {
     try {
@@ -62,7 +71,7 @@ export const friendshipService = {
     }
   },
 
-  getFriends: async (): Promise<any[]> => {
+  getFriends: async (): Promise<Friend[]> => {
     try {
       const response = await apiClient.get('/friendships/friends');
       return response.data.data;

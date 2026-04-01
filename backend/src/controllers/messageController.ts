@@ -13,14 +13,15 @@ export const getConversations = async (req: AuthRequest, res: Response): Promise
 
     const result = await query(
       `
-      SELECT DISTINCT ON (other_user_id)
+      SELECT DISTINCT ON (m.other_user_id)
         u.id AS user_id,
         u.username,
         u.full_name,
         u.profile_picture_url,
         m.text AS last_message,
         m.created_at AS last_message_date,
-        m.is_read
+        m.is_read,
+        f.streak_count
       FROM (
         SELECT 
           CASE WHEN sender_id = $1 THEN receiver_id ELSE sender_id END AS other_user_id,
@@ -30,7 +31,10 @@ export const getConversations = async (req: AuthRequest, res: Response): Promise
         ORDER BY created_at DESC
       ) m
       JOIN users u ON u.id = m.other_user_id
-      ORDER BY other_user_id, m.created_at DESC;
+      LEFT JOIN friendships f ON 
+        (f.requester_id = $1 AND f.receiver_id = m.other_user_id AND f.status = 'accepted') OR 
+        (f.requester_id = m.other_user_id AND f.receiver_id = $1 AND f.status = 'accepted')
+      ORDER BY m.other_user_id, m.created_at DESC;
     `,
       [userId],
     );

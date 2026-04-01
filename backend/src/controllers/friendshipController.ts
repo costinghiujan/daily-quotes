@@ -218,14 +218,14 @@ export const getFriends = async (req: AuthRequest, res: Response): Promise<void>
 
     const result = await query(
       `
-      SELECT u.id, u.username, u.full_name, u.profile_picture_url, u.bio
+      SELECT u.id, u.username, u.full_name, u.profile_picture_url, u.bio, f.streak_count, f.id as friendship_id
       FROM users u
       JOIN friendships f ON u.id = f.receiver_id
       WHERE f.requester_id = $1 AND f.status = 'accepted'
       
       UNION
       
-      SELECT u.id, u.username, u.full_name, u.profile_picture_url, u.bio
+      SELECT u.id, u.username, u.full_name, u.profile_picture_url, u.bio, f.streak_count, f.id as friendship_id
       FROM users u
       JOIN friendships f ON u.id = f.requester_id
       WHERE f.receiver_id = $1 AND f.status = 'accepted';

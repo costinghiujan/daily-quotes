@@ -12,7 +12,7 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { friendshipService } from '../api/friendshipService';
+import { friendshipService, Friend } from '../api/friendshipService';
 import { ThemeContext } from '../context/ThemeContext';
 import { ThemeColors } from '../theme/colors';
 
@@ -20,7 +20,7 @@ export default function FriendsScreen() {
   const { colors } = useContext(ThemeContext);
   const styles = useMemo(() => getStyles(colors), [colors]);
 
-  const [friends, setFriends] = useState<any[]>([]);
+  const [friends, setFriends] = useState<Friend[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchFriends = async () => {
@@ -90,7 +90,7 @@ export default function FriendsScreen() {
     );
   };
 
-  const renderFriendItem = ({ item }: { item: any }) => {
+  const renderFriendItem = ({ item }: { item: Friend }) => {
     const displayName = item.full_name || item.username;
 
     return (
@@ -104,9 +104,17 @@ export default function FriendsScreen() {
             </View>
           )}
           <View style={styles.textContainer}>
-            <Text style={styles.nameText} numberOfLines={1}>
-              {displayName}
-            </Text>
+            <View style={styles.nameRow}>
+              <Text style={styles.nameText} numberOfLines={1}>
+                {displayName}
+              </Text>
+              {/* NOU: AFISARE STREAK (FLACĂRĂ) */}
+              {item.streak_count && item.streak_count > 0 ? (
+                <View style={styles.streakBadge}>
+                  <Text style={styles.streakText}>🔥 {item.streak_count}</Text>
+                </View>
+              ) : null}
+            </View>
             <Text style={styles.usernameText}>@{item.username}</Text>
           </View>
         </View>
@@ -114,7 +122,7 @@ export default function FriendsScreen() {
         <View style={styles.actionButtons}>
           <TouchableOpacity
             style={styles.unfriendBtn}
-            onPress={() => handleUnfriend(item.id, displayName)}
+            onPress={() => handleUnfriend(item.friendship_id, displayName)}
           >
             <Text style={styles.unfriendBtnText}>Șterge</Text>
           </TouchableOpacity>
@@ -193,7 +201,18 @@ const getStyles = (colors: ThemeColors) =>
       marginRight: 12,
     },
     textContainer: { flex: 1, justifyContent: 'center' },
-    nameText: { fontSize: 16, fontWeight: 'bold', color: colors.textDark, marginBottom: 2 },
+    nameRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 2 },
+    nameText: { fontSize: 16, fontWeight: 'bold', color: colors.textDark, flexShrink: 1 },
+    
+    streakBadge: {
+      backgroundColor: 'rgba(255, 140, 0, 0.1)',
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 8,
+      marginLeft: 6,
+    },
+    streakText: { fontSize: 12, fontWeight: 'bold', color: '#FF8C00' },
+
     usernameText: { fontSize: 13, color: colors.textLight },
 
     actionButtons: { flexDirection: 'row', alignItems: 'center', gap: 8 },

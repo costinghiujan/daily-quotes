@@ -16,11 +16,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { io, Socket } from 'socket.io-client';
 import Constants from 'expo-constants';
 
-import { messageService, Conversation, Message } from '../api/messageService';
-import { friendshipService } from '../api/friendshipService';
+import { messageService, Conversation as BaseConversation, Message } from '../api/messageService';
+import { friendshipService, Friend } from '../api/friendshipService';
 import { ThemeContext } from '../context/ThemeContext';
 import { AuthContext } from '../context/AuthContext';
 import { ThemeColors } from '../theme/colors';
+
+interface Conversation extends BaseConversation {
+  streak_count?: number;
+}
 
 const debuggerHost = Constants.expoConfig?.hostUri;
 const dynamicIp = debuggerHost ? debuggerHost.split(':')[0] : null;
@@ -36,7 +40,7 @@ export default function ConversationsScreen() {
   const [isLoading, setIsLoading] = useState(true);
 
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [friends, setFriends] = useState<any[]>([]);
+  const [friends, setFriends] = useState<Friend[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isFriendsLoading, setIsFriendsLoading] = useState(false);
 
@@ -119,7 +123,7 @@ export default function ConversationsScreen() {
     }
   };
 
-  const startChatWithFriend = (friend: any) => {
+  const startChatWithFriend = (friend: Friend) => {
     setIsModalVisible(false);
     setSearchQuery('');
 
@@ -127,6 +131,7 @@ export default function ConversationsScreen() {
       userId: friend.id,
       username: friend.username,
       avatar: friend.profile_picture_url,
+      streakCount: friend.streak_count,
     });
   };
 
@@ -172,6 +177,13 @@ export default function ConversationsScreen() {
           <Text style={styles.name} numberOfLines={1}>
             {item.full_name || item.username}
           </Text>
+          {/* NOU: AFISARE STREAK (FLACĂRĂ) */}
+          {item.streak_count && item.streak_count > 0 ? (
+             <View style={styles.streakBadgeSmall}>
+               <Text style={styles.streakTextSmall}>🔥 {item.streak_count}</Text>
+             </View>
+          ) : null}
+          
           <Text style={[styles.time, !item.is_read && styles.unreadMessage]}>
             {formatTime(item.last_message_date)}
           </Text>
@@ -186,7 +198,7 @@ export default function ConversationsScreen() {
     </TouchableOpacity>
   );
 
-  const renderFriendItem = ({ item }: { item: any }) => (
+  const renderFriendItem = ({ item }: { item: Friend }) => (
     <TouchableOpacity style={styles.friendCard} onPress={() => startChatWithFriend(item)}>
       <View style={styles.avatarContainer}>
         {item.profile_picture_url ? (
@@ -317,12 +329,21 @@ const getStyles = (colors: ThemeColors) =>
     textContainer: { flex: 1, justifyContent: 'center' },
     headerRow: {
       flexDirection: 'row',
-      justifyContent: 'space-between',
       alignItems: 'center',
       marginBottom: 4,
     },
-    name: { fontSize: 16, fontWeight: 'bold', color: colors.textDark, flex: 1, marginRight: 10 },
-    time: { fontSize: 12, color: colors.textLight },
+    name: { fontSize: 16, fontWeight: 'bold', color: colors.textDark, flexShrink: 1, marginRight: 5 },
+    
+    streakBadgeSmall: {
+      backgroundColor: 'rgba(255, 140, 0, 0.1)',
+      paddingHorizontal: 4,
+      paddingVertical: 1,
+      borderRadius: 6,
+      marginRight: 'auto',
+    },
+    streakTextSmall: { fontSize: 11, fontWeight: 'bold', color: '#FF8C00' },
+    
+    time: { fontSize: 12, color: colors.textLight, marginLeft: 5 },
     lastMessage: { fontSize: 14, color: colors.textLight },
     unreadMessage: { color: colors.textDark, fontWeight: 'bold' },
     unreadDot: {
