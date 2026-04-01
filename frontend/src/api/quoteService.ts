@@ -120,4 +120,14 @@ export const quoteService = {
       throw error;
     }
   },
+
+  getQuoteOfTheDay: async (): Promise<any | null> => {
+    try {
+      const response = await apiClient.get('/quotes/hall-of-fame');
+      return response.data.data;
+    } catch (error) {
+      console.error('[Eroare Frontend] Preluare Citatul Zilei:', error);
+      return null;
+    }
+  },
 };

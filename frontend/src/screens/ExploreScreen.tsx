@@ -21,13 +21,19 @@ export default function ExploreScreen() {
   const styles = useMemo(() => getStyles(colors), [colors]);
 
   const [exploreQuotes, setExploreQuotes] = useState<any[]>([]);
+  const [quoteOfTheDay, setQuoteOfTheDay] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const fetchExploreFeed = async () => {
     try {
-      const data = await quoteService.getExploreFeed();
-      setExploreQuotes(data);
+      const [feedData, hofData] = await Promise.all([
+        quoteService.getExploreFeed(),
+        quoteService.getQuoteOfTheDay()
+      ]);
+      
+      setExploreQuotes(feedData);
+      setQuoteOfTheDay(hofData);
     } catch (error) {
       console.error('[Eroare UI] Nu am putut încărca Explore Feed:', error);
     } finally {
@@ -103,6 +109,40 @@ export default function ExploreScreen() {
     </View>
   );
 
+  const renderHeader = () => {
+    return (
+      <>
+        <View style={styles.headerTitleContainer}>
+          <Text style={styles.headerTitle}>Descoperă</Text>
+          <Text style={styles.headerSubtitle}>Citate de la oameni noi</Text>
+        </View>
+
+        {quoteOfTheDay && (
+          <View style={styles.hofContainer}>
+            <View style={styles.hofHeader}>
+              <Ionicons name="trophy" size={20} color="#FFD700" />
+              <Text style={styles.hofTitle}>Citatul Zilei</Text>
+              <Ionicons name="trophy" size={20} color="#FFD700" />
+            </View>
+            <View style={styles.hofCard}>
+              <Text style={styles.hofQuoteText}>&quot;{renderTextWithHashtags(quoteOfTheDay.text)}&quot;</Text>
+              <Text style={styles.hofQuoteAuthor}>— {quoteOfTheDay.original_author}</Text>
+              <View style={styles.hofFooter}>
+                <Text style={styles.hofPostedBy}>
+                  Postat de <Text style={{fontWeight: 'bold'}}>@{quoteOfTheDay.username}</Text>
+                </Text>
+                <View style={styles.hofReactionBadge}>
+                  <Ionicons name="star" size={12} color="#FFD700" />
+                  <Text style={styles.hofReactionText}>{quoteOfTheDay.total_reactions} Reacții</Text>
+                </View>
+              </View>
+            </View>
+          </View>
+        )}
+      </>
+    );
+  };
+
   if (isLoading && exploreQuotes.length === 0) {
     return (
       <View style={styles.centered}>
@@ -113,15 +153,11 @@ export default function ExploreScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.headerTitleContainer}>
-        <Text style={styles.headerTitle}>Descoperă</Text>
-        <Text style={styles.headerSubtitle}>Citate de la oameni noi</Text>
-      </View>
-
       <FlatList
         data={exploreQuotes}
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderQuoteItem}
+        ListHeaderComponent={renderHeader}
         contentContainerStyle={styles.listContent}
         refreshControl={
           <RefreshControl
@@ -156,19 +192,84 @@ const getStyles = (colors: ThemeColors) =>
     headerTitleContainer: {
       paddingHorizontal: 20,
       paddingTop: 20,
-      paddingBottom: 10,
+      paddingBottom: 15,
       backgroundColor: colors.background,
     },
     headerTitle: { fontSize: 28, fontWeight: 'bold', color: colors.textDark },
     headerSubtitle: { fontSize: 15, color: colors.textLight, marginTop: 4 },
 
-    listContent: { padding: 15, paddingBottom: 30 },
+    hofContainer: {
+      paddingHorizontal: 15,
+      marginBottom: 20,
+    },
+    hofHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 10,
+      gap: 10,
+    },
+    hofTitle: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      color: '#FFD700',
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+    },
+    hofCard: {
+      backgroundColor: colors.card,
+      borderRadius: 16,
+      padding: 20,
+      borderWidth: 2,
+      borderColor: '#FFD700',
+      elevation: 5,
+      shadowColor: '#FFD700',
+      shadowOpacity: 0.2,
+      shadowRadius: 10,
+    },
+    hofQuoteText: {
+      fontSize: 19,
+      lineHeight: 28,
+      fontStyle: 'italic',
+      color: colors.textDark,
+      textAlign: 'center',
+      marginBottom: 15,
+    },
+    hofQuoteAuthor: {
+      fontSize: 15,
+      fontWeight: 'bold',
+      color: colors.textLight,
+      textAlign: 'right',
+      marginBottom: 15,
+    },
+    hofFooter: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      paddingTop: 12,
+    },
+    hofPostedBy: { fontSize: 12, color: colors.textLight },
+    hofReactionBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: 'rgba(255, 215, 0, 0.1)',
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 12,
+      gap: 4,
+    },
+    hofReactionText: { fontSize: 12, fontWeight: 'bold', color: '#B8860B' },
+
+    listContent: { paddingBottom: 30 },
 
     quoteCard: {
       backgroundColor: colors.card,
       borderRadius: 12,
       padding: 18,
       marginBottom: 15,
+      marginHorizontal: 15,
       elevation: 3,
       shadowColor: '#000',
       shadowOpacity: 0.08,

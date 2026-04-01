@@ -11,6 +11,7 @@ import {
   getCommentsForQuote,
   searchQuotes,
   getExploreFeed,
+  getQuoteOfTheDay
 } from '../controllers/quoteController';
 import { protect } from '../middleware/authMiddleware';
 
@@ -19,6 +20,7 @@ const router = Router();
 router.get('/feed', protect, getFeedQuotes);
 router.get('/explore', protect, getExploreFeed);
 router.get('/search', protect, searchQuotes);
+router.get('/hall-of-fame', protect, getQuoteOfTheDay);
 
 router.post('/', protect, createQuote);
 router.get('/', protect, getAllQuotes);
@@ -28,5 +30,6 @@ router.delete('/:id', protect, deleteQuote);
 router.post('/:id/react', protect, toggleReaction);
 router.post('/:id/comments', protect, addComment);
 router.get('/:id/comments', protect, getCommentsForQuote);
+
 
 export default router;

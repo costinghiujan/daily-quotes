@@ -27,7 +27,6 @@ export const createQuote = async (req: AuthRequest, res: Response): Promise<void
       [text, author, category, userId],
     );
 
-    // --- LOGICA DE GAMIFICARE ---
     if (userId) {
       try {
         await GamificationService.addXp(userId, XP_VALUES.ADD_QUOTE);
@@ -36,7 +35,6 @@ export const createQuote = async (req: AuthRequest, res: Response): Promise<void
         console.error('[Avertisment] Eroare la gamificare (createQuote):', gamificationError);
       }
     }
-    // ----------------------------
 
     res.status(201).json({ status: 'success', data: result.rows[0] });
   } catch (error) {
@@ -258,14 +256,12 @@ export const addComment = async (req: AuthRequest, res: Response): Promise<void>
       await sendNotification(quoteOwnerId, userId, 'COMMENT_ADDED', quoteId);
     }
 
-    // --- NOU: LOGICA DE GAMIFICARE PENTRU COMENTARII ---
     try {
       await GamificationService.addXp(userId, XP_VALUES.ADD_COMMENT);
       await GamificationService.evaluateBadges(userId);
     } catch (gamificationError) {
       console.error('[Avertisment] Eroare la gamificare (addComment):', gamificationError);
     }
-    // ---------------------------------------------------
 
     const userQuery = `SELECT username, full_name, profile_picture_url FROM users WHERE id = $1;`;
     const userResult = await query(userQuery, [userId]);
@@ -402,6 +398,49 @@ export const getExploreFeed = async (req: AuthRequest, res: Response): Promise<v
     res.status(200).json({ status: 'success', data: result.rows });
   } catch (error) {
     console.error('[Eroare Controller] Nu s-a putut încărca Explore Feed:', error);
+    res.status(500).json({ status: 'error', message: 'Eroare internă.' });
+  }
+};
+
+export const getQuoteOfTheDay = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const currentUserId = req.user?.id;
+
+    if (!currentUserId) {
+      res.status(401).json({ status: 'error', message: 'Neautorizat.' });
+      return;
+    }
+
+    const sql = `
+      SELECT 
+        q.id, q.text, q.author AS original_author, q.created_at,
+        u.id AS post_user_id, u.username, u.full_name, u.profile_picture_url,
+        COUNT(qr.id) AS total_reactions,
+        COUNT(CASE WHEN qr.reaction_type = 'BLUE_HEART' THEN 1 END) AS blue_heart_count,
+        ARRAY_REMOVE(ARRAY_AGG(CASE WHEN qr.user_id = $1 THEN qr.reaction_type END), NULL) AS user_reactions
+      FROM quotes q
+      JOIN users u ON q.user_id = u.id
+      LEFT JOIN quote_reactions qr ON q.id = qr.quote_id
+      LEFT JOIN blocks b1 ON b1.blocker_id = $1 AND b1.blocked_id = u.id
+      LEFT JOIN blocks b2 ON b2.blocker_id = u.id AND b2.blocked_id = $1
+      WHERE q.created_at >= NOW() - INTERVAL '24 HOURS'
+        AND b1.blocker_id IS NULL 
+        AND b2.blocker_id IS NULL
+      GROUP BY q.id, u.id
+      ORDER BY total_reactions DESC, q.created_at DESC
+      LIMIT 1;
+    `;
+
+    const result = await query(sql, [currentUserId]);
+
+    if (result.rowCount === 0) {
+      res.status(200).json({ status: 'success', data: null });
+      return;
+    }
+
+    res.status(200).json({ status: 'success', data: result.rows[0] });
+  } catch (error) {
+    console.error('[Eroare Controller] Nu s-a putut obține Citatul Zilei:', error);
     res.status(500).json({ status: 'error', message: 'Eroare internă.' });
   }
 };
