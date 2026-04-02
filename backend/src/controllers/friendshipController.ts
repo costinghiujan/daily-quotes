@@ -221,14 +221,20 @@ export const getFriends = async (req: AuthRequest, res: Response): Promise<void>
       SELECT u.id, u.username, u.full_name, u.profile_picture_url, u.bio, f.streak_count, f.id as friendship_id
       FROM users u
       JOIN friendships f ON u.id = f.receiver_id
+      LEFT JOIN blocks b1 ON b1.blocker_id = $1 AND b1.blocked_id = u.id
+      LEFT JOIN blocks b2 ON b2.blocker_id = u.id AND b2.blocked_id = $1
       WHERE f.requester_id = $1 AND f.status = 'accepted'
+        AND b1.blocker_id IS NULL AND b2.blocker_id IS NULL
       
       UNION
       
       SELECT u.id, u.username, u.full_name, u.profile_picture_url, u.bio, f.streak_count, f.id as friendship_id
       FROM users u
       JOIN friendships f ON u.id = f.requester_id
-      WHERE f.receiver_id = $1 AND f.status = 'accepted';
+      LEFT JOIN blocks b1 ON b1.blocker_id = $1 AND b1.blocked_id = u.id
+      LEFT JOIN blocks b2 ON b2.blocker_id = u.id AND b2.blocked_id = $1
+      WHERE f.receiver_id = $1 AND f.status = 'accepted'
+        AND b1.blocker_id IS NULL AND b2.blocker_id IS NULL;
     `,
       [currentUserId],
     );

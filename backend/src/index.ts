@@ -73,7 +73,20 @@ io.on('connection', (socket) => {
     } = data;
 
     try {
-      console.log('[Debug Backend] 3. Încercare de salvare în DB...');
+      const blockCheck = await pool.query(
+        `SELECT 1 FROM blocks 
+         WHERE (blocker_id = $1 AND blocked_id = $2) 
+            OR (blocker_id = $2 AND blocked_id = $1)`,
+        [senderId, receiverId]
+      );
+
+      if (blockCheck.rowCount && blockCheck.rowCount > 0) {
+        console.warn(`[Sockets] ⛔ Mesaj respins: Relație blocată între ${senderId} și ${receiverId}.`);
+        socket.emit('message_error', { message: 'Nu poți trimite mesaje acestui utilizator deoarece există o restricție de blocare.' });
+        return;
+      }
+
+      console.log('[Debug Backend] 3. Verificare trecură. Încercare de salvare în DB...');
 
       const result = await pool.query(
         `INSERT INTO messages 
