@@ -89,7 +89,9 @@ export default function ProfileScreen() {
       setIsUploading(true);
       try {
         const updatedProfile = await userService.uploadAvatar(pickerResult.assets[0].uri);
-        setProfile((prev) => (prev ? { ...prev, profile_picture_url: updatedProfile.profile_picture_url } : null));
+        setProfile((prev) =>
+          prev ? { ...prev, profile_picture_url: updatedProfile.profile_picture_url } : null,
+        );
         Alert.alert('Succes', 'Fotografia de profil a fost actualizată!');
       } catch (error) {
         console.error(error);
@@ -237,7 +239,11 @@ export default function ProfileScreen() {
       {!isEditing && profile?.badges && profile.badges.length > 0 && (
         <View style={styles.badgesSection}>
           <Text style={styles.badgesSectionTitle}>Insigne Deblocate</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.badgesScroll}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.badgesScroll}
+          >
             {profile.badges.map((badge) => (
               <View key={badge.id} style={styles.badgeItem}>
                 <View style={styles.badgeIconContainer}>
@@ -270,9 +276,7 @@ export default function ProfileScreen() {
         renderItem={renderQuoteItem}
         ListHeaderComponent={renderProfileHeader}
         contentContainerStyle={styles.listContent}
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>Nu ai adăugat niciun citat încă.</Text>
-        }
+        ListEmptyComponent={<Text style={styles.emptyText}>Nu ai adăugat niciun citat încă.</Text>}
       />
     </View>
   );
@@ -329,7 +333,7 @@ const getStyles = (colors: ThemeColors) =>
     infoContainer: { alignItems: 'center', width: '100%', paddingHorizontal: 20 },
     nameLevelRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
     fullName: { fontSize: 20, fontWeight: 'bold', color: colors.textDark, marginRight: 8 },
-    
+
     levelBadge: {
       backgroundColor: colors.primary,
       paddingHorizontal: 8,
@@ -353,7 +357,12 @@ const getStyles = (colors: ThemeColors) =>
       borderRadius: 4,
     },
     badgesSection: { width: '100%', marginTop: 25, paddingLeft: 20 },
-    badgesSectionTitle: { fontSize: 14, fontWeight: 'bold', color: colors.textDark, marginBottom: 10 },
+    badgesSectionTitle: {
+      fontSize: 14,
+      fontWeight: 'bold',
+      color: colors.textDark,
+      marginBottom: 10,
+    },
     badgesScroll: { paddingRight: 20 },
     badgeItem: { alignItems: 'center', marginRight: 15, width: 70 },
     badgeIconContainer: {

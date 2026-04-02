@@ -156,20 +156,29 @@ export const initDB = async () => {
 
     try {
       await pool.query(`ALTER TABLE messages ALTER COLUMN text DROP NOT NULL;`);
-      await pool.query(`ALTER TABLE messages ADD COLUMN IF NOT EXISTS message_type VARCHAR(20) DEFAULT 'TEXT';`);
+      await pool.query(
+        `ALTER TABLE messages ADD COLUMN IF NOT EXISTS message_type VARCHAR(20) DEFAULT 'TEXT';`,
+      );
       await pool.query(`ALTER TABLE messages ADD COLUMN IF NOT EXISTS media_url TEXT;`);
       await pool.query(`ALTER TABLE messages ADD COLUMN IF NOT EXISTS file_name VARCHAR(255);`);
-      
+
       await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS xp INTEGER DEFAULT 0;`);
       await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS level INTEGER DEFAULT 1;`);
       await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_daily_prompt_date DATE;`);
-      
-      await pool.query(`ALTER TABLE friendships ADD COLUMN IF NOT EXISTS streak_count INTEGER DEFAULT 0;`);
-      await pool.query(`ALTER TABLE friendships ADD COLUMN IF NOT EXISTS last_interaction_date TIMESTAMP;`);
-      
+
+      await pool.query(
+        `ALTER TABLE friendships ADD COLUMN IF NOT EXISTS streak_count INTEGER DEFAULT 0;`,
+      );
+      await pool.query(
+        `ALTER TABLE friendships ADD COLUMN IF NOT EXISTS last_interaction_date TIMESTAMP;`,
+      );
+
       console.log('[Bază de Date] Toate migrările pe tabelele vechi au rulat cu succes.');
     } catch (migError) {
-      console.log('[Bază de Date] Notă migrare (posibil rulezi o bază de date proaspătă):', migError);
+      console.log(
+        '[Bază de Date] Notă migrare (posibil rulezi o bază de date proaspătă):',
+        migError,
+      );
     }
 
     await pool.query(`
@@ -202,8 +211,9 @@ export const initDB = async () => {
       ON CONFLICT (name) DO NOTHING;
     `);
 
-    console.log('[Bază de Date] Tabelele de Gamificare și Insignele au fost inițializate cu succes.');
-
+    console.log(
+      '[Bază de Date] Tabelele de Gamificare și Insignele au fost inițializate cu succes.',
+    );
   } catch (error) {
     console.error('[Eroare Bază de Date] Inițializarea tabelelor a eșuat:', error);
     throw error;

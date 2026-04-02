@@ -179,11 +179,11 @@ export default function ConversationsScreen() {
           </Text>
           {/* NOU: AFISARE STREAK (FLACĂRĂ) */}
           {item.streak_count && item.streak_count > 0 ? (
-             <View style={styles.streakBadgeSmall}>
-               <Text style={styles.streakTextSmall}>🔥 {item.streak_count}</Text>
-             </View>
+            <View style={styles.streakBadgeSmall}>
+              <Text style={styles.streakTextSmall}>🔥 {item.streak_count}</Text>
+            </View>
           ) : null}
-          
+
           <Text style={[styles.time, !item.is_read && styles.unreadMessage]}>
             {formatTime(item.last_message_date)}
           </Text>
@@ -332,8 +332,14 @@ const getStyles = (colors: ThemeColors) =>
       alignItems: 'center',
       marginBottom: 4,
     },
-    name: { fontSize: 16, fontWeight: 'bold', color: colors.textDark, flexShrink: 1, marginRight: 5 },
-    
+    name: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      color: colors.textDark,
+      flexShrink: 1,
+      marginRight: 5,
+    },
+
     streakBadgeSmall: {
       backgroundColor: 'rgba(255, 140, 0, 0.1)',
       paddingHorizontal: 4,
@@ -342,7 +348,7 @@ const getStyles = (colors: ThemeColors) =>
       marginRight: 'auto',
     },
     streakTextSmall: { fontSize: 11, fontWeight: 'bold', color: '#FF8C00' },
-    
+
     time: { fontSize: 12, color: colors.textLight, marginLeft: 5 },
     lastMessage: { fontSize: 14, color: colors.textLight },
     unreadMessage: { color: colors.textDark, fontWeight: 'bold' },

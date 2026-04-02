@@ -173,14 +173,8 @@ export const getFeedQuotes = async (req: AuthRequest, res: Response): Promise<vo
 
     const feedQuery = `
         SELECT 
-          q.id, 
-          q.text, 
-          q.author AS original_author, 
-          q.created_at,
-          u.id AS post_user_id, 
-          u.username, 
-          u.full_name, 
-          u.profile_picture_url,
+          q.id, q.text, q.author AS original_author, q.created_at,
+          u.id AS post_user_id, u.username, u.full_name, u.profile_picture_url,
           COUNT(CASE WHEN qr.reaction_type = 'BLUE_HEART' THEN 1 END) AS blue_heart_count,
           COUNT(CASE WHEN qr.reaction_type = 'APPLAUSE' THEN 1 END) AS applause_count,
           COUNT(CASE WHEN qr.reaction_type = 'SAD' THEN 1 END) AS sad_count,
@@ -191,12 +185,18 @@ export const getFeedQuotes = async (req: AuthRequest, res: Response): Promise<vo
         FROM quotes q
         JOIN users u ON q.user_id = u.id
         LEFT JOIN quote_reactions qr ON q.id = qr.quote_id
-        WHERE q.user_id = $1 
-          OR q.user_id IN (
-              SELECT CASE WHEN f.requester_id = $1 THEN f.receiver_id ELSE f.requester_id END
-              FROM friendships f
-              WHERE (f.requester_id = $1 OR f.receiver_id = $1) AND f.status = 'accepted'
-          )
+        LEFT JOIN blocks b1 ON b1.blocker_id = $1 AND b1.blocked_id = u.id
+        LEFT JOIN blocks b2 ON b2.blocker_id = u.id AND b2.blocked_id = $1
+        WHERE (
+            q.user_id = $1 
+            OR q.user_id IN (
+                SELECT CASE WHEN f.requester_id = $1 THEN f.receiver_id ELSE f.requester_id END
+                FROM friendships f
+                WHERE (f.requester_id = $1 OR f.receiver_id = $1) AND f.status = 'accepted'
+            )
+        )
+        AND b1.blocker_id IS NULL 
+        AND b2.blocker_id IS NULL
         GROUP BY q.id, u.id
         ORDER BY q.created_at DESC
         LIMIT 50;

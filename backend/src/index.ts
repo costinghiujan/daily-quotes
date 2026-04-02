@@ -77,12 +77,17 @@ io.on('connection', (socket) => {
         `SELECT 1 FROM blocks 
          WHERE (blocker_id = $1 AND blocked_id = $2) 
             OR (blocker_id = $2 AND blocked_id = $1)`,
-        [senderId, receiverId]
+        [senderId, receiverId],
       );
 
       if (blockCheck.rowCount && blockCheck.rowCount > 0) {
-        console.warn(`[Sockets] ⛔ Mesaj respins: Relație blocată între ${senderId} și ${receiverId}.`);
-        socket.emit('message_error', { message: 'Nu poți trimite mesaje acestui utilizator deoarece există o restricție de blocare.' });
+        console.warn(
+          `[Sockets] ⛔ Mesaj respins: Relație blocată între ${senderId} și ${receiverId}.`,
+        );
+        socket.emit('message_error', {
+          message:
+            'Nu poți trimite mesaje acestui utilizator deoarece există o restricție de blocare.',
+        });
         return;
       }
 

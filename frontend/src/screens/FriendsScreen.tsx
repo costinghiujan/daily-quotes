@@ -203,7 +203,7 @@ const getStyles = (colors: ThemeColors) =>
     textContainer: { flex: 1, justifyContent: 'center' },
     nameRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 2 },
     nameText: { fontSize: 16, fontWeight: 'bold', color: colors.textDark, flexShrink: 1 },
-    
+
     streakBadge: {
       backgroundColor: 'rgba(255, 140, 0, 0.1)',
       paddingHorizontal: 6,

@@ -32,12 +32,19 @@ export const upload = multer({
   fileFilter: fileFilter,
 });
 
-const attachmentFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+const attachmentFilter = (
+  req: Request,
+  file: Express.Multer.File,
+  cb: multer.FileFilterCallback,
+) => {
   const allowedMimeTypes = [
-    'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+    'image/jpeg',
+    'image/png',
+    'image/gif',
+    'image/webp',
     'application/pdf',
     'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   ];
 
   if (allowedMimeTypes.includes(file.mimetype)) {
@@ -46,9 +53,9 @@ const attachmentFilter = (req: Request, file: Express.Multer.File, cb: multer.Fi
     cb(new Error('Format invalid. Sunt permise doar imagini și documente (PDF, DOC, DOCX).'));
   }
 };
-  
+
 export const uploadAttachment = multer({
-  storage: storage, 
+  storage: storage,
   limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: attachmentFilter,
 });

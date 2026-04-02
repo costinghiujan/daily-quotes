@@ -45,12 +45,12 @@ export default function CommentsScreen({ route, navigation }: any) {
       (e) => {
         setKeyboardHeight(e.endCoordinates.height);
         setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 150);
-      }
+      },
     );
-    
+
     const hideSubscription = Keyboard.addListener(
       Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
-      () => setKeyboardHeight(0)
+      () => setKeyboardHeight(0),
     );
 
     return () => {
@@ -180,9 +180,7 @@ export default function CommentsScreen({ route, navigation }: any) {
   }
 
   return (
-    <View style={[styles.container, { paddingBottom: keyboardHeight }]}>
-      {commentsContent}
-    </View>
+    <View style={[styles.container, { paddingBottom: keyboardHeight }]}>{commentsContent}</View>
   );
 }
 

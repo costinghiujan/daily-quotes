@@ -11,7 +11,7 @@ import {
   getCommentsForQuote,
   searchQuotes,
   getExploreFeed,
-  getQuoteOfTheDay
+  getQuoteOfTheDay,
 } from '../controllers/quoteController';
 import { protect } from '../middleware/authMiddleware';
 
@@ -30,6 +30,5 @@ router.delete('/:id', protect, deleteQuote);
 router.post('/:id/react', protect, toggleReaction);
 router.post('/:id/comments', protect, addComment);
 router.get('/:id/comments', protect, getCommentsForQuote);
-
 
 export default router;

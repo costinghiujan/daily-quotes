@@ -24,7 +24,7 @@ export interface Friend {
   full_name: string | null;
   profile_picture_url: string | null;
   friendship_id: number;
-  streak_count?: number; 
+  streak_count?: number;
 }
 
 export const friendshipService = {

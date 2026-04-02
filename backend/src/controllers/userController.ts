@@ -27,8 +27,12 @@ export const searchUsers = async (req: AuthRequest, res: Response): Promise<void
       LEFT JOIN friendships f 
         ON (f.requester_id = $2 AND f.receiver_id = u.id) 
         OR (f.requester_id = u.id AND f.receiver_id = $2)
+      LEFT JOIN blocks b1 ON b1.blocker_id = $2 AND b1.blocked_id = u.id
+      LEFT JOIN blocks b2 ON b2.blocker_id = u.id AND b2.blocked_id = $2
       WHERE (u.username ILIKE $1 OR u.full_name ILIKE $1) 
         AND u.id != $2
+        AND b1.blocker_id IS NULL 
+        AND b2.blocker_id IS NULL
       LIMIT 20;
     `,
       [`%${searchQuery}%`, currentUserId],

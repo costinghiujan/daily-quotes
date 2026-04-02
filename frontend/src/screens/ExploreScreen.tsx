@@ -29,9 +29,9 @@ export default function ExploreScreen() {
     try {
       const [feedData, hofData] = await Promise.all([
         quoteService.getExploreFeed(),
-        quoteService.getQuoteOfTheDay()
+        quoteService.getQuoteOfTheDay(),
       ]);
-      
+
       setExploreQuotes(feedData);
       setQuoteOfTheDay(hofData);
     } catch (error) {
@@ -125,15 +125,19 @@ export default function ExploreScreen() {
               <Ionicons name="trophy" size={20} color="#FFD700" />
             </View>
             <View style={styles.hofCard}>
-              <Text style={styles.hofQuoteText}>&quot;{renderTextWithHashtags(quoteOfTheDay.text)}&quot;</Text>
+              <Text style={styles.hofQuoteText}>
+                &quot;{renderTextWithHashtags(quoteOfTheDay.text)}&quot;
+              </Text>
               <Text style={styles.hofQuoteAuthor}>— {quoteOfTheDay.original_author}</Text>
               <View style={styles.hofFooter}>
                 <Text style={styles.hofPostedBy}>
-                  Postat de <Text style={{fontWeight: 'bold'}}>@{quoteOfTheDay.username}</Text>
+                  Postat de <Text style={{ fontWeight: 'bold' }}>@{quoteOfTheDay.username}</Text>
                 </Text>
                 <View style={styles.hofReactionBadge}>
                   <Ionicons name="star" size={12} color="#FFD700" />
-                  <Text style={styles.hofReactionText}>{quoteOfTheDay.total_reactions} Reacții</Text>
+                  <Text style={styles.hofReactionText}>
+                    {quoteOfTheDay.total_reactions} Reacții
+                  </Text>
                 </View>
               </View>
             </View>
