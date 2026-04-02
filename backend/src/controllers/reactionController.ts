@@ -46,7 +46,6 @@ export const toggleReaction = async (req: AuthRequest, res: Response): Promise<v
     );
 
     if (existingReaction.rows.length > 0) {
-      // Toggle Off: Eliminăm reacția
       await query('DELETE FROM quote_reactions WHERE id = $1', [existingReaction.rows[0].id]);
       await removeNotification(quoteAuthorId, userId, 'REACTION_ADDED', quoteId);
 
@@ -55,20 +54,17 @@ export const toggleReaction = async (req: AuthRequest, res: Response): Promise<v
         .json({ status: 'success', action: 'removed', message: 'Reacția a fost eliminată.' });
       return;
     } else {
-      // Toggle On: Adăugăm reacția
       await query(
         'INSERT INTO quote_reactions (user_id, quote_id, reaction_type) VALUES ($1, $2, $3)',
         [userId, quoteId, reactionType],
       );
 
-      // --- NOU: LOGICA DE GAMIFICARE ---
       try {
         await GamificationService.addXp(userId, XP_VALUES.ADD_REACTION);
         await GamificationService.evaluateBadges(userId);
       } catch (gamificationError) {
         console.error('[Avertisment] Eroare la gamificare (toggleReaction):', gamificationError);
       }
-      // ---------------------------------
 
       await sendNotification(quoteAuthorId, userId, 'REACTION_ADDED', quoteId);
 

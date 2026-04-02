@@ -56,7 +56,6 @@ export default function ChatScreen() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
 
-  // --- CONTROL MANUAL AL TASTATURII PENTRU ANDROID ---
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   useEffect(() => {
@@ -288,7 +287,6 @@ export default function ChatScreen() {
     );
   }
 
-  // --- NOU: ÎMPACHETĂM CONȚINUTUL (DRY PRINCIPLE) ---
   const chatContent = (
     <>
       <FlatList
@@ -352,8 +350,6 @@ export default function ChatScreen() {
       )}
     </>
   );
-
-  // --- LOGICA DE RANDARE BAZATĂ PE PLATFORMĂ ---
 
   if (Platform.OS === 'ios') {
     return (

@@ -2,7 +2,7 @@ import { apiClient } from './client';
 
 export interface NotificationSettings {
   notify_reactions: boolean;
-  notify_comments: boolean; // NOU
+  notify_comments: boolean;
   notify_friend_requests: boolean;
   notify_friend_accepted: boolean;
 }
