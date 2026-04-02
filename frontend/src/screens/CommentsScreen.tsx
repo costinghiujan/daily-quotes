@@ -37,7 +37,6 @@ export default function CommentsScreen({ route, navigation }: any) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // --- CONTROL MANUAL AL TASTATURII PENTRU ANDROID ---
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   useEffect(() => {
@@ -46,12 +45,12 @@ export default function CommentsScreen({ route, navigation }: any) {
       (e) => {
         setKeyboardHeight(e.endCoordinates.height);
         setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 150);
-      },
+      }
     );
-
+    
     const hideSubscription = Keyboard.addListener(
       Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
-      () => setKeyboardHeight(0),
+      () => setKeyboardHeight(0)
     );
 
     return () => {
@@ -84,7 +83,6 @@ export default function CommentsScreen({ route, navigation }: any) {
       const postedComment = await quoteService.addComment(quoteId, newComment.trim());
       setComments((prev) => [...prev, postedComment]);
       setNewComment('');
-      // Scroll automat la adăugarea unui comentariu nou
       setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
     } catch (error) {
       console.error(error);
@@ -120,7 +118,6 @@ export default function CommentsScreen({ route, navigation }: any) {
     );
   };
 
-  // --- ÎMPACHETĂM CONȚINUTUL (DRY PRINCIPLE) ---
   const commentsContent = (
     <>
       {isLoading ? (
@@ -170,7 +167,6 @@ export default function CommentsScreen({ route, navigation }: any) {
     </>
   );
 
-  // --- LOGICA DE RANDARE BAZATĂ PE PLATFORMĂ ---
   if (Platform.OS === 'ios') {
     return (
       <KeyboardAvoidingView
@@ -184,7 +180,9 @@ export default function CommentsScreen({ route, navigation }: any) {
   }
 
   return (
-    <View style={[styles.container, { paddingBottom: keyboardHeight }]}>{commentsContent}</View>
+    <View style={[styles.container, { paddingBottom: keyboardHeight }]}>
+      {commentsContent}
+    </View>
   );
 }
 
