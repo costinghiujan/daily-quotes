@@ -32,6 +32,13 @@ export default function ExploreScreen() {
         quoteService.getQuoteOfTheDay(),
       ]);
 
+      const data = await quoteService.getExploreFeed();
+
+      console.log("🏆 TOP RECOMANDĂRI PENTRU TINE:");
+      data.forEach((quote: any, index: number) => {
+        console.log(`${index + 1}. [Scor: ${Number(quote.recommendation_score).toFixed(3)}] ${quote.original_author} - ${quote.text.substring(0, 30)}...`);
+      });
+
       setExploreQuotes(feedData);
       setQuoteOfTheDay(hofData);
     } catch (error) {

@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { query } from '../config/db';
 import { sendNotification } from '../utils/notificationHelper';
 import { GamificationService, XP_VALUES } from '../services/gamificationService';
+import { aiService } from '../services/aiService';
 
 export type AuthRequest = Request & {
   user?: {
@@ -16,9 +17,66 @@ const extractHashtags = (text: string): string[] => {
   if (!text) return [];
   const matches = text.match(/#[\w\u0590-\u05ff]+/g);
   if (!matches) return [];
+  return [...new Set(matches.map((tag) => tag.substring(1).toLowerCase()))];
+};
 
-  const cleanTags = matches.map((tag) => tag.substring(1).toLowerCase());
-  return [...new Set(cleanTags)];
+interface UserHistoryQuote {
+  embedding: string | number[] | null;
+  hashtags: string[] | null;
+  author: string | null;
+}
+
+const calculateUserSignature = (quotes: UserHistoryQuote[]) => {
+  if (!quotes || quotes.length === 0) return { avgEmbedding: null, topTags: [], topAuthors: [] };
+
+  const tagCounts: Record<string, number> = {};
+  const authorCounts: Record<string, number> = {}; // NOU: Contor pentru autori
+  const vectors: number[][] = [];
+
+  for (const q of quotes) {
+    if (q.hashtags && Array.isArray(q.hashtags)) {
+      for (const tag of q.hashtags) {
+        tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+      }
+    }
+
+    if (q.author) {
+      authorCounts[q.author] = (authorCounts[q.author] || 0) + 1;
+    }
+
+    if (q.embedding) {
+      try {
+        const vec = typeof q.embedding === 'string' ? JSON.parse(q.embedding) : q.embedding;
+        vectors.push(vec);
+      } catch (e) {
+        console.error('[AI] Eroare la parsarea vectorului din DB:', e);
+      }
+    }
+  }
+
+  const topTags = Object.entries(tagCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map((entry) => entry[0]);
+
+  const topAuthors = Object.entries(authorCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map((entry) => entry[0]);
+
+  let avgEmbedding = null;
+  if (vectors.length > 0) {
+    const dimensions = vectors[0].length;
+    const sumVector = new Array(dimensions).fill(0);
+    for (const vec of vectors) {
+      for (let i = 0; i < dimensions; i++) {
+        sumVector[i] += vec[i];
+      }
+    }
+    avgEmbedding = sumVector.map((val) => val / vectors.length);
+  }
+
+  return { avgEmbedding, topTags, topAuthors };
 };
 
 export const createQuote = async (req: AuthRequest, res: Response): Promise<void> => {
@@ -33,15 +91,16 @@ export const createQuote = async (req: AuthRequest, res: Response): Promise<void
 
     const extractedHashtags = extractHashtags(text);
 
-    // 2. TODO (FAZA 3): Aici vom apela motorul local Ollama pentru a obține `embedding`-ul.
-    // Momentan vom salva NULL, pregătind terenul.
-    const embedding = null;
+    const contextForAI = `Citat: ${text} | Autor: ${author} | Categorie: ${category}`;
+    const embeddingArray = await aiService.getEmbedding(contextForAI);
+
+    const embeddingString = embeddingArray ? `[${embeddingArray.join(',')}]` : null;
 
     const result = await query(
       `INSERT INTO quotes (text, author, category, user_id, hashtags, embedding) 
        VALUES ($1, $2, $3, $4, $5, $6) 
-       RETURNING *`,
-      [text, author, category, userId, extractedHashtags, embedding],
+       RETURNING id, text, author, category, hashtags, created_at`,
+      [text, author, category, userId, extractedHashtags, embeddingString],
     );
 
     if (userId) {
@@ -381,36 +440,120 @@ export const getExploreFeed = async (req: AuthRequest, res: Response): Promise<v
       return;
     }
 
-    const exploreSQL = `
-      SELECT 
-        q.id, q.text, q.author AS original_author, q.created_at,
-        u.id AS post_user_id, u.username, u.full_name, u.profile_picture_url,
-        COUNT(CASE WHEN qr.reaction_type = 'BLUE_HEART' THEN 1 END) AS blue_heart_count,
-        COUNT(CASE WHEN qr.reaction_type = 'APPLAUSE' THEN 1 END) AS applause_count,
-        COUNT(CASE WHEN qr.reaction_type = 'SAD' THEN 1 END) AS sad_count,
-        COUNT(CASE WHEN qr.reaction_type = 'TOUCHING' THEN 1 END) AS touching_count,
-        COUNT(CASE WHEN qr.reaction_type = 'HUG' THEN 1 END) AS hug_count,
-        COUNT(CASE WHEN qr.reaction_type = 'MIND_BLOWN' THEN 1 END) AS mind_blown_count,
-        ARRAY_REMOVE(ARRAY_AGG(CASE WHEN qr.user_id = $1 THEN qr.reaction_type END), NULL) AS user_reactions
+    const userHistory = await query(
+      `
+      SELECT q.embedding, q.hashtags, q.author
       FROM quotes q
-      JOIN users u ON q.user_id = u.id
-      LEFT JOIN quote_reactions qr ON q.id = qr.quote_id
-      LEFT JOIN blocks b1 ON b1.blocker_id = $1 AND b1.blocked_id = u.id
-      LEFT JOIN blocks b2 ON b2.blocker_id = u.id AND b2.blocked_id = $1
-      WHERE q.user_id != $1
-        AND q.user_id NOT IN (
-            SELECT CASE WHEN f.requester_id = $1 THEN f.receiver_id ELSE f.requester_id END
-            FROM friendships f
-            WHERE (f.requester_id = $1 OR f.receiver_id = $1) AND f.status = 'accepted'
-        )
-        AND b1.blocker_id IS NULL 
-        AND b2.blocker_id IS NULL
-      GROUP BY q.id, u.id
-      ORDER BY RANDOM()
+      LEFT JOIN quote_reactions qr ON q.id = qr.quote_id AND qr.user_id = $1 AND qr.reaction_type = 'BLUE_HEART'
+      WHERE (q.user_id = $1 OR qr.user_id = $1) AND q.embedding IS NOT NULL
+      ORDER BY COALESCE(qr.created_at, q.created_at) DESC
       LIMIT 20;
-    `;
+    `,
+      [currentUserId],
+    );
 
-    const result = await query(exploreSQL, [currentUserId]);
+    const { avgEmbedding, topTags, topAuthors } = calculateUserSignature(userHistory.rows);
+
+    let exploreSQL = '';
+    let queryParams: (number | string | string[])[] = [];
+
+    if (!avgEmbedding || avgEmbedding.length === 0) {
+      console.log(`[Recomandare] Cold Start pentru userul ${currentUserId} (Feed Random)`);
+
+      exploreSQL = `
+        SELECT 
+          q.id, q.text, q.author AS original_author, q.created_at,
+          u.id AS post_user_id, u.username, u.full_name, u.profile_picture_url,
+          COUNT(CASE WHEN qr.reaction_type = 'BLUE_HEART' THEN 1 END) AS blue_heart_count,
+          COUNT(CASE WHEN qr.reaction_type = 'APPLAUSE' THEN 1 END) AS applause_count,
+          COUNT(CASE WHEN qr.reaction_type = 'SAD' THEN 1 END) AS sad_count,
+          COUNT(CASE WHEN qr.reaction_type = 'TOUCHING' THEN 1 END) AS touching_count,
+          COUNT(CASE WHEN qr.reaction_type = 'HUG' THEN 1 END) AS hug_count,
+          COUNT(CASE WHEN qr.reaction_type = 'MIND_BLOWN' THEN 1 END) AS mind_blown_count,
+          ARRAY_REMOVE(ARRAY_AGG(CASE WHEN qr.user_id = $1 THEN qr.reaction_type END), NULL) AS user_reactions
+        FROM quotes q
+        JOIN users u ON q.user_id = u.id
+        LEFT JOIN quote_reactions qr ON q.id = qr.quote_id
+        LEFT JOIN blocks b1 ON b1.blocker_id = $1 AND b1.blocked_id = u.id
+        LEFT JOIN blocks b2 ON b2.blocker_id = u.id AND b2.blocked_id = $1
+        WHERE q.user_id != $1
+          AND q.user_id NOT IN (
+              SELECT CASE WHEN f.requester_id = $1 THEN f.receiver_id ELSE f.requester_id END
+              FROM friendships f
+              WHERE (f.requester_id = $1 OR f.receiver_id = $1) AND f.status = 'accepted'
+          )
+          AND b1.blocker_id IS NULL AND b2.blocker_id IS NULL
+        GROUP BY q.id, u.id
+        ORDER BY RANDOM()
+        LIMIT 20;
+      `;
+      queryParams = [currentUserId];
+    } else {
+      console.log(
+        `[Recomandare] Motor Hibrid pornit. Top Tags:`,
+        topTags,
+        `| Top Autori:`,
+        topAuthors,
+      );
+
+      const embeddingParam = `[${avgEmbedding.join(',')}]`;
+
+      exploreSQL = `
+        SELECT 
+          q.id, q.text, q.author AS original_author, q.created_at,
+          u.id AS post_user_id, u.username, u.full_name, u.profile_picture_url,
+          COUNT(CASE WHEN qr.reaction_type = 'BLUE_HEART' THEN 1 END) AS blue_heart_count,
+          COUNT(CASE WHEN qr.reaction_type = 'APPLAUSE' THEN 1 END) AS applause_count,
+          COUNT(CASE WHEN qr.reaction_type = 'SAD' THEN 1 END) AS sad_count,
+          COUNT(CASE WHEN qr.reaction_type = 'TOUCHING' THEN 1 END) AS touching_count,
+          COUNT(CASE WHEN qr.reaction_type = 'HUG' THEN 1 END) AS hug_count,
+          COUNT(CASE WHEN qr.reaction_type = 'MIND_BLOWN' THEN 1 END) AS mind_blown_count,
+          ARRAY_REMOVE(ARRAY_AGG(CASE WHEN qr.user_id = $1 THEN qr.reaction_type END), NULL) AS user_reactions,
+          
+          -- SCORUL DE RECOMANDARE (Acum îl returnăm explicit către UI)
+          (
+            (1 - (q.embedding <=> $2::vector)) * 0.4
+            +
+            (
+              CASE 
+                WHEN CARDINALITY($3::text[]) > 0 THEN 
+                  (CARDINALITY(ARRAY(SELECT UNNEST(q.hashtags) INTERSECT SELECT UNNEST($3::text[])))::float / CARDINALITY($3::text[])) * 0.4
+                ELSE 0 
+              END
+            )
+            +
+            (
+              CASE 
+                WHEN q.author = ANY($4::text[]) THEN 0.2
+                ELSE 0 
+              END
+            )
+          ) AS recommendation_score
+
+        FROM quotes q
+        JOIN users u ON q.user_id = u.id
+        LEFT JOIN quote_reactions qr ON q.id = qr.quote_id
+        LEFT JOIN blocks b1 ON b1.blocker_id = $1 AND b1.blocked_id = u.id
+        LEFT JOIN blocks b2 ON b2.blocker_id = u.id AND b2.blocked_id = $1
+        WHERE q.user_id != $1
+          AND q.embedding IS NOT NULL
+          AND q.id NOT IN (
+              SELECT quote_id FROM quote_reactions WHERE user_id = $1
+          )
+          AND q.user_id NOT IN (
+              SELECT CASE WHEN f.requester_id = $1 THEN f.receiver_id ELSE f.requester_id END
+              FROM friendships f
+              WHERE (f.requester_id = $1 OR f.receiver_id = $1) AND f.status = 'accepted'
+          )
+          AND b1.blocker_id IS NULL AND b2.blocker_id IS NULL
+        GROUP BY q.id, u.id
+        ORDER BY recommendation_score DESC
+        LIMIT 20;
+      `;
+      queryParams = [currentUserId, embeddingParam, topTags, topAuthors];
+    }
+
+    const result = await query(exploreSQL, queryParams);
 
     res.status(200).json({ status: 'success', data: result.rows });
   } catch (error) {

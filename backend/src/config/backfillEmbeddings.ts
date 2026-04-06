@@ -7,7 +7,7 @@ const backfillEmbeddings = async () => {
     console.log('--- 🧠 ÎNCEPERE VECTORIZARE CITATE (BACKFILL) ---');
 
     const result = await client.query(
-      `SELECT id, text, author, category FROM quotes WHERE embedding IS NULL`
+      `SELECT id, text, author, category FROM quotes WHERE embedding IS NULL`,
     );
     const quotes = result.rows;
 
@@ -29,10 +29,10 @@ const backfillEmbeddings = async () => {
 
       if (embeddingArray) {
         const embeddingString = `[${embeddingArray.join(',')}]`;
-        await client.query(
-          `UPDATE quotes SET embedding = $1 WHERE id = $2`,
-          [embeddingString, q.id]
-        );
+        await client.query(`UPDATE quotes SET embedding = $1 WHERE id = $2`, [
+          embeddingString,
+          q.id,
+        ]);
         console.log('OK');
       } else {
         console.log('Eroare (Verifică dacă Ollama rulează)');
