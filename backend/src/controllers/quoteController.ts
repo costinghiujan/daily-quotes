@@ -12,6 +12,15 @@ export type AuthRequest = Request & {
   sessionId?: number;
 };
 
+const extractHashtags = (text: string): string[] => {
+  if (!text) return [];
+  const matches = text.match(/#[\w\u0590-\u05ff]+/g);
+  if (!matches) return [];
+
+  const cleanTags = matches.map((tag) => tag.substring(1).toLowerCase());
+  return [...new Set(cleanTags)];
+};
+
 export const createQuote = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { text, author, category } = req.body;
@@ -22,9 +31,17 @@ export const createQuote = async (req: AuthRequest, res: Response): Promise<void
       return;
     }
 
+    const extractedHashtags = extractHashtags(text);
+
+    // 2. TODO (FAZA 3): Aici vom apela motorul local Ollama pentru a obține `embedding`-ul.
+    // Momentan vom salva NULL, pregătind terenul.
+    const embedding = null;
+
     const result = await query(
-      'INSERT INTO quotes (text, author, category, user_id) VALUES ($1, $2, $3, $4) RETURNING *',
-      [text, author, category, userId],
+      `INSERT INTO quotes (text, author, category, user_id, hashtags, embedding) 
+       VALUES ($1, $2, $3, $4, $5, $6) 
+       RETURNING *`,
+      [text, author, category, userId, extractedHashtags, embedding],
     );
 
     if (userId) {

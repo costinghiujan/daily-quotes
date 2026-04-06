@@ -5,11 +5,11 @@ const clearDatabase = async () => {
   try {
     console.log('--- 🧹 ÎNCEPERE GOLIRE BAZĂ DE DATE ---');
     await client.query('BEGIN');
-    
+
     await client.query(
       'TRUNCATE users, quotes, friendships, quote_reactions, comments, notifications, notification_settings, user_badges, blocks, messages RESTART IDENTITY CASCADE',
     );
-    
+
     await client.query('COMMIT');
     console.log('--- ✅ BAZA DE DATE A FOST GOLITĂ CU SUCCES ---');
     process.exit(0);

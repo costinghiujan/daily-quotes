@@ -23,6 +23,9 @@ export const testConnection = async () => {
 
 export const initDB = async () => {
   try {
+    await pool.query('CREATE EXTENSION IF NOT EXISTS vector;');
+    console.log('[Bază de Date] Extensia vector a fost creată sau deja există.');
+
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
@@ -47,6 +50,8 @@ export const initDB = async () => {
         author VARCHAR(255) NOT NULL,
         category VARCHAR(100),
         user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        hashtags TEXT[] DEFAULT '{}',
+        embedding VECTOR(768),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
