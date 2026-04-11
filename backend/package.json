@@ -8,9 +8,9 @@
     "build": "tsc",
     "lint": "eslint src/",
     "format": "prettier --write \"src/**/*.ts\"",
+    "db:vectorize": "ts-node src/config/backfillEmbeddings.ts",
     "db:clear": "ts-node src/config/clearDB.ts",
-    "db:seedAccounts": "ts-node src/config/seedAccounts.ts",
-    "db:vectorize": "ts-node src/config/backfillEmbeddings.ts"
+    "db:seed": "ts-node src/config/seed.ts"
   },
   "keywords": [],
   "author": "",
