@@ -15,9 +15,10 @@ import messageRoutes from './routes/messageRoutes';
 import { testConnection, initDB, pool } from './config/db';
 import { sendMessagePushNotification } from './utils/notificationHelper';
 import { initCronJobs } from './services/cronService';
+import { validateEnvironment } from './utils/envValidator';
 
 const app = express();
-const PORT = parseInt(process.env.PORT || '5000', 10);
+const PORT = parseInt(process.env.PORT || '3000', 10);
 
 app.use(cors());
 app.use(express.json());
@@ -135,6 +136,12 @@ io.on('connection', (socket) => {
 
 const startServer = async () => {
   try {
+    // Validate environment variables before starting
+    if (!validateEnvironment()) {
+      console.error('[Eroare Critică] Validarea variabilelor de mediu a eșuat.');
+      process.exit(1);
+    }
+
     await testConnection();
     await initDB();
 
