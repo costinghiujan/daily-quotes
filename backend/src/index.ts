@@ -136,7 +136,6 @@ io.on('connection', (socket) => {
 
 const startServer = async () => {
   try {
-    // Validate environment variables before starting
     if (!validateEnvironment()) {
       console.error('[Eroare Critică] Validarea variabilelor de mediu a eșuat.');
       process.exit(1);

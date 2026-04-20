@@ -1,8 +1,3 @@
-/**
- * Environment variable validator
- * Checks for required environment variables at application startup
- */
-
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -99,7 +94,6 @@ export class EnvValidator {
       }
 
       if (value) {
-        // Type validation
         if (rule.type === 'number') {
           const numValue = Number(value);
           if (isNaN(numValue)) {
@@ -114,7 +108,6 @@ export class EnvValidator {
       }
     }
 
-    // Special validation for JWT secret strength
     const jwtSecret = process.env.JWT_SECRET;
     if (jwtSecret && jwtSecret.length < 32) {
       this.warnings.push(
@@ -122,7 +115,6 @@ export class EnvValidator {
       );
     }
 
-    // Check for default/insecure values
     const insecureDefaults = [
       { name: 'DB_PASSWORD', value: 'password' },
       { name: 'DB_PASSWORD', value: '123456' },
@@ -166,7 +158,6 @@ export class EnvValidator {
       console.log('✅ All environment variables are valid.\n');
     }
 
-    // Print current environment values (masking secrets)
     console.log('Current environment configuration:');
     envValidationRules.forEach((rule) => {
       const value = process.env[rule.name];
@@ -192,10 +183,8 @@ export class EnvValidator {
   }
 }
 
-// Export singleton instance
 export const envValidator = new EnvValidator();
 
-// Export validation function for use in index.ts
 export const validateEnvironment = (): boolean => {
   const result = envValidator.validate();
   
