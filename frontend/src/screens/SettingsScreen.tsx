@@ -12,6 +12,8 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { sessionService, Session } from '../api/sessionService';
 import { notificationService, NotificationSettings } from '../api/notificationService';
@@ -20,6 +22,7 @@ import { ThemeContext } from '../context/ThemeContext';
 import { ThemeColors } from '../theme/colors';
 
 export default function SettingsScreen() {
+  const { t, i18n } = useTranslation();
   const navigation = useNavigation<any>();
   const { logout } = useContext(AuthContext);
   const { colors, theme, setTheme } = useContext(ThemeContext);
@@ -37,11 +40,18 @@ export default function SettingsScreen() {
   const [isSettingsLoading, setIsSettingsLoading] = useState(false);
 
   const [isThemeModalVisible, setThemeModalVisible] = useState(false);
+  const [isLanguageModalVisible, setLanguageModalVisible] = useState(false);
+
+  const handleChangeLanguage = async (lang: string) => {
+    i18n.changeLanguage(lang);
+    await AsyncStorage.setItem('app_language', lang);
+    setLanguageModalVisible(false);
+  };
 
   const handleLogout = () => {
-    Alert.alert('Delogare', 'Ești sigur că vrei să ieși din cont de pe acest dispozitiv?', [
-      { text: 'Anulează', style: 'cancel' },
-      { text: 'Ieși', style: 'destructive', onPress: () => logout() },
+    Alert.alert(t('settings.logoutConfirmTitle'), t('settings.logoutConfirmDesc'), [
+      { text: t('settings.cancel'), style: 'cancel' },
+      { text: t('settings.logout'), style: 'destructive', onPress: () => logout() },
     ]);
   };
 
@@ -54,7 +64,7 @@ export default function SettingsScreen() {
       setCurrentSessionId(data.currentSessionId);
     } catch (error) {
       console.error(error);
-      Alert.alert('Eroare', 'Nu s-au putut încărca dispozitivele conectate.');
+      Alert.alert(t('settings.error'), t('settings.sessionsLoadFailed'));
       setSecurityModalVisible(false);
     } finally {
       setIsSessionsLoading(false);
@@ -63,21 +73,21 @@ export default function SettingsScreen() {
 
   const handleRevokeSession = (sessionId: number) => {
     Alert.alert(
-      'Deconectare Dispozitiv',
-      'Ești sigur că vrei să deconectezi acest dispozitiv de la distanță?',
+      t('settings.revokeConfirmTitle'),
+      t('settings.revokeConfirmDesc'),
       [
-        { text: 'Anulează', style: 'cancel' },
+        { text: t('settings.cancel'), style: 'cancel' },
         {
-          text: 'Deconectează',
+          text: t('settings.revoke'),
           style: 'destructive',
           onPress: async () => {
             try {
               await sessionService.revokeSession(sessionId);
               setActiveSessions((prev) => prev.filter((s) => s.id !== sessionId));
-              Alert.alert('Succes', 'Dispozitivul a fost deconectat.');
+              Alert.alert(t('settings.success'), t('settings.deviceRevoked'));
             } catch (error) {
               console.error(error);
-              Alert.alert('Eroare', 'Nu s-a putut deconecta dispozitivul.');
+              Alert.alert(t('settings.error'), t('settings.deviceRevokeFailed'));
             }
           },
         },
@@ -135,49 +145,55 @@ export default function SettingsScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-      <Text style={styles.sectionHeader}>Preferințe Aplicație</Text>
+      <Text style={styles.sectionHeader}>{t('settings.preferences')}</Text>
       <View style={styles.sectionBlock}>
         <SettingItem
           icon="notifications-outline"
-          title="Notificări"
-          subtitle="Reacții, comentarii, cereri"
+          title={t('settings.notifications')}
+          subtitle={t('settings.notificationsDesc')}
           onPress={openNotificationsModal}
         />
         <SettingItem
           icon={theme === 'light' ? 'sunny-outline' : 'moon-outline'}
-          title="Temă de culoare"
-          subtitle={theme === 'light' ? 'Deschisă' : 'Întunecată'}
+          title={t('settings.theme')}
+          subtitle={theme === 'light' ? t('settings.themeLight') : t('settings.themeDark')}
           onPress={() => setThemeModalVisible(true)}
+        />
+        <SettingItem
+          icon="language-outline"
+          title={t('settings.language')}
+          subtitle={t('settings.languageDesc')}
+          onPress={() => setLanguageModalVisible(true)}
         />
       </View>
 
-      <Text style={styles.sectionHeader}>Confidențialitate și Siguranță</Text>
+      <Text style={styles.sectionHeader}>{t('settings.privacy')}</Text>
       <View style={styles.sectionBlock}>
         <SettingItem
           icon="people-outline"
-          title="Lista de Prieteni"
-          subtitle="Gestionează prietenii tăi"
+          title={t('settings.friends')}
+          subtitle={t('settings.friendsDesc')}
           onPress={() => navigation.navigate('FriendsScreen')}
         />
         <SettingItem
           icon="shield-half-outline"
-          title="Persoane Blocate"
-          subtitle="Vezi și deblochează utilizatori"
+          title={t('settings.blocked')}
+          subtitle={t('settings.blockedDesc')}
           onPress={() => navigation.navigate('BlockedUsersScreen')}
         />
       </View>
 
-      <Text style={styles.sectionHeader}>Securitate Cont</Text>
+      <Text style={styles.sectionHeader}>{t('settings.security')}</Text>
       <View style={styles.sectionBlock}>
         <SettingItem
           icon="laptop-outline"
-          title="Dispozitive conectate"
-          subtitle="Gestionează sesiunile active"
+          title={t('settings.devices')}
+          subtitle={t('settings.devicesDesc')}
           onPress={openSecurityModal}
         />
         <SettingItem
           icon="log-out-outline"
-          title="Deconectare"
+          title={t('settings.logout')}
           onPress={handleLogout}
           isDestructive={true}
         />
@@ -203,7 +219,7 @@ export default function SettingsScreen() {
               <ScrollView style={styles.sessionsList}>
                 {activeSessions.map((session) => {
                   const isCurrent = session.id === currentSessionId;
-                  const date = new Date(session.created_at).toLocaleDateString('ro-RO');
+                  const date = new Date(session.created_at).toLocaleDateString(i18n.language === 'ro' ? 'ro-RO' : 'en-US');
                   return (
                     <View key={session.id} style={styles.sessionCard}>
                       <View style={styles.sessionInfo}>
@@ -221,9 +237,9 @@ export default function SettingsScreen() {
                           <Text style={styles.deviceName} numberOfLines={1}>
                             {session.device_name.substring(0, 30)}
                           </Text>
-                          <Text style={styles.sessionDate}>Logat pe: {date}</Text>
+                          <Text style={styles.sessionDate}>{t('settings.loggedOn')}: {date}</Text>
                           {isCurrent && (
-                            <Text style={styles.currentBadge}>Dispozitivul curent</Text>
+                            <Text style={styles.currentBadge}>{t('settings.currentDevice')}</Text>
                           )}
                         </View>
                       </View>
@@ -232,7 +248,7 @@ export default function SettingsScreen() {
                           style={styles.revokeBtn}
                           onPress={() => handleRevokeSession(session.id)}
                         >
-                          <Text style={styles.revokeBtnText}>Ieși</Text>
+                          <Text style={styles.revokeBtnText}>{t('settings.revoke')}</Text>
                         </TouchableOpacity>
                       )}
                     </View>
@@ -253,7 +269,7 @@ export default function SettingsScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Setări Notificări</Text>
+              <Text style={styles.modalTitle}>{t('settings.notificationSettings')}</Text>
               <TouchableOpacity onPress={() => setNotificationsModalVisible(false)}>
                 <Ionicons name="close" size={24} color={colors.textDark} />
               </TouchableOpacity>
@@ -265,9 +281,9 @@ export default function SettingsScreen() {
               <View style={styles.settingsContainer}>
                 <View style={styles.settingRow}>
                   <View style={styles.settingTextContainer}>
-                    <Text style={styles.settingTitle}>Reacții la citate</Text>
+                    <Text style={styles.settingTitle}>{t('settings.reactions')}</Text>
                     <Text style={styles.settingDescription}>
-                      Când cineva reacționează la postările tale.
+                      {t('settings.reactionsDesc')}
                     </Text>
                   </View>
                   <Switch
@@ -282,9 +298,9 @@ export default function SettingsScreen() {
 
                 <View style={styles.settingRow}>
                   <View style={styles.settingTextContainer}>
-                    <Text style={styles.settingTitle}>Comentarii noi</Text>
+                    <Text style={styles.settingTitle}>{t('settings.newComments')}</Text>
                     <Text style={styles.settingDescription}>
-                      Când cineva lasă un comentariu la citatul tău.
+                      {t('settings.newCommentsDesc')}
                     </Text>
                   </View>
                   <Switch
@@ -297,9 +313,9 @@ export default function SettingsScreen() {
 
                 <View style={styles.settingRow}>
                   <View style={styles.settingTextContainer}>
-                    <Text style={styles.settingTitle}>Cereri de prietenie</Text>
+                    <Text style={styles.settingTitle}>{t('settings.friendRequests')}</Text>
                     <Text style={styles.settingDescription}>
-                      Când cineva dorește să se conecteze cu tine.
+                      {t('settings.friendRequestsDesc')}
                     </Text>
                   </View>
                   <Switch
@@ -314,9 +330,9 @@ export default function SettingsScreen() {
 
                 <View style={styles.settingRow}>
                   <View style={styles.settingTextContainer}>
-                    <Text style={styles.settingTitle}>Cereri acceptate</Text>
+                    <Text style={styles.settingTitle}>{t('settings.acceptedRequests')}</Text>
                     <Text style={styles.settingDescription}>
-                      Când cineva îți acceptă cererea trimisă.
+                      {t('settings.acceptedRequestsDesc')}
                     </Text>
                   </View>
                   <Switch
@@ -344,7 +360,7 @@ export default function SettingsScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Alege Tema Aplicației</Text>
+              <Text style={styles.modalTitle}>{t('settings.chooseTheme')}</Text>
               <TouchableOpacity onPress={() => setThemeModalVisible(false)}>
                 <Ionicons name="close" size={24} color={colors.textDark} />
               </TouchableOpacity>
@@ -358,7 +374,7 @@ export default function SettingsScreen() {
                     size={24}
                     color={theme === 'light' ? colors.primary : colors.textLight}
                   />
-                  <Text style={styles.settingItemTitle}>Deschisă</Text>
+                  <Text style={styles.settingItemTitle}>{t('settings.themeLight')}</Text>
                 </View>
                 <Ionicons
                   name={theme === 'light' ? 'radio-button-on' : 'radio-button-off'}
@@ -374,12 +390,55 @@ export default function SettingsScreen() {
                     size={24}
                     color={theme === 'dark' ? colors.primary : colors.textLight}
                   />
-                  <Text style={styles.settingItemTitle}>Întunecată</Text>
+                  <Text style={styles.settingItemTitle}>{t('settings.themeDark')}</Text>
                 </View>
                 <Ionicons
                   name={theme === 'dark' ? 'radio-button-on' : 'radio-button-off'}
                   size={24}
                   color={theme === 'dark' ? colors.primary : colors.textLight}
+                />
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* --- MODAL: LIMBĂ --- */}
+      <Modal
+        visible={isLanguageModalVisible}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setLanguageModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{t('settings.chooseLanguage')}</Text>
+              <TouchableOpacity onPress={() => setLanguageModalVisible(false)}>
+                <Ionicons name="close" size={24} color={colors.textDark} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.settingsContainer} showsVerticalScrollIndicator={false}>
+              <TouchableOpacity style={styles.themeOption} onPress={() => handleChangeLanguage('ro')}>
+                <View style={styles.themeOptionLeft}>
+                  <Text style={styles.settingItemTitle}>🇷🇴 {t('settings.romanian')}</Text>
+                </View>
+                <Ionicons
+                  name={i18n.language === 'ro' ? 'radio-button-on' : 'radio-button-off'}
+                  size={24}
+                  color={i18n.language === 'ro' ? colors.primary : colors.textLight}
+                />
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.themeOption} onPress={() => handleChangeLanguage('en')}>
+                <View style={styles.themeOptionLeft}>
+                  <Text style={styles.settingItemTitle}>🇬🇧 {t('settings.english')}</Text>
+                </View>
+                <Ionicons
+                  name={i18n.language === 'en' ? 'radio-button-on' : 'radio-button-off'}
+                  size={24}
+                  color={i18n.language === 'en' ? colors.primary : colors.textLight}
                 />
               </TouchableOpacity>
             </ScrollView>

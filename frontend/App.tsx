@@ -34,6 +34,8 @@ import ExploreScreen from './src/screens/ExploreScreen';
 
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import './src/i18n';
+
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowBanner: true,
