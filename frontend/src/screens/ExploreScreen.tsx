@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useContext, useMemo } from 'react';
+import React, { useState, useCallback, useContext, useMemo, useLayoutEffect } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { quoteService } from '../api/quoteService';
 import { ThemeContext } from '../context/ThemeContext';
@@ -19,11 +20,18 @@ export default function ExploreScreen() {
   const navigation = useNavigation<any>();
   const { colors } = useContext(ThemeContext);
   const styles = useMemo(() => getStyles(colors), [colors]);
+  const insets = useSafeAreaInsets();
 
   const [exploreQuotes, setExploreQuotes] = useState<any[]>([]);
   const [quoteOfTheDay, setQuoteOfTheDay] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: false,
+    });
+  }, [navigation]);
 
   const fetchExploreFeed = async () => {
     try {
@@ -119,9 +127,9 @@ export default function ExploreScreen() {
   const renderHeader = () => {
     return (
       <>
-        <View style={styles.headerTitleContainer}>
-          <Text style={styles.headerTitle}>Descoperă</Text>
-          <Text style={styles.headerSubtitle}>Citate de la oameni noi</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 10, paddingBottom: 15, marginBottom: 20, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+          <Ionicons name="book" size={28} color={colors.primary} style={{ marginRight: 10 }} />
+          <Text style={{ fontSize: 24, fontWeight: '800', color: colors.textDark }}>DailyQuotes</Text>
         </View>
 
         {quoteOfTheDay && (
@@ -163,7 +171,7 @@ export default function ExploreScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <FlatList
         data={exploreQuotes}
         keyExtractor={(item) => item.id.toString()}

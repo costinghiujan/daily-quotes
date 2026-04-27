@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useContext, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useContext, useMemo, useEffect, useRef, useLayoutEffect } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { io, Socket } from 'socket.io-client';
 import Constants from 'expo-constants';
 
@@ -35,6 +36,7 @@ export default function ConversationsScreen() {
   const { user } = useContext(AuthContext);
   const styles = useMemo(() => getStyles(colors), [colors]);
   const navigation = useNavigation<any>();
+  const insets = useSafeAreaInsets();
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -45,6 +47,12 @@ export default function ConversationsScreen() {
   const [isFriendsLoading, setIsFriendsLoading] = useState(false);
 
   const socketRef = useRef<Socket | null>(null);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: false,
+    });
+  }, [navigation]);
 
   useFocusEffect(
     useCallback(() => {
@@ -225,7 +233,11 @@ export default function ConversationsScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 10, paddingBottom: 10 }}>
+        <Ionicons name="book" size={28} color={colors.primary} style={{ marginRight: 10 }} />
+        <Text style={{ fontSize: 24, fontWeight: '800', color: colors.textDark }}>DailyQuotes</Text>
+      </View>
       <FlatList
         data={conversations}
         keyExtractor={(item) => item.user_id.toString()}

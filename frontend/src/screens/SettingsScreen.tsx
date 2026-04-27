@@ -1,4 +1,4 @@
-import React, { useState, useContext, useMemo } from 'react';
+import React, { useState, useEffect, useContext, useMemo, useLayoutEffect } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -27,6 +28,13 @@ export default function SettingsScreen() {
   const { logout } = useContext(AuthContext);
   const { colors, theme, setTheme } = useContext(ThemeContext);
   const styles = useMemo(() => getStyles(colors), [colors]);
+  const insets = useSafeAreaInsets();
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: false,
+    });
+  }, [navigation]);
 
   const [isSecurityModalVisible, setSecurityModalVisible] = useState(false);
   const [activeSessions, setActiveSessions] = useState<Session[]>([]);
@@ -144,8 +152,13 @@ export default function SettingsScreen() {
   );
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-      <Text style={styles.sectionHeader}>{t('settings.preferences')}</Text>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 10, paddingBottom: 15, marginBottom: 5, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+        <Ionicons name="book" size={28} color={colors.primary} style={{ marginRight: 10 }} />
+        <Text style={{ fontSize: 24, fontWeight: '800', color: colors.textDark }}>DailyQuotes</Text>
+      </View>
+      <ScrollView contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
+        <Text style={styles.sectionHeader}>{t('settings.preferences')}</Text>
       <View style={styles.sectionBlock}>
         <SettingItem
           icon="notifications-outline"
@@ -445,7 +458,8 @@ export default function SettingsScreen() {
           </View>
         </View>
       </Modal>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 

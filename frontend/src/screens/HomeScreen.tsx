@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useContext, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useContext, useLayoutEffect } from 'react';
 import {
   View,
   Text,
@@ -10,12 +10,14 @@ import {
   Alert,
   Image,
   RefreshControl,
+  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { quoteService } from '../api/quoteService';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { quoteService } from '../api/quoteService';
+import { AuthContext } from '../context/AuthContext';
 import { ThemeContext } from '../context/ThemeContext';
-import { ThemeColors } from '../theme/colors';
 
 const REACTIONS_CONFIG = [
   { key: 'BLUE_HEART', emoji: '💙', prop: 'blue_heart_count' },
@@ -27,8 +29,8 @@ const REACTIONS_CONFIG = [
 ];
 
 export default function HomeScreen({ navigation }: any) {
-  const { colors, theme } = useContext(ThemeContext);
-  const styles = useMemo(() => getStyles(colors, theme), [colors, theme]);
+  const { user } = useContext(AuthContext);
+  const insets = useSafeAreaInsets();
 
   const [feedQuotes, setFeedQuotes] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -37,6 +39,14 @@ export default function HomeScreen({ navigation }: any) {
   const [newText, setNewText] = useState('');
   const [newAuthor, setNewAuthor] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { colors } = useContext(ThemeContext);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: false,
+    });
+  }, [navigation]);
 
   const fetchFeed = async () => {
     setIsLoading(true);
@@ -74,46 +84,40 @@ export default function HomeScreen({ navigation }: any) {
     setIsSubmitting(true);
     try {
       await quoteService.create({ text: newText, author: newAuthor, category: 'General' });
-      Alert.alert('Succes', 'Citatul a fost postat!');
       setNewText('');
       setNewAuthor('');
       onRefresh();
     } catch (error) {
       console.error(error);
-      Alert.alert('Eroare', 'Nu am putut posta citatul.');
+      Alert.alert('Eroare', 'Nu am putut posta.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const renderFeedItem = ({ item }: { item: any }) => {
+  const getMockImage = (id: number) => `https://picsum.photos/seed/${id}/600/800`;
+  const getMockAvatar = (id: number) => `https://picsum.photos/seed/avatar${id}/100/100`;
+
+  const renderFeedItem = ({ item, index }: { item: any, index: number }) => {
     const handleToggleReaction = async (quoteId: number, reactionKey: string) => {
       setFeedQuotes((prevQuotes) =>
         prevQuotes.map((quote) => {
           if (quote.id !== quoteId) return quote;
-
           const updatedQuote = { ...quote };
-          const currentReactions = Array.isArray(updatedQuote.user_reactions)
-            ? updatedQuote.user_reactions
-            : [];
+          const currentReactions = Array.isArray(updatedQuote.user_reactions) ? updatedQuote.user_reactions : [];
           const targetProp = reactionKey.toLowerCase() + '_count';
-
           const hasReacted = currentReactions.includes(reactionKey);
 
           if (hasReacted) {
             updatedQuote[targetProp] = Math.max(0, parseInt(updatedQuote[targetProp] || 0) - 1);
-            updatedQuote.user_reactions = currentReactions.filter(
-              (key: string) => key !== reactionKey,
-            );
+            updatedQuote.user_reactions = currentReactions.filter((key: string) => key !== reactionKey);
           } else {
             updatedQuote[targetProp] = parseInt(updatedQuote[targetProp] || 0) + 1;
             updatedQuote.user_reactions = [...currentReactions, reactionKey];
           }
-
           return updatedQuote;
         }),
       );
-
       try {
         await quoteService.toggleReaction(quoteId, reactionKey);
       } catch (error) {
@@ -121,106 +125,148 @@ export default function HomeScreen({ navigation }: any) {
       }
     };
 
+    const hasAnyReaction = REACTIONS_CONFIG.some(r => parseInt(item[r.prop] || 0) > 0);
+    const totalReactions = REACTIONS_CONFIG.reduce((acc, r) => acc + parseInt(item[r.prop] || 0), 0);
+
     return (
-      <View style={styles.feedCard}>
+      <View style={styles.feedItem}>
         <View style={styles.postHeader}>
           {item.profile_picture_url ? (
             <Image source={{ uri: item.profile_picture_url }} style={styles.avatarSmall} />
           ) : (
-            <View style={styles.avatarPlaceholderSmall}>
-              <Ionicons name="person" size={16} color={colors.white} />
-            </View>
+            <Image source={{ uri: getMockAvatar(item.id || index) }} style={styles.avatarSmall} />
           )}
-          <View>
-            <Text style={styles.postUserName}>{item.full_name || item.username}</Text>
-            <Text style={styles.postUserHandle}>@{item.username}</Text>
+          <View style={styles.postHeaderInfo}>
+            <Text style={styles.postUserName}>{item.full_name || item.username || 'User'}</Text>
+            <Text style={styles.postSubText}>
+               {item.created_at ? new Date(item.created_at).toLocaleDateString() : 'A day exploring the city'}
+            </Text>
           </View>
-        </View>
-
-        <View style={styles.quoteContent}>
-          <Text style={styles.quoteText}>&quot;{item.text}&quot;</Text>
-          <Text style={styles.quoteAuthor}>— {item.original_author}</Text>
-        </View>
-
-        <View style={styles.reactionsBar}>
-          <View style={{ flexDirection: 'row', flex: 1, flexWrap: 'wrap', gap: 4 }}>
-            {REACTIONS_CONFIG.map((reaction) => {
-              const count = parseInt(item[reaction.prop] || 0);
-              const isSelected =
-                Array.isArray(item.user_reactions) && item.user_reactions.includes(reaction.key);
-
-              return (
-                <TouchableOpacity
-                  key={reaction.key}
-                  style={[styles.reactionBtn, isSelected && styles.reactionBtnActive]}
-                  onPress={() => handleToggleReaction(item.id, reaction.key)}
-                >
-                  <Text style={styles.emojiText}>{reaction.emoji}</Text>
-                  {count > 0 && (
-                    <Text style={[styles.reactionCount, isSelected && styles.reactionCountActive]}>
-                      {count}
-                    </Text>
-                  )}
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-
-          <TouchableOpacity
-            style={styles.commentIconBtn}
-            onPress={() => navigation.navigate('Comments', { quoteId: item.id })}
-          >
-            <Ionicons name="chatbubble-outline" size={22} color={colors.textLight} />
+          <TouchableOpacity>
+            <Ionicons name="ellipsis-horizontal" size={20} color={colors.textDark} />
           </TouchableOpacity>
+        </View>
+
+        <Text style={styles.postText}>&quot;{item.text}&quot; — {item.original_author}</Text>
+
+
+
+        <View style={styles.likesRow}>
+          <View style={styles.reactionsStack}>
+            {hasAnyReaction ? REACTIONS_CONFIG.map((r, i) => {
+              if (parseInt(item[r.prop] || 0) > 0 && i < 3) {
+                 return (
+                   <View key={r.key} style={[styles.reactionCircle, { backgroundColor: '#F0F2F5', zIndex: 3 - i, marginLeft: i > 0 ? -6 : 0 }]}>
+                     <Text style={{ fontSize: 10 }}>{r.emoji}</Text>
+                   </View>
+                 );
+              }
+              return null;
+            }) : (
+              <View style={[styles.reactionCircle, { backgroundColor: '#1877F2', zIndex: 3 }]}>
+                <Ionicons name="thumbs-up" size={10} color="#fff" />
+              </View>
+            )}
+          </View>
+          <Text style={styles.likesText}>
+            {totalReactions > 0 ? `${totalReactions} reactions` : 'No reactions yet'}
+          </Text>
+        </View>
+
+        {/* Action bar for Like / Comment */}
+        <View style={styles.reactionsBar}>
+           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>
+              {REACTIONS_CONFIG.map((reaction) => {
+                 const count = parseInt(item[reaction.prop] || 0);
+                 const isSelected = Array.isArray(item.user_reactions) && item.user_reactions.includes(reaction.key);
+                 return (
+                    <TouchableOpacity
+                       key={reaction.key}
+                       style={[styles.reactionBtn, isSelected && styles.reactionBtnActive]}
+                       onPress={() => handleToggleReaction(item.id, reaction.key)}
+                    >
+                       <Text style={styles.emojiText}>{reaction.emoji}</Text>
+                       {count > 0 && <Text style={[styles.reactionCount, isSelected && styles.reactionCountActive]}>{count}</Text>}
+                    </TouchableOpacity>
+                 );
+              })}
+           </ScrollView>
+           <TouchableOpacity
+             style={styles.commentIconBtn}
+             onPress={() => navigation.navigate('Comments', { quoteId: item.id })}
+           >
+             <Ionicons name="chatbubble-outline" size={22} color={colors.textDark} />
+           </TouchableOpacity>
         </View>
       </View>
     );
   };
 
-  const headerElement = (
-    <View style={styles.createPostContainer}>
-      <Text style={styles.createPostTitle}>Împarte un citat cu prietenii</Text>
-      <TextInput
-        style={[styles.input, { height: 80 }]}
-        placeholder="Scrie citatul aici..."
-        placeholderTextColor={colors.textLight}
-        value={newText}
-        onChangeText={setNewText}
-        multiline
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Autorul citatului (ex: Albert Einstein)"
-        placeholderTextColor={colors.textLight}
-        value={newAuthor}
-        onChangeText={setNewAuthor}
-      />
-      <TouchableOpacity style={styles.postButton} onPress={handleAddQuote} disabled={isSubmitting}>
-        {isSubmitting ? (
-          <ActivityIndicator color={colors.white} size="small" />
-        ) : (
-          <Text style={styles.postButtonText}>Postează</Text>
+  const renderHeader = () => (
+    <View style={styles.headerContainer}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', paddingBottom: 15, marginBottom: 20, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+        <Ionicons name="book" size={28} color={colors.primary} style={{ marginRight: 10 }} />
+        <Text style={{ fontSize: 24, fontWeight: '800', color: colors.textDark }}>DailyQuotes</Text>
+      </View>
+
+      <View style={styles.createPostContainer}>
+        <View style={styles.createPostTop}>
+          {user?.profile_picture_url ? (
+            <Image source={{ uri: user.profile_picture_url }} style={styles.myAvatar} />
+          ) : (
+            <Image source={{ uri: getMockAvatar(99) }} style={styles.myAvatar} />
+          )}
+          <View style={styles.mindInputWrapper}>
+            <TextInput
+              style={styles.mindInput}
+              placeholder="What's on your mind?"
+              placeholderTextColor={colors.textLight}
+              value={newText}
+              onChangeText={setNewText}
+            />
+          </View>
+        </View>
+        <TextInput
+           style={[styles.mindInputWrapper, { flex: undefined, marginBottom: 15, borderRadius: 10, paddingVertical: 8 }]}
+           placeholder="Author (e.g. Albert Einstein)"
+           placeholderTextColor={colors.textLight}
+           value={newAuthor}
+           onChangeText={setNewAuthor}
+        />
+
+
+        {(newText.length > 0 || newAuthor.length > 0) && (
+           <TouchableOpacity style={styles.postSubmitBtn} onPress={handleAddQuote} disabled={isSubmitting}>
+             {isSubmitting ? (
+                <ActivityIndicator color={colors.white} size="small" />
+             ) : (
+                <Text style={styles.postSubmitText}>Postează</Text>
+             )}
+           </TouchableOpacity>
         )}
-      </TouchableOpacity>
+      </View>
+
+      <Text style={styles.recentTitle}>Recent</Text>
     </View>
   );
 
   if (isLoading && feedQuotes.length === 0) {
     return (
-      <View style={styles.centered}>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <FlatList
         data={feedQuotes}
-        keyExtractor={(item) => item.id.toString()}
+        keyExtractor={(item, index) => item.id ? item.id.toString() : index.toString()}
         renderItem={renderFeedItem}
-        ListHeaderComponent={headerElement}
+        ListHeaderComponent={renderHeader}
         contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
@@ -230,12 +276,10 @@ export default function HomeScreen({ navigation }: any) {
           />
         }
         ListEmptyComponent={
-          <View style={styles.emptyContainer}>
+          <View style={{ alignItems: 'center', marginTop: 40, paddingHorizontal: 20 }}>
             <Ionicons name="people-outline" size={64} color={colors.textLight} />
-            <Text style={styles.emptyText}>Feed-ul tău este gol.</Text>
-            <Text style={styles.emptySubText}>
-              Caută prieteni și acceptă cereri pentru a vedea citatele lor aici!
-            </Text>
+            <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.textDark, marginTop: 15 }}>Feed-ul tău este gol.</Text>
+            <Text style={{ fontSize: 15, color: colors.textLight, textAlign: 'center', marginTop: 10 }}>Caută prieteni și acceptă cereri pentru a vedea citatele lor aici!</Text>
           </View>
         }
       />
@@ -243,123 +287,218 @@ export default function HomeScreen({ navigation }: any) {
   );
 }
 
-const getStyles = (colors: ThemeColors, theme: string) =>
-  StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.background },
-    centered: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: colors.background,
-    },
-    listContent: { padding: 15, paddingBottom: 30, paddingTop: 50 },
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  listContent: {
+    paddingBottom: 40,
+  },
+  headerContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 10,
+  },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 2,
+    borderBottomColor: '#E5EFFF',
+    paddingBottom: 8,
+    marginBottom: 20,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    fontSize: 18,
+    color: '#1877F2',
+    flex: 1,
+    fontWeight: '500',
+  },
+  createPostContainer: {
+    marginBottom: 30,
+  },
+  createPostTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  myAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    marginRight: 12,
+  },
+  mindInputWrapper: {
+    flex: 1,
+    backgroundColor: '#F0F2F5',
+    borderRadius: 25,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+  },
+  mindInput: {
+    fontSize: 16,
+    color: '#1C1E21',
+  },
 
-    createPostContainer: {
-      backgroundColor: colors.card,
-      padding: 15,
-      borderRadius: 10,
-      marginBottom: 20,
-      elevation: 2,
-      shadowColor: '#000',
-      shadowOpacity: 0.05,
-      shadowRadius: 5,
-    },
-    createPostTitle: { fontSize: 16, fontWeight: 'bold', color: colors.textDark, marginBottom: 10 },
-    input: {
-      backgroundColor: colors.background,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: 8,
-      padding: 12,
-      marginBottom: 10,
-      fontSize: 15,
-      color: colors.textDark,
-    },
-    postButton: {
-      backgroundColor: colors.primary,
-      padding: 12,
-      borderRadius: 8,
-      alignItems: 'center',
-    },
-    postButtonText: { color: colors.white, fontWeight: 'bold', fontSize: 16 },
-
-    feedCard: {
-      backgroundColor: colors.card,
-      borderRadius: 10,
-      padding: 15,
-      marginBottom: 15,
-      elevation: 2,
-      shadowColor: '#000',
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-    },
-    postHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
-    avatarSmall: { width: 40, height: 40, borderRadius: 20, marginRight: 10 },
-    avatarPlaceholderSmall: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      marginRight: 10,
-      backgroundColor: colors.primary,
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    postUserName: { fontSize: 15, fontWeight: 'bold', color: colors.textDark },
-    postUserHandle: { fontSize: 13, color: colors.textLight },
-    quoteContent: {
-      borderLeftWidth: 3,
-      borderLeftColor: colors.primary,
-      paddingLeft: 10,
-      marginTop: 5,
-      marginBottom: 15,
-    },
-    quoteText: {
-      fontSize: 16,
-      fontStyle: 'italic',
-      color: colors.textDark,
-      marginBottom: 8,
-      lineHeight: 22,
-    },
-    quoteAuthor: { fontSize: 14, fontWeight: 'bold', color: colors.textLight },
-
-    emptyContainer: { alignItems: 'center', marginTop: 40, paddingHorizontal: 20 },
-    emptyText: { fontSize: 18, fontWeight: 'bold', color: colors.textDark, marginTop: 15 },
-    emptySubText: {
-      fontSize: 15,
-      color: colors.textLight,
-      textAlign: 'center',
-      marginTop: 10,
-      lineHeight: 22,
-    },
-
-    reactionsBar: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      borderTopWidth: 1,
-      borderTopColor: colors.border,
-      paddingTop: 12,
-    },
-    commentIconBtn: {
-      padding: 8,
-      marginLeft: 10,
-      backgroundColor: colors.background,
-      borderRadius: 20,
-    },
-    reactionBtn: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingHorizontal: 8,
-      paddingVertical: 6,
-      borderRadius: 20,
-      backgroundColor: theme === 'dark' ? '#2c2c2c' : '#f9f9f9',
-    },
-    reactionBtnActive: {
-      backgroundColor: colors.primary + '30',
-      borderWidth: 1,
-      borderColor: colors.primary + '50',
-    },
-    emojiText: { fontSize: 16 },
-    reactionCount: { fontSize: 13, fontWeight: 'bold', color: colors.textLight, marginLeft: 4 },
-    reactionCountActive: { color: colors.primary },
-  });
+  postSubmitBtn: {
+     backgroundColor: '#1877F2',
+     padding: 12,
+     borderRadius: 8,
+     alignItems: 'center',
+     marginTop: 15,
+  },
+  postSubmitText: {
+     color: '#FFFFFF',
+     fontWeight: 'bold',
+     fontSize: 16,
+  },
+  recentTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#1C1E21',
+    marginBottom: 15,
+  },
+  feedItem: {
+    paddingHorizontal: 20,
+    marginBottom: 35,
+  },
+  postHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  avatarSmall: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 12,
+  },
+  postHeaderInfo: {
+    flex: 1,
+  },
+  postUserName: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1C1E21',
+  },
+  postSubText: {
+    fontSize: 13,
+    color: '#8A8D91',
+    marginTop: 2,
+  },
+  postText: {
+    fontSize: 15,
+    color: '#1C1E21',
+    marginBottom: 10,
+    fontStyle: 'italic',
+  },
+  postImageContainer: {
+    width: '100%',
+    height: 380,
+    borderRadius: 20,
+    overflow: 'hidden',
+    position: 'relative',
+    marginBottom: 12,
+  },
+  postImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  paginationBadge: {
+    position: 'absolute',
+    top: 15,
+    right: 15,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  paginationText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  nextImageHint: {
+    position: 'absolute',
+    right: -20,
+    top: 0,
+    bottom: 0,
+    width: 30,
+    backgroundColor: '#000',
+    opacity: 0.2,
+    borderRadius: 20,
+  },
+  dotsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#D0D0D0',
+    marginHorizontal: 3,
+  },
+  dotActive: {
+    backgroundColor: '#1C1E21',
+  },
+  likesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  reactionsStack: {
+    flexDirection: 'row',
+    marginRight: 8,
+  },
+  reactionCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  likesText: {
+    fontSize: 13,
+    color: '#1C1E21',
+    fontWeight: '500',
+  },
+  reactionsBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '#F0F2F5',
+    paddingTop: 12,
+  },
+  reactionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 20,
+    backgroundColor: '#F9FAFB',
+    marginRight: 6,
+  },
+  reactionBtnActive: {
+    backgroundColor: '#E5EFFF',
+    borderWidth: 1,
+    borderColor: '#A0C3FF',
+  },
+  emojiText: { fontSize: 16 },
+  reactionCount: { fontSize: 13, fontWeight: 'bold', color: '#8A8D91', marginLeft: 4 },
+  reactionCountActive: { color: '#1877F2' },
+  commentIconBtn: {
+    padding: 8,
+    marginLeft: 10,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 20,
+  },
+});

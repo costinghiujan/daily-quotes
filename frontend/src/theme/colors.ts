@@ -11,21 +11,25 @@ export type ThemeColors = {
   success: string;
   gray: string;
   border: string;
+  primaryLight?: string;
+  inputBg?: string;
 };
 
 export const lightTheme: ThemeColors = {
-  background: '#F8F9FA',
+  background: '#FFFFFF',
   card: '#FFFFFF',
-  primary: '#2563EB',
-  secondary: '#38BDF8',
-  textDark: '#2D3748',
-  textLight: '#718096',
+  primary: '#1877F2',
+  secondary: '#45BD62',
+  textDark: '#1C1E21',
+  textLight: '#8A8D91',
   white: '#FFFFFF',
-  error: '#EF4444',
+  error: '#F02849',
   errorBg: '#FEE2E2',
-  success: '#10B981',
-  gray: '#CBD5E1',
-  border: '#E2E8F0',
+  success: '#45BD62',
+  gray: '#F0F2F5',
+  border: '#EAEAEA',
+  primaryLight: '#E5EFFF',
+  inputBg: '#F0F2F5',
 };
 
 export const darkTheme: ThemeColors = {
