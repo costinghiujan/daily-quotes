@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useContext, useMemo } from 'react';
+import React, { useState, useCallback, useContext, useMemo, useLayoutEffect } from 'react';
 import {
   View,
   Text,
@@ -6,19 +6,28 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  Alert,
   Image,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { friendshipService, BlockedUser } from '../api/friendshipService';
 import { ThemeContext } from '../context/ThemeContext';
+import { AlertContext } from '../context/AlertContext';
 import { ThemeColors } from '../theme/colors';
+
 
 export default function BlockedUsersScreen() {
   const { colors } = useContext(ThemeContext);
   const styles = useMemo(() => getStyles(colors), [colors]);
+  const { showAlert } = useContext(AlertContext);
+  const { t } = useTranslation();
+  const navigation = useNavigation<any>();
+  const insets = useSafeAreaInsets();
+
 
   const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -30,7 +39,7 @@ export default function BlockedUsersScreen() {
       setBlockedUsers(data);
     } catch (error) {
       console.error('[Eroare UI] Nu am putut încărca lista de blocați:', error);
-      Alert.alert('Eroare', 'Nu am putut încărca utilizatorii blocați.');
+      showAlert({ title: t('common.error'), message: t('blocked.errorLoad'), confirmText: t('common.ok'), hideCancel: true });
     } finally {
       setIsLoading(false);
     }
@@ -43,32 +52,28 @@ export default function BlockedUsersScreen() {
   );
 
   const handleUnblock = (userId: number, userName: string) => {
-    Alert.alert(
-      'Deblochează Utilizator',
-      `Ești sigur că vrei să îl deblochezi pe ${userName}? Vă veți putea găsi reciproc și trimite mesaje din nou.`,
-      [
-        { text: 'Anulează', style: 'cancel' },
-        {
-          text: 'Deblochează',
-          style: 'default',
-          onPress: async () => {
-            try {
-              setBlockedUsers((prev) => prev.filter((user) => user.id !== userId));
-              await friendshipService.unblockUser(userId);
-            } catch (error) {
-              console.error('[Eroare UI] Deblocare utilizator:', error);
-              fetchBlockedUsers();
-              Alert.alert('Eroare', 'Nu s-a putut debloca utilizatorul.');
-            }
-          },
-        },
-      ],
-    );
+    showAlert({
+      title: t('blocked.unblockUser'),
+      message: t('blocked.unblockConfirm', { name: userName }),
+      confirmText: t('blocked.unblock'),
+      cancelText: t('common.cancel'),
+      isDestructive: false,
+      onConfirm: async () => {
+        try {
+          setBlockedUsers((prev) => prev.filter((user) => user.id !== userId));
+          await friendshipService.unblockUser(userId);
+        } catch (error) {
+          console.error('[Eroare UI] Deblocare utilizator:', error);
+          fetchBlockedUsers();
+          showAlert({ title: t('common.error'), message: t('blocked.errorUnblock'), confirmText: t('common.ok'), hideCancel: true });
+        }
+      },
+    });
   };
 
   const renderBlockedUser = ({ item }: { item: BlockedUser }) => {
     const displayName = item.full_name || item.username;
-    const blockedDate = new Date(item.blocked_at).toLocaleDateString('ro-RO', {
+    const blockedDate = new Date(item.blocked_at).toLocaleDateString(undefined, {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
@@ -88,7 +93,7 @@ export default function BlockedUsersScreen() {
             <Text style={styles.nameText} numberOfLines={1}>
               {displayName}
             </Text>
-            <Text style={styles.dateText}>Blocat pe: {blockedDate}</Text>
+            <Text style={styles.dateText}>{t('blocked.blockedOn')}: {blockedDate}</Text>
           </View>
         </View>
 
@@ -96,7 +101,7 @@ export default function BlockedUsersScreen() {
           style={styles.unblockBtn}
           onPress={() => handleUnblock(item.id, displayName)}
         >
-          <Text style={styles.unblockBtnText}>Deblochează</Text>
+          <Text style={styles.unblockBtnText}>{t('blocked.unblock')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -111,7 +116,26 @@ export default function BlockedUsersScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <View style={[styles.topBar, { borderBottomColor: colors.separatorColor }]}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <LinearGradient
+            colors={colors.primaryGradient as [string, string]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.logoIcon}
+          >
+            <Ionicons name="shield" size={18} color="#fff" />
+          </LinearGradient>
+          <Text style={[styles.logoText, { color: colors.textDark }]}>{t('blocked.title')}</Text>
+        </View>
+        <TouchableOpacity
+          style={[styles.profileBtn, { backgroundColor: colors.iconBg }]}
+          onPress={() => navigation.navigate('ProfileScreen')}
+        >
+          <Ionicons name="person" size={20} color={colors.iconColor} />
+        </TouchableOpacity>
+      </View>
       <FlatList
         data={blockedUsers}
         keyExtractor={(item) => item.id.toString()}
@@ -120,16 +144,16 @@ export default function BlockedUsersScreen() {
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Ionicons name="shield-checkmark-outline" size={64} color={colors.success} />
-            <Text style={styles.emptyText}>Nu ai blocat pe nimeni.</Text>
+            <Text style={styles.emptyText}>{t('blocked.emptyTitle')}</Text>
             <Text style={styles.emptySubText}>
-              Utilizatorii pe care îi blochezi vor apărea aici. Ei nu îți vor mai putea vedea
-              activitatea.
+              {t('blocked.emptySub')}
             </Text>
           </View>
         }
       />
     </View>
   );
+
 }
 
 const getStyles = (colors: ThemeColors) =>
@@ -141,7 +165,37 @@ const getStyles = (colors: ThemeColors) =>
       alignItems: 'center',
       backgroundColor: colors.background,
     },
+    topBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 20,
+      paddingBottom: 15,
+      marginBottom: 10,
+      borderBottomWidth: 1,
+    },
+    logoIcon: {
+      width: 34,
+      height: 34,
+      borderRadius: 10,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: 10,
+    },
+    logoText: {
+      fontSize: 22,
+      fontWeight: '800',
+    },
+    profileBtn: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      justifyContent: 'center',
+      alignItems: 'center',
+      overflow: 'hidden',
+    },
     listContent: { padding: 15, paddingBottom: 30 },
+
 
     userCard: {
       flexDirection: 'row',

@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import { query } from '../config/db';
-import { AuthRequest } from './quoteController';
+import { AuthRequest } from '../middleware/authMiddleware';
 import { sendNotification } from '../utils/notificationHelper';
 import { sendPushNotification } from '../services/expoPushService';
 
@@ -158,21 +158,16 @@ export const acceptFriendRequest = async (req: AuthRequest, res: Response): Prom
 export const removeFriendOrRequest = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user?.id;
-    const targetUserId = parseInt(req.params.id as string, 10);
+    const friendshipId = parseInt(req.params.id as string, 10);
 
-    if (!userId || isNaN(targetUserId)) {
+    if (!userId || isNaN(friendshipId)) {
       res.status(400).json({ status: 'error', message: 'ID invalid.' });
       return;
     }
 
     const result = await query(
-      `
-      DELETE FROM friendships 
-      WHERE (requester_id = $1 AND receiver_id = $2) 
-         OR (requester_id = $2 AND receiver_id = $1)
-      RETURNING *
-    `,
-      [userId, targetUserId],
+      `DELETE FROM friendships WHERE id = $1 RETURNING *`,
+      [friendshipId],
     );
 
     if (result.rowCount === 0) {
@@ -196,7 +191,7 @@ export const getPendingRequests = async (req: AuthRequest, res: Response): Promi
 
     const result = await query(
       `
-      SELECT u.id, u.username, u.full_name, u.profile_picture_url, f.created_at
+      SELECT u.id, u.username, u.full_name, u.profile_picture_url, f.id as friendship_id, f.created_at
       FROM friendships f
       JOIN users u ON f.requester_id = u.id
       WHERE f.receiver_id = $1 AND f.status = 'pending'

@@ -23,6 +23,7 @@ import ChatScreen from './src/screens/ChatScreen';
 
 import { AuthProvider, AuthContext } from './src/context/AuthContext';
 import { ThemeProvider, ThemeContext } from './src/context/ThemeContext';
+import { AlertProvider } from './src/context/AlertContext';
 import { ThemeColors } from './src/theme/colors';
 import { notificationService } from './src/api/notificationService';
 
@@ -34,6 +35,7 @@ import ExploreScreen from './src/screens/ExploreScreen';
 
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { useTranslation } from 'react-i18next';
 import './src/i18n';
 
 Notifications.setNotificationHandler({
@@ -54,6 +56,8 @@ const MainTabNavigator = () => {
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
   
   const { colors } = useContext(ThemeContext);
+  const { userToken } = useContext(AuthContext);
+  const { t } = useTranslation();
 
   const registerForPushNotificationsAsync = async () => {
     let token;
@@ -154,14 +158,14 @@ const MainTabNavigator = () => {
         },
       })}
     >
-      <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Feed' }} />
-      <Tab.Screen name="Search" component={SearchScreen} options={{ title: 'Caută' }} />
-      <Tab.Screen name="Explore" component={ExploreScreen} options={{ title: 'Descoperă' }} />  
+      <Tab.Screen name="Home" component={HomeScreen} options={{ title: t('navigation.home') }} />
+      <Tab.Screen name="Search" component={SearchScreen} options={{ title: t('navigation.search') }} />
+      <Tab.Screen name="Explore" component={ExploreScreen} options={{ title: t('navigation.explore') }} />  
       <Tab.Screen 
         name="Notifications" 
         component={NotificationsScreen} 
         options={{ 
-          title: 'Notificări',
+          title: t('navigation.notifications'),
           tabBarBadge: (unreadCount && !isNaN(unreadCount) && unreadCount > 0) ? unreadCount : undefined,
           tabBarBadgeStyle: { backgroundColor: colors.error, color: colors.white, fontSize: 10 }
         }} 
@@ -170,12 +174,12 @@ const MainTabNavigator = () => {
         name="Conversations" 
         component={ConversationsScreen} 
         options={{ 
-          title: 'Mesaje',
+          title: t('navigation.messages'),
           tabBarBadge: (unreadMessagesCount && !isNaN(unreadMessagesCount) && unreadMessagesCount > 0) ? unreadMessagesCount : undefined,
           tabBarBadgeStyle: { backgroundColor: colors.error, color: colors.white, fontSize: 10 }
         }} 
       />
-      <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profilul Meu' }} />
+      <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: t('navigation.profile') }} />
     </Tab.Navigator>
   );
 };
@@ -184,6 +188,7 @@ const RootNavigator = () => {
   const { userToken, isLoading } = useContext(AuthContext);
   
   const { colors, theme } = useContext(ThemeContext);
+  const { t } = useTranslation();
   const styles = useMemo(() => getStyles(colors), [colors]);
 
   const navigationTheme: NavigationTheme = useMemo(() => {
@@ -230,33 +235,33 @@ const RootNavigator = () => {
               name="Comments" 
               component={CommentsScreen} 
               options={{ 
-                title: 'Comentarii',
-                headerBackTitle: 'Înapoi' 
+                title: t('navigation.comments'),
+                headerBackTitle: t('navigation.back')
               }} 
             />
             <Stack.Screen 
               name="ChatScreen" 
               component={ChatScreen} 
               options={{ 
-                headerBackTitle: 'Înapoi',
+                headerBackTitle: t('navigation.back'),
               }} 
             />
             <Stack.Screen 
               name="SettingsScreen" 
               component={SettingsScreen} 
               options={{ 
-                title: 'Setări' 
+                title: t('navigation.settings')
               }} 
             />
             <Stack.Screen 
               name="FriendsScreen" 
               component={FriendsScreen} 
-              options={{ title: 'Lista de Prieteni' }} 
+              options={{ title: t('navigation.friendsList') }} 
             />
             <Stack.Screen 
               name="BlockedUsersScreen" 
               component={BlockedUsersScreen} 
-              options={{ title: 'Persoane Blocate' }} 
+              options={{ title: t('navigation.blockedUsers') }} 
             />
           </>
         )}
@@ -270,7 +275,9 @@ export default function App() {
     <SafeAreaProvider>
       <ThemeProvider>
         <AuthProvider>
-          <RootNavigator />
+          <AlertProvider>
+            <RootNavigator />
+          </AlertProvider>
         </AuthProvider>
       </ThemeProvider>
     </SafeAreaProvider>

@@ -1,16 +1,16 @@
 import { StyleSheet } from 'react-native';
-import { colors } from './colors';
+import { ThemeColors } from './colors';
 
-export const authStyles = StyleSheet.create({
+export const createAuthStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background, justifyContent: 'center' },
   scrollContent: { flexGrow: 1, justifyContent: 'center', paddingVertical: 20 },
   formContainer: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.card,
     padding: 24,
     marginHorizontal: 20,
     borderRadius: 16,
     elevation: 4,
-    shadowColor: colors.textDark,
+    shadowColor: colors.cardShadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 6,
@@ -26,9 +26,9 @@ export const authStyles = StyleSheet.create({
   subtitle: { fontSize: 16, color: colors.textLight, textAlign: 'center', marginBottom: 32 },
 
   input: {
-    backgroundColor: colors.background,
+    backgroundColor: colors.inputBg,
     borderWidth: 1,
-    borderColor: colors.secondary,
+    borderColor: colors.border,
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -46,7 +46,7 @@ export const authStyles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 10,
   },
-  buttonDisabled: { backgroundColor: colors.secondary },
+  buttonDisabled: { backgroundColor: colors.muted },
   buttonText: { color: colors.white, fontSize: 16, fontWeight: 'bold' },
 
   footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 24 },
@@ -66,10 +66,10 @@ export const authStyles = StyleSheet.create({
   strengthLabel: { fontSize: 12, fontWeight: 'bold', width: 60, textAlign: 'right' },
   rulesContainer: { marginBottom: 16, paddingHorizontal: 4 },
   ruleMet: { color: colors.success, fontSize: 12, marginBottom: 2 },
-  ruleUnmet: { color: colors.gray, fontSize: 12, marginBottom: 2 },
+  ruleUnmet: { color: colors.muted, fontSize: 12, marginBottom: 2 },
 });
 
-export const homeStyles = StyleSheet.create({
+export const createHomeStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   loadingText: { marginTop: 10, fontSize: 16, color: colors.textLight },
@@ -83,18 +83,18 @@ export const homeStyles = StyleSheet.create({
   },
 
   formContainer: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.card,
     padding: 16,
     marginHorizontal: 16,
     marginBottom: 16,
     borderRadius: 12,
     elevation: 2,
-    shadowColor: colors.textDark,
+    shadowColor: colors.cardShadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
     borderWidth: 1,
-    borderColor: colors.secondary,
+    borderColor: colors.border,
   },
   editModeText: {
     color: colors.primary,
@@ -103,9 +103,9 @@ export const homeStyles = StyleSheet.create({
     textAlign: 'center',
   },
   input: {
-    backgroundColor: colors.background,
+    backgroundColor: colors.inputBg,
     borderWidth: 1,
-    borderColor: colors.secondary,
+    borderColor: colors.border,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -124,10 +124,10 @@ export const homeStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  buttonDisabled: { backgroundColor: colors.secondary },
+  buttonDisabled: { backgroundColor: colors.muted },
   buttonText: { color: colors.white, fontSize: 16, fontWeight: 'bold' },
   cancelButton: {
-    backgroundColor: colors.secondary,
+    backgroundColor: colors.gray,
     paddingVertical: 14,
     paddingHorizontal: 20,
     borderRadius: 8,
@@ -138,17 +138,17 @@ export const homeStyles = StyleSheet.create({
 
   listContainer: { paddingHorizontal: 16, paddingBottom: 20 },
   card: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.card,
     padding: 20,
     borderRadius: 12,
     marginBottom: 16,
-    shadowColor: colors.textDark,
+    shadowColor: colors.cardShadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
     borderWidth: 1,
-    borderColor: colors.secondary,
+    borderColor: colors.border,
   },
   quoteText: {
     fontSize: 18,
@@ -167,8 +167,8 @@ export const homeStyles = StyleSheet.create({
   },
   cardActions: { flexDirection: 'row', gap: 8 },
   categoryBadge: {
-    backgroundColor: colors.secondary,
-    color: colors.textDark,
+    backgroundColor: colors.primaryLight,
+    color: colors.primary,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 16,

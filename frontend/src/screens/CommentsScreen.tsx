@@ -10,13 +10,14 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
-  Alert,
   Keyboard,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { quoteService, Comment } from '../api/quoteService';
+import { useTranslation } from 'react-i18next';
 
 import { ThemeContext } from '../context/ThemeContext';
+import { AlertContext } from '../context/AlertContext';
 import { ThemeColors } from '../theme/colors';
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,9 +25,11 @@ import { useHeaderHeight } from '@react-navigation/elements';
 
 export default function CommentsScreen({ route, navigation }: any) {
   const { quoteId } = route.params;
+  const { t } = useTranslation();
 
   const { colors } = useContext(ThemeContext);
   const styles = useMemo(() => getStyles(colors), [colors]);
+  const { showAlert } = useContext(AlertContext);
 
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
@@ -66,7 +69,7 @@ export default function CommentsScreen({ route, navigation }: any) {
         setComments(data);
       } catch (error) {
         console.error(error);
-        Alert.alert('Eroare', 'Nu am putut încărca discuția.');
+        showAlert({ title: t('common.error'), message: t('comments.errorLoad'), hideCancel: true, confirmText: t('common.ok') });
       } finally {
         setIsLoading(false);
       }
@@ -86,14 +89,14 @@ export default function CommentsScreen({ route, navigation }: any) {
       setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
     } catch (error) {
       console.error(error);
-      Alert.alert('Eroare', 'Nu am putut posta comentariul.');
+      showAlert({ title: t('common.error'), message: t('comments.errorPost'), hideCancel: true, confirmText: t('common.ok') });
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const renderComment = ({ item }: { item: Comment }) => {
-    const date = new Date(item.created_at).toLocaleDateString('ro-RO', {
+    const date = new Date(item.created_at).toLocaleDateString(undefined, {
       hour: '2-digit',
       minute: '2-digit',
     });
@@ -132,17 +135,16 @@ export default function CommentsScreen({ route, navigation }: any) {
           renderItem={renderComment}
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={
-            <Text style={styles.emptyText}>Fii primul care lasă un comentariu!</Text>
+            <Text style={styles.emptyText}>{t('comments.beFirst')}</Text>
           }
           onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
         />
       )}
 
-      {/* Spațiu de siguranță adăugat prin insets.bottom pentru navigarea nativă */}
       <View style={[styles.inputContainer, { paddingBottom: Math.max(10, insets.bottom) }]}>
         <TextInput
           style={styles.input}
-          placeholder="Adaugă un comentariu..."
+          placeholder={t('comments.placeholder')}
           placeholderTextColor={colors.textLight}
           value={newComment}
           onChangeText={setNewComment}

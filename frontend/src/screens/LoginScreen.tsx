@@ -4,7 +4,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Keyboard,
@@ -14,15 +13,19 @@ import {
 import { authService } from '../api/authService';
 import { AuthContext } from '../context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { ThemeContext } from '../context/ThemeContext';
-import { ThemeColors } from '../theme/colors';
+import { AlertContext } from '../context/AlertContext';
 
 export default function LoginScreen({ navigation }: any) {
   const { loginState } = useContext(AuthContext);
+  const { t } = useTranslation();
 
   const { colors } = useContext(ThemeContext);
   const styles = useMemo(() => getStyles(colors), [colors]);
+  const { showAlert } = useContext(AlertContext);
 
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -63,7 +66,12 @@ export default function LoginScreen({ navigation }: any) {
 
         loginState(response.data.token, response.data.user);
       } catch (error: any) {
-        Alert.alert('Eroare de Autentificare', error.message);
+        showAlert({
+          title: t('auth.loginError'),
+          message: error.message,
+          confirmText: t('common.ok'),
+          hideCancel: true,
+        });
       } finally {
         setIsSubmitting(false);
       }
@@ -75,13 +83,27 @@ export default function LoginScreen({ navigation }: any) {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
+      <LinearGradient
+        colors={colors.backgroundGradient as [string, string, string]}
+        style={StyleSheet.absoluteFill}
+      />
       <View style={styles.formContainer}>
-        <Text style={styles.title}>Bine ai revenit!</Text>
-        <Text style={styles.subtitle}>Conectează-te la contul tău</Text>
+        <View style={styles.logoSection}>
+          <LinearGradient
+            colors={colors.primaryGradient as [string, string]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.logoIcon}
+          >
+            <Ionicons name="book" size={28} color="#fff" />
+          </LinearGradient>
+          <Text style={styles.title}>{t('auth.welcomeBack')}</Text>
+          <Text style={styles.subtitle}>{t('auth.loginSubtitle')}</Text>
+        </View>
 
         <TextInput
           style={[styles.input, identifierError && styles.inputError]}
-          placeholder="Email sau Username"
+          placeholder={t('auth.emailOrUsername')}
           placeholderTextColor={colors.textLight}
           value={identifier}
           onChangeText={(text) => {
@@ -91,13 +113,13 @@ export default function LoginScreen({ navigation }: any) {
           autoCapitalize="none"
         />
         {identifierError && (
-          <Text style={styles.errorText}>Introduceți un email sau un nume de utilizator.</Text>
+          <Text style={styles.errorText}>{t('auth.identifierRequired')}</Text>
         )}
 
         <View style={{ width: '100%', justifyContent: 'center' }}>
           <TextInput
             style={[styles.input, passwordError && styles.inputError, { paddingRight: 50 }]}
-            placeholder="Parolă"
+            placeholder={t('auth.password')}
             placeholderTextColor={colors.textLight}
             value={password}
             onChangeText={(text) => {
@@ -116,24 +138,32 @@ export default function LoginScreen({ navigation }: any) {
           </TouchableOpacity>
         </View>
 
-        {passwordError && <Text style={styles.errorText}>Introduceți parola.</Text>}
+        {passwordError && <Text style={styles.errorText}>{t('auth.passwordRequired')}</Text>}
 
         <TouchableOpacity
-          style={[styles.button, isSubmitting && { backgroundColor: colors.primary + '80' }]}
+          style={[styles.button, isSubmitting && { opacity: 0.7 }]}
           onPress={handleLogin}
           disabled={isSubmitting}
+          activeOpacity={0.8}
         >
-          {isSubmitting ? (
-            <ActivityIndicator color={colors.white} />
-          ) : (
-            <Text style={styles.buttonText}>Loghează-te</Text>
-          )}
+          <LinearGradient
+            colors={colors.buttonPrimaryBg as [string, string]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.buttonGradient}
+          >
+            {isSubmitting ? (
+              <ActivityIndicator color={colors.buttonPrimaryText} />
+            ) : (
+              <Text style={styles.buttonText}>{t('auth.login')}</Text>
+            )}
+          </LinearGradient>
         </TouchableOpacity>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Nu ai cont? </Text>
+          <Text style={styles.footerText}>{t('auth.noAccount')}</Text>
           <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-            <Text style={styles.link}>Creează unul acum</Text>
+            <Text style={styles.link}>{t('auth.createOne')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -141,42 +171,52 @@ export default function LoginScreen({ navigation }: any) {
   );
 }
 
-const getStyles = (colors: ThemeColors) =>
+const getStyles = (colors: any) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: colors.background,
       justifyContent: 'center',
       padding: 20,
     },
     formContainer: {
       backgroundColor: colors.card,
-      padding: 20,
-      borderRadius: 15,
-      elevation: 3,
-      shadowColor: '#000',
-      shadowOpacity: 0.1,
-      shadowRadius: 10,
-      shadowOffset: { width: 0, height: 5 },
+      padding: 24,
+      borderRadius: 20,
+      elevation: 5,
+      shadowColor: colors.cardShadow,
+      shadowOpacity: 0.15,
+      shadowRadius: 15,
+      shadowOffset: { width: 0, height: 8 },
+    },
+    logoSection: {
+      alignItems: 'center',
+      marginBottom: 25,
+    },
+    logoIcon: {
+      width: 56,
+      height: 56,
+      borderRadius: 16,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 15,
     },
     title: {
       fontSize: 28,
       fontWeight: 'bold',
-      color: colors.primary,
+      color: colors.textDark,
       marginBottom: 5,
       textAlign: 'center',
     },
     subtitle: {
-      fontSize: 16,
+      fontSize: 15,
       color: colors.textLight,
-      marginBottom: 25,
       textAlign: 'center',
     },
     input: {
-      backgroundColor: colors.background,
+      backgroundColor: colors.inputBg,
       borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: 10,
+      borderColor: colors.inputBorder,
+      borderRadius: 12,
       padding: 15,
       marginBottom: 15,
       fontSize: 16,
@@ -194,14 +234,16 @@ const getStyles = (colors: ThemeColors) =>
       marginLeft: 5,
     },
     button: {
-      backgroundColor: colors.primary,
-      paddingVertical: 15,
-      borderRadius: 10,
-      alignItems: 'center',
+      borderRadius: 12,
+      overflow: 'hidden',
       marginTop: 10,
     },
+    buttonGradient: {
+      paddingVertical: 15,
+      alignItems: 'center',
+    },
     buttonText: {
-      color: colors.white,
+      color: colors.buttonPrimaryText,
       fontSize: 18,
       fontWeight: 'bold',
     },
@@ -211,7 +253,7 @@ const getStyles = (colors: ThemeColors) =>
       marginTop: 20,
     },
     footerText: {
-      color: colors.textDark,
+      color: colors.textLight,
       fontSize: 14,
     },
     link: {

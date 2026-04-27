@@ -10,7 +10,6 @@ import {
   ActivityIndicator,
   Image,
   Linking,
-  Alert,
   Keyboard,
   KeyboardAvoidingView,
 } from 'react-native';
@@ -20,9 +19,11 @@ import { io, Socket } from 'socket.io-client';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import Constants from 'expo-constants';
+import { useTranslation } from 'react-i18next';
 
 import { AuthContext } from '../context/AuthContext';
 import { ThemeContext } from '../context/ThemeContext';
+import { AlertContext } from '../context/AlertContext';
 import { ThemeColors } from '../theme/colors';
 import { messageService, Message } from '../api/messageService';
 import { friendshipService } from '../api/friendshipService';
@@ -41,6 +42,8 @@ export default function ChatScreen() {
   const navigation = useNavigation<any>();
   const { user } = useContext(AuthContext);
   const { colors } = useContext(ThemeContext);
+  const { showAlert } = useContext(AlertContext);
+  const { t } = useTranslation();
   const styles = useMemo(() => getStyles(colors), [colors]);
 
   const insets = useSafeAreaInsets();
@@ -148,11 +151,11 @@ export default function ChatScreen() {
       if (type === 'image') {
         const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (permissionResult.granted === false) {
-          Alert.alert('Eroare', 'Avem nevoie de permisiunea ta pentru a accesa fotografiile!');
+          showAlert({ title: t('common.error'), message: t('chat.errorPermission'), hideCancel: true, confirmText: t('common.ok') });
           return;
         }
         fileResult = await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          mediaTypes: ['images'],
           quality: 0.7,
         });
       } else {
@@ -205,18 +208,34 @@ export default function ChatScreen() {
       socketRef.current?.emit('send_message', messageData);
     } catch (error: any) {
       console.error('[Upload Eroare]', error);
-      Alert.alert('Eroare', error.message || 'Nu am putut trimite fișierul.');
+      showAlert({ title: t('common.error'), message: error.message || t('chat.errorUpload'), hideCancel: true, confirmText: t('common.ok') });
     } finally {
       setIsUploading(false);
     }
   };
 
   const showAttachmentOptions = () => {
-    Alert.alert('Trimite fișier', 'Alege tipul de fișier', [
-      { text: 'Fotografie', onPress: () => handleSendAttachment('image') },
-      { text: 'Document (PDF, DOC)', onPress: () => handleSendAttachment('document') },
-      { text: 'Anulează', style: 'cancel' },
-    ]);
+    showAlert({
+      title: t('chat.sendFile'),
+      message: t('chat.chooseFileType'),
+      confirmText: t('chat.photo'),
+      cancelText: t('chat.cancel'),
+      hideCancel: false,
+      onConfirm: () => handleSendAttachment('image'),
+      onCancel: () => {
+        // Show document option after a brief delay
+        setTimeout(() => {
+          showAlert({
+            title: t('chat.sendFile'),
+            message: t('chat.chooseFileType'),
+            confirmText: t('chat.document'),
+            cancelText: t('chat.cancel'),
+            hideCancel: false,
+            onConfirm: () => handleSendAttachment('document'),
+          });
+        }, 200);
+      },
+    });
   };
 
   const renderMessage = ({ item }: { item: Message }) => {
@@ -225,10 +244,12 @@ export default function ChatScreen() {
     return (
       <View style={[styles.messageRow, isMyMessage ? styles.myMessageRow : styles.otherMessageRow]}>
         {!isMyMessage && (
-          <Image
-            source={{ uri: otherUserAvatar || 'https://via.placeholder.com/40' }}
-            style={styles.avatar}
-          />
+          <TouchableOpacity onPress={() => navigation.navigate('ProfileScreen', { userId: item.sender_id })}>
+            <Image
+              source={{ uri: otherUserAvatar || 'https://picsum.photos/seed/chat/40/40' }}
+              style={styles.avatar}
+            />
+          </TouchableOpacity>
         )}
         <View style={[styles.messageBubble, isMyMessage ? styles.myBubble : styles.otherBubble]}>
           {item.message_type === 'IMAGE' && item.media_url ? (
@@ -314,7 +335,7 @@ export default function ChatScreen() {
 
           <TextInput
             style={styles.input}
-            placeholder="Scrie un mesaj..."
+            placeholder={t('chat.placeholder')}
             placeholderTextColor={colors.textLight}
             value={inputText}
             onChangeText={setInputText}
@@ -342,9 +363,9 @@ export default function ChatScreen() {
             style={{ marginBottom: 5 }}
           />
           <Text style={styles.disabledText}>
-            {relationshipStatus === 'BLOCKED_BY_ME' && 'Ai blocat această persoană.'}
-            {relationshipStatus === 'BLOCKED_BY_THEM' && 'Nu poți trimite mesaje acestui cont.'}
-            {relationshipStatus === 'NOT_FRIENDS' && 'Nu mai ești prieten cu această persoană.'}
+            {relationshipStatus === 'BLOCKED_BY_ME' && t('chat.blockedByMe')}
+            {relationshipStatus === 'BLOCKED_BY_THEM' && t('chat.blockedByThem')}
+            {relationshipStatus === 'NOT_FRIENDS' && t('chat.notFriends')}
           </Text>
         </View>
       )}

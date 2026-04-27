@@ -2,15 +2,7 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { query } from '../config/db';
-
-export type AuthRequest = Request & {
-  user?: {
-    id: number;
-    username: string;
-    email: string;
-  };
-  sessionId?: number;
-};
+import { AuthRequest } from '../middleware/authMiddleware';
 
 export const registerUser = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -94,7 +86,7 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
       expiresIn: '30d',
     });
 
-    const { ...safeUserData } = user;
+    const { password_hash, ...safeUserData } = user;
 
     res.status(200).json({
       status: 'success',
@@ -110,6 +102,7 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
 export const logoutUser = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const sessionId = req.sessionId;
+    const userId = req.user?.id;
 
     if (!sessionId) {
       res.status(400).json({ status: 'error', message: 'Nicio sesiune activă detectată.' });
@@ -118,9 +111,15 @@ export const logoutUser = async (req: AuthRequest, res: Response): Promise<void>
 
     await query('DELETE FROM sessions WHERE id = $1', [sessionId]);
 
+    // Clear push token to prevent notifications from bleeding into next session
+    if (userId) {
+      await query('UPDATE users SET expo_push_token = NULL WHERE id = $1', [userId]);
+    }
+
     res.status(200).json({ status: 'success', message: 'Te-ai delogat cu succes.' });
   } catch (error) {
     console.error('[Eroare Controller] Logout:', error);
     res.status(500).json({ status: 'error', message: 'Eroare internă la delogare.' });
   }
 };
+

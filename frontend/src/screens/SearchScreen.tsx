@@ -7,18 +7,22 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { userService, UserProfile } from '../api/userService';
 import { friendshipService } from '../api/friendshipService';
 import { quoteService } from '../api/quoteService';
 
 import { ThemeContext } from '../context/ThemeContext';
+import { AuthContext } from '../context/AuthContext';
+import { AlertContext } from '../context/AlertContext';
 import { ThemeColors } from '../theme/colors';
+
 
 interface SearchResultUser extends UserProfile {
   friendship_status?: 'pending' | 'accepted' | null;
@@ -29,10 +33,13 @@ export default function SearchScreen() {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
   const initialQuery = route?.params?.initialQuery || '';
+  const { t } = useTranslation();
 
   const { colors } = useContext(ThemeContext);
   const styles = useMemo(() => getStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
+  const { user } = useContext(AuthContext);
+  const { showAlert } = useContext(AlertContext);
 
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [activeTab, setActiveTab] = useState<'users' | 'quotes'>('users');
@@ -100,7 +107,7 @@ export default function SearchScreen() {
       setUserResults((prev) =>
         prev.map((u) => (u.id === userId ? { ...u, friendship_status: null } : u)),
       );
-      Alert.alert('Eroare', error.response?.data?.message || 'Nu s-a putut trimite cererea.');
+      showAlert({ title: t('common.error'), message: error.response?.data?.message || t('search.errorRequest'), hideCancel: true, confirmText: t('common.ok') });
     }
   };
 
@@ -135,7 +142,10 @@ export default function SearchScreen() {
     const isPending = item.friendship_status === 'pending';
 
     return (
-      <View style={styles.card}>
+      <TouchableOpacity
+        style={styles.card}
+        onPress={() => navigation.navigate('ProfileScreen', { userId: item.id })}
+      >
         <View style={styles.avatarPlaceholder}>
           <Ionicons name="person" size={24} color={colors.white} />
         </View>
@@ -146,19 +156,19 @@ export default function SearchScreen() {
         {isFriend ? (
           <View style={[styles.badge, { backgroundColor: colors.success + '20' }]}>
             <Ionicons name="checkmark-circle" size={16} color={colors.success} />
-            <Text style={[styles.badgeText, { color: colors.success }]}>Prieteni</Text>
+            <Text style={[styles.badgeText, { color: colors.success }]}>{t('search.friends')}</Text>
           </View>
         ) : isPending ? (
           <View style={[styles.badge, { backgroundColor: colors.secondary + '20' }]}>
             <Ionicons name="time" size={16} color={colors.secondary} />
-            <Text style={[styles.badgeText, { color: colors.secondary }]}>În așteptare</Text>
+            <Text style={[styles.badgeText, { color: colors.secondary }]}>{t('search.pending')}</Text>
           </View>
         ) : (
           <TouchableOpacity style={styles.actionBtn} onPress={() => handleAddFriend(item.id)}>
             <Ionicons name="person-add" size={20} color={colors.white} />
           </TouchableOpacity>
         )}
-      </View>
+      </TouchableOpacity>
     );
   };
 
@@ -171,8 +181,8 @@ export default function SearchScreen() {
         <Text style={styles.quoteUser}>@{item.username}</Text>
       </View>
 
-      <Text style={styles.quoteTextContainer}>&quot;{renderTextWithHashtags(item.text)}&quot;</Text>
-      <Text style={styles.quoteAuthor}>— {item.original_author}</Text>
+      <Text style={styles.quoteTextContainer}>{'\u201C'}{renderTextWithHashtags(item.text)}{'\u201D'}</Text>
+      <Text style={styles.quoteAuthor}>— {item.author}</Text>
 
       <View style={styles.quoteFooter}>
         <Ionicons name="heart" size={16} color={colors.primary} />
@@ -183,16 +193,32 @@ export default function SearchScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 10, paddingBottom: 10 }}>
-        <Ionicons name="book" size={28} color={colors.primary} style={{ marginRight: 10 }} />
-        <Text style={{ fontSize: 24, fontWeight: '800', color: colors.textDark }}>DailyQuotes</Text>
+      <View style={[styles.topBar, { borderBottomColor: colors.separatorColor }]}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <LinearGradient
+            colors={colors.primaryGradient as [string, string]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.logoIcon}
+          >
+            <Ionicons name="search" size={18} color="#fff" />
+          </LinearGradient>
+          <Text style={[styles.logoText, { color: colors.textDark }]}>{t('search.title')}</Text>
+        </View>
+        <TouchableOpacity
+          style={[styles.profileBtn, { backgroundColor: colors.iconBg }]}
+          onPress={() => navigation.navigate('ProfileScreen')}
+        >
+          <Ionicons name="person" size={20} color={colors.iconColor} />
+        </TouchableOpacity>
       </View>
+
       <View style={styles.searchContainer}>
         <Ionicons name="search" size={20} color={colors.textLight} style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
           placeholder={
-            activeTab === 'users' ? 'Caută utilizatori...' : 'Caută cuvinte sau #hashtag-uri...'
+            activeTab === 'users' ? t('search.searchUsers') : t('search.searchQuotes')
           }
           placeholderTextColor={colors.textLight}
           value={searchQuery}
@@ -213,7 +239,7 @@ export default function SearchScreen() {
           onPress={() => setActiveTab('users')}
         >
           <Text style={[styles.tabText, activeTab === 'users' && styles.activeTabText]}>
-            Utilizatori
+            {t('search.usersTab')}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -221,7 +247,7 @@ export default function SearchScreen() {
           onPress={() => setActiveTab('quotes')}
         >
           <Text style={[styles.tabText, activeTab === 'quotes' && styles.activeTabText]}>
-            Citate
+            {t('search.quotesTab')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -236,7 +262,7 @@ export default function SearchScreen() {
         ListEmptyComponent={
           !isLoading && searchQuery.trim() !== '' ? (
             <Text style={styles.emptyText}>
-              Nu am găsit rezultate pentru &quot;{searchQuery}&quot;.
+              {t('search.noResults', { query: searchQuery })}
             </Text>
           ) : null
         }
@@ -248,7 +274,37 @@ export default function SearchScreen() {
 const getStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
+    topBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 20,
+      paddingBottom: 15,
+      marginBottom: 10,
+      borderBottomWidth: 1,
+    },
+    logoIcon: {
+      width: 34,
+      height: 34,
+      borderRadius: 10,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: 10,
+    },
+    logoText: {
+      fontSize: 22,
+      fontWeight: '800',
+    },
+    profileBtn: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      justifyContent: 'center',
+      alignItems: 'center',
+      overflow: 'hidden',
+    },
     searchContainer: {
+
       flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: colors.card,

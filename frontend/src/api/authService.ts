@@ -35,4 +35,13 @@ export const authService = {
       throw new Error('Eroare de conexiune la server.');
     }
   },
+
+  logout: async () => {
+    try {
+      await apiClient.post('/auth/logout');
+    } catch (error: any) {
+      console.error('[Eroare Frontend - Auth/Logout]:', error);
+      // Don't throw - we still want to clear local state even if server call fails
+    }
+  },
 };

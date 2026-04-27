@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  Alert,
   Modal,
   ScrollView,
   Switch,
@@ -15,17 +14,20 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { sessionService, Session } from '../api/sessionService';
 import { notificationService, NotificationSettings } from '../api/notificationService';
 import { AuthContext } from '../context/AuthContext';
 import { ThemeContext } from '../context/ThemeContext';
+import { AlertContext } from '../context/AlertContext';
 import { ThemeColors } from '../theme/colors';
 
 export default function SettingsScreen() {
   const { t, i18n } = useTranslation();
   const navigation = useNavigation<any>();
   const { logout } = useContext(AuthContext);
+  const { showAlert } = useContext(AlertContext);
   const { colors, theme, setTheme } = useContext(ThemeContext);
   const styles = useMemo(() => getStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
@@ -57,10 +59,16 @@ export default function SettingsScreen() {
   };
 
   const handleLogout = () => {
-    Alert.alert(t('settings.logoutConfirmTitle'), t('settings.logoutConfirmDesc'), [
-      { text: t('settings.cancel'), style: 'cancel' },
-      { text: t('settings.logout'), style: 'destructive', onPress: () => logout() },
-    ]);
+    showAlert({
+      title: t('settings.logoutConfirmTitle'),
+      message: t('settings.logoutConfirmDesc'),
+      confirmText: t('settings.logout'),
+      cancelText: t('common.cancel'),
+      isDestructive: true,
+      onConfirm: async () => {
+        await logout();
+      },
+    });
   };
 
   const openSecurityModal = async () => {
@@ -72,7 +80,7 @@ export default function SettingsScreen() {
       setCurrentSessionId(data.currentSessionId);
     } catch (error) {
       console.error(error);
-      Alert.alert(t('settings.error'), t('settings.sessionsLoadFailed'));
+      showAlert({ title: t('settings.error'), message: t('settings.sessionsLoadFailed'), hideCancel: true, confirmText: 'OK' });
       setSecurityModalVisible(false);
     } finally {
       setIsSessionsLoading(false);
@@ -80,27 +88,33 @@ export default function SettingsScreen() {
   };
 
   const handleRevokeSession = (sessionId: number) => {
-    Alert.alert(
-      t('settings.revokeConfirmTitle'),
-      t('settings.revokeConfirmDesc'),
-      [
-        { text: t('settings.cancel'), style: 'cancel' },
-        {
-          text: t('settings.revoke'),
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await sessionService.revokeSession(sessionId);
-              setActiveSessions((prev) => prev.filter((s) => s.id !== sessionId));
-              Alert.alert(t('settings.success'), t('settings.deviceRevoked'));
-            } catch (error) {
-              console.error(error);
-              Alert.alert(t('settings.error'), t('settings.deviceRevokeFailed'));
-            }
-          },
-        },
-      ],
-    );
+    showAlert({
+      title: t('settings.revokeConfirmTitle'),
+      message: t('settings.revokeConfirmDesc'),
+      confirmText: t('settings.revoke'),
+      cancelText: t('common.cancel'),
+      isDestructive: true,
+      onConfirm: async () => {
+        try {
+          await sessionService.revokeSession(sessionId);
+          setActiveSessions((prev) => prev.filter((s) => s.id !== sessionId));
+          showAlert({
+            title: t('settings.success'),
+            message: t('settings.deviceRevoked'),
+            hideCancel: true,
+            confirmText: t('common.ok'),
+          });
+        } catch (error) {
+          console.error(error);
+          showAlert({
+            title: t('settings.error'),
+            message: t('settings.deviceRevokeFailed'),
+            hideCancel: true,
+            confirmText: t('common.ok'),
+          });
+        }
+      },
+    });
   };
 
   const openNotificationsModal = async () => {
@@ -111,7 +125,7 @@ export default function SettingsScreen() {
       setNotificationSettings(settings);
     } catch (error) {
       console.error(error);
-      Alert.alert('Eroare', 'Nu s-au putut încărca setările de notificări.');
+      showAlert({ title: t('common.error'), message: t('settings.sessionsLoadFailed'), hideCancel: true, confirmText: 'OK' });
       setNotificationsModalVisible(false);
     } finally {
       setIsSettingsLoading(false);
@@ -130,7 +144,7 @@ export default function SettingsScreen() {
     } catch (error) {
       console.error(error);
       setNotificationSettings(previousSettings);
-      Alert.alert('Eroare conexiune', 'Setarea nu a putut fi salvată.');
+      showAlert({ title: t('settings.error'), message: t('settings.settingSaveFailed'), hideCancel: true, confirmText: t('common.ok') });
     }
   };
 
@@ -153,10 +167,20 @@ export default function SettingsScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 10, paddingBottom: 15, marginBottom: 5, borderBottomWidth: 1, borderBottomColor: colors.border }}>
-        <Ionicons name="book" size={28} color={colors.primary} style={{ marginRight: 10 }} />
-        <Text style={{ fontSize: 24, fontWeight: '800', color: colors.textDark }}>DailyQuotes</Text>
+      <View style={[styles.topBar, { borderBottomColor: colors.separatorColor }]}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <LinearGradient
+            colors={colors.primaryGradient as [string, string]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.logoIcon}
+          >
+            <Ionicons name="book" size={18} color="#fff" />
+          </LinearGradient>
+          <Text style={[styles.logoText, { color: colors.textDark }]}>{t('home.title')}</Text>
+        </View>
       </View>
+
       <ScrollView contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
         <Text style={styles.sectionHeader}>{t('settings.preferences')}</Text>
       <View style={styles.sectionBlock}>
@@ -221,7 +245,7 @@ export default function SettingsScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Dispozitive Conectate</Text>
+              <Text style={styles.modalTitle}>{t('settings.connectedDevices')}</Text>
               <TouchableOpacity onPress={() => setSecurityModalVisible(false)}>
                 <Ionicons name="close" size={24} color={colors.textDark} />
               </TouchableOpacity>
@@ -467,6 +491,29 @@ const getStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
     contentContainer: { padding: 15, paddingBottom: 40 },
+    topBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 20,
+      paddingTop: 10,
+      paddingBottom: 15,
+      marginBottom: 5,
+      borderBottomWidth: 1,
+    },
+    logoIcon: {
+      width: 34,
+      height: 34,
+      borderRadius: 10,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: 10,
+    },
+    logoText: {
+      fontSize: 22,
+      fontWeight: '800',
+    },
+
 
     sectionHeader: {
       fontSize: 13,

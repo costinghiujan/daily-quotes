@@ -249,7 +249,7 @@ export const getFeedQuotes = async (req: AuthRequest, res: Response): Promise<vo
 
     const feedQuery = `
         SELECT 
-          q.id, q.text, q.author AS original_author, q.created_at,
+          q.id, q.text, q.author, q.created_at,
           u.id AS post_user_id, u.username, u.full_name, u.profile_picture_url,
           COUNT(CASE WHEN qr.reaction_type = 'BLUE_HEART' THEN 1 END) AS blue_heart_count,
           COUNT(CASE WHEN qr.reaction_type = 'APPLAUSE' THEN 1 END) AS applause_count,
@@ -405,7 +405,7 @@ export const searchQuotes = async (req: AuthRequest, res: Response): Promise<voi
 
     const searchSQL = `
       SELECT 
-        q.id, q.text, q.author AS original_author, q.created_at,
+        q.id, q.text, q.author, q.created_at,
         u.id AS post_user_id, u.username, u.full_name, u.profile_picture_url,
         COUNT(CASE WHEN qr.reaction_type = 'BLUE_HEART' THEN 1 END) AS blue_heart_count,
         ARRAY_REMOVE(ARRAY_AGG(CASE WHEN qr.user_id = $2 THEN qr.reaction_type END), NULL) AS user_reactions
@@ -462,7 +462,7 @@ export const getExploreFeed = async (req: AuthRequest, res: Response): Promise<v
 
       exploreSQL = `
         SELECT 
-          q.id, q.text, q.author AS original_author, q.created_at,
+          q.id, q.text, q.author, q.created_at,
           u.id AS post_user_id, u.username, u.full_name, u.profile_picture_url,
           COUNT(CASE WHEN qr.reaction_type = 'BLUE_HEART' THEN 1 END) AS blue_heart_count,
           COUNT(CASE WHEN qr.reaction_type = 'APPLAUSE' THEN 1 END) AS applause_count,
@@ -500,7 +500,7 @@ export const getExploreFeed = async (req: AuthRequest, res: Response): Promise<v
 
       exploreSQL = `
         SELECT 
-          q.id, q.text, q.author AS original_author, q.created_at,
+          q.id, q.text, q.author, q.created_at,
           u.id AS post_user_id, u.username, u.full_name, u.profile_picture_url,
           COUNT(CASE WHEN qr.reaction_type = 'BLUE_HEART' THEN 1 END) AS blue_heart_count,
           COUNT(CASE WHEN qr.reaction_type = 'APPLAUSE' THEN 1 END) AS applause_count,
@@ -573,7 +573,7 @@ export const getQuoteOfTheDay = async (req: AuthRequest, res: Response): Promise
 
     const sql = `
       SELECT 
-        q.id, q.text, q.author AS original_author, q.created_at,
+        q.id, q.text, q.author, q.created_at,
         u.id AS post_user_id, u.username, u.full_name, u.profile_picture_url,
         COUNT(qr.id) AS total_reactions,
         COUNT(CASE WHEN qr.reaction_type = 'BLUE_HEART' THEN 1 END) AS blue_heart_count,

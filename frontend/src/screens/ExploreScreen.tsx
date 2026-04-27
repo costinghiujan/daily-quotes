@@ -11,16 +11,18 @@ import {
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { quoteService } from '../api/quoteService';
 import { ThemeContext } from '../context/ThemeContext';
-import { ThemeColors } from '../theme/colors';
 
 export default function ExploreScreen() {
   const navigation = useNavigation<any>();
   const { colors } = useContext(ThemeContext);
   const styles = useMemo(() => getStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
 
   const [exploreQuotes, setExploreQuotes] = useState<any[]>([]);
   const [quoteOfTheDay, setQuoteOfTheDay] = useState<any | null>(null);
@@ -39,18 +41,10 @@ export default function ExploreScreen() {
         quoteService.getExploreFeed(),
         quoteService.getQuoteOfTheDay(),
       ]);
-
-      const data = await quoteService.getExploreFeed();
-
-      console.log("🏆 TOP RECOMANDĂRI PENTRU TINE:");
-      data.forEach((quote: any, index: number) => {
-        console.log(`${index + 1}. [Scor: ${Number(quote.recommendation_score).toFixed(3)}] ${quote.original_author} - ${quote.text.substring(0, 30)}...`);
-      });
-
       setExploreQuotes(feedData);
       setQuoteOfTheDay(hofData);
     } catch (error) {
-      console.error('[Eroare UI] Nu am putut încărca Explore Feed:', error);
+      console.error('[Eroare UI] Nu am putut incarca Explore Feed:', error);
     } finally {
       setIsLoading(false);
     }
@@ -71,7 +65,6 @@ export default function ExploreScreen() {
 
   const renderTextWithHashtags = (text: string) => {
     const parts = text.split(/(#\w+)/g);
-
     return parts.map((part, index) => {
       if (part.match(/(#\w+)/)) {
         return (
@@ -95,24 +88,30 @@ export default function ExploreScreen() {
   };
 
   const renderQuoteItem = ({ item }: { item: any }) => (
-    <View style={styles.quoteCard}>
+    <View style={[styles.quoteCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
       <View style={styles.quoteHeader}>
-        <View style={styles.avatarPlaceholderSmall}>
-          <Ionicons name="person" size={16} color={colors.white} />
-        </View>
+        <TouchableOpacity onPress={() => navigation.navigate('ProfileScreen', { userId: item.user_id })}>
+          <View style={[styles.avatarPlaceholderSmall, { backgroundColor: colors.primary }]}>
+            <Ionicons name="person" size={16} color={colors.white} />
+          </View>
+        </TouchableOpacity>
         <View>
-          <Text style={styles.quoteUserName}>{item.full_name || item.username}</Text>
-          <Text style={styles.quoteUserHandle}>@{item.username}</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('ProfileScreen', { userId: item.user_id })}>
+            <Text style={[styles.quoteUserName, { color: colors.textDark }]}>{item.full_name || item.username}</Text>
+          </TouchableOpacity>
+          <Text style={[styles.quoteUserHandle, { color: colors.textLight }]}>@{item.username}</Text>
         </View>
       </View>
 
-      <Text style={styles.quoteTextContainer}>&quot;{renderTextWithHashtags(item.text)}&quot;</Text>
-      <Text style={styles.quoteAuthor}>— {item.original_author}</Text>
+      <Text style={[styles.quoteTextContainer, { color: colors.textPrimary }]}>
+        {'\u201C'}{renderTextWithHashtags(item.text)}{'\u201D'}
+      </Text>
+      <Text style={[styles.quoteAuthor, { color: colors.textLight }]}>— {item.author}</Text>
 
-      <View style={styles.reactionsBar}>
-        <View style={styles.reactionBtn}>
+      <View style={[styles.reactionsBar, { borderTopColor: colors.separatorColor }]}>
+        <View style={[styles.reactionBtn, { backgroundColor: colors.reactionBg }]}>
           <Ionicons name="heart" size={18} color={colors.primary} />
-          <Text style={styles.reactionCount}>{item.blue_heart_count || 0}</Text>
+          <Text style={[styles.reactionCount, { color: colors.primary }]}>{item.blue_heart_count || 0}</Text>
         </View>
         <TouchableOpacity
           style={styles.commentBtn}
@@ -127,35 +126,56 @@ export default function ExploreScreen() {
   const renderHeader = () => {
     return (
       <>
-        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 10, paddingBottom: 15, marginBottom: 20, borderBottomWidth: 1, borderBottomColor: colors.border }}>
-          <Ionicons name="book" size={28} color={colors.primary} style={{ marginRight: 10 }} />
-          <Text style={{ fontSize: 24, fontWeight: '800', color: colors.textDark }}>DailyQuotes</Text>
+        {/* Top Bar */}
+        <View style={[styles.topBar, { borderBottomColor: colors.separatorColor }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <LinearGradient
+              colors={colors.primaryGradient as [string, string]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.logoIcon}
+            >
+              <Ionicons name="compass" size={18} color="#fff" />
+            </LinearGradient>
+            <Text style={[styles.logoText, { color: colors.textDark }]}>{t('explore.title')}</Text>
+          </View>
+          <TouchableOpacity
+            style={[styles.profileBtn, { backgroundColor: colors.iconBg }]}
+            onPress={() => navigation.navigate('ProfileScreen')}
+          >
+            <Ionicons name="person" size={20} color={colors.iconColor} />
+          </TouchableOpacity>
         </View>
 
         {quoteOfTheDay && (
           <View style={styles.hofContainer}>
             <View style={styles.hofHeader}>
               <Ionicons name="trophy" size={20} color="#FFD700" />
-              <Text style={styles.hofTitle}>Citatul Zilei</Text>
+              <Text style={styles.hofTitle}>{t('explore.quoteOfTheDay')}</Text>
               <Ionicons name="trophy" size={20} color="#FFD700" />
             </View>
-            <View style={styles.hofCard}>
+            <LinearGradient
+              colors={['#667eea', '#764ba2']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.hofCard}
+            >
               <Text style={styles.hofQuoteText}>
-                &quot;{renderTextWithHashtags(quoteOfTheDay.text)}&quot;
+                {'\u201C'}{renderTextWithHashtags(quoteOfTheDay.text)}{'\u201D'}
               </Text>
-              <Text style={styles.hofQuoteAuthor}>— {quoteOfTheDay.original_author}</Text>
-              <View style={styles.hofFooter}>
+              <Text style={styles.hofQuoteAuthor}>— {quoteOfTheDay.author}</Text>
+              <View style={[styles.hofFooter, { borderTopColor: 'rgba(255,255,255,0.2)' }]}>
                 <Text style={styles.hofPostedBy}>
-                  Postat de <Text style={{ fontWeight: 'bold' }}>@{quoteOfTheDay.username}</Text>
+                  {t('explore.postedBy')} <Text style={{ fontWeight: 'bold' }}>@{quoteOfTheDay.username}</Text>
                 </Text>
                 <View style={styles.hofReactionBadge}>
                   <Ionicons name="star" size={12} color="#FFD700" />
                   <Text style={styles.hofReactionText}>
-                    {quoteOfTheDay.total_reactions} Reacții
+                    {quoteOfTheDay.total_reactions} {t('explore.reactions')}
                   </Text>
                 </View>
               </View>
-            </View>
+            </LinearGradient>
           </View>
         )}
       </>
@@ -164,14 +184,14 @@ export default function ExploreScreen() {
 
   if (isLoading && exploreQuotes.length === 0) {
     return (
-      <View style={styles.centered}>
+      <View style={[styles.centered, { backgroundColor: colors.background }]}>
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
       <FlatList
         data={exploreQuotes}
         keyExtractor={(item) => item.id.toString()}
@@ -189,8 +209,8 @@ export default function ExploreScreen() {
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Ionicons name="compass-outline" size={64} color={colors.textLight} />
-            <Text style={styles.emptyText}>Nu am găsit citate noi momentan.</Text>
-            <Text style={styles.emptySubText}>Trage în jos pentru a reîmprospăta.</Text>
+            <Text style={[styles.emptyText, { color: colors.textDark }]}>{t('explore.noQuotes')}</Text>
+            <Text style={[styles.emptySubText, { color: colors.textLight }]}>{t('explore.pullToRefresh')}</Text>
           </View>
         }
       />
@@ -198,25 +218,43 @@ export default function ExploreScreen() {
   );
 }
 
-const getStyles = (colors: ThemeColors) =>
+const getStyles = (colors: any) =>
   StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.background },
+    container: { flex: 1 },
     centered: {
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
-      backgroundColor: colors.background,
     },
-
-    headerTitleContainer: {
+    topBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
       paddingHorizontal: 20,
-      paddingTop: 20,
       paddingBottom: 15,
-      backgroundColor: colors.background,
+      marginBottom: 10,
+      borderBottomWidth: 1,
     },
-    headerTitle: { fontSize: 28, fontWeight: 'bold', color: colors.textDark },
-    headerSubtitle: { fontSize: 15, color: colors.textLight, marginTop: 4 },
-
+    logoIcon: {
+      width: 34,
+      height: 34,
+      borderRadius: 10,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: 10,
+    },
+    logoText: {
+      fontSize: 22,
+      fontWeight: '800',
+    },
+    profileBtn: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      justifyContent: 'center',
+      alignItems: 'center',
+      overflow: 'hidden',
+    },
     hofContainer: {
       paddingHorizontal: 15,
       marginBottom: 20,
@@ -236,28 +274,25 @@ const getStyles = (colors: ThemeColors) =>
       letterSpacing: 1,
     },
     hofCard: {
-      backgroundColor: colors.card,
       borderRadius: 16,
       padding: 20,
-      borderWidth: 2,
-      borderColor: '#FFD700',
       elevation: 5,
-      shadowColor: '#FFD700',
-      shadowOpacity: 0.2,
+      shadowColor: '#667eea',
+      shadowOpacity: 0.3,
       shadowRadius: 10,
     },
     hofQuoteText: {
       fontSize: 19,
       lineHeight: 28,
       fontStyle: 'italic',
-      color: colors.textDark,
+      color: '#fff',
       textAlign: 'center',
       marginBottom: 15,
     },
     hofQuoteAuthor: {
       fontSize: 15,
       fontWeight: 'bold',
-      color: colors.textLight,
+      color: 'rgba(255,255,255,0.8)',
       textAlign: 'right',
       marginBottom: 15,
     },
@@ -266,25 +301,21 @@ const getStyles = (colors: ThemeColors) =>
       justifyContent: 'space-between',
       alignItems: 'center',
       borderTopWidth: 1,
-      borderTopColor: colors.border,
       paddingTop: 12,
     },
-    hofPostedBy: { fontSize: 12, color: colors.textLight },
+    hofPostedBy: { fontSize: 12, color: 'rgba(255,255,255,0.7)' },
     hofReactionBadge: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: 'rgba(255, 215, 0, 0.1)',
+      backgroundColor: 'rgba(255, 215, 0, 0.2)',
       paddingHorizontal: 8,
       paddingVertical: 4,
       borderRadius: 12,
       gap: 4,
     },
-    hofReactionText: { fontSize: 12, fontWeight: 'bold', color: '#B8860B' },
-
+    hofReactionText: { fontSize: 12, fontWeight: 'bold', color: '#FFD700' },
     listContent: { paddingBottom: 30 },
-
     quoteCard: {
-      backgroundColor: colors.card,
       borderRadius: 12,
       padding: 18,
       marginBottom: 15,
@@ -294,63 +325,52 @@ const getStyles = (colors: ThemeColors) =>
       shadowOpacity: 0.08,
       shadowRadius: 6,
       borderWidth: 1,
-      borderColor: colors.border,
     },
     quoteHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
     avatarPlaceholderSmall: {
       width: 36,
       height: 36,
       borderRadius: 18,
-      backgroundColor: colors.primary,
       justifyContent: 'center',
       alignItems: 'center',
       marginRight: 10,
     },
-    quoteUserName: { fontSize: 15, fontWeight: 'bold', color: colors.textDark },
-    quoteUserHandle: { fontSize: 13, color: colors.textLight },
-
+    quoteUserName: { fontSize: 15, fontWeight: 'bold' },
+    quoteUserHandle: { fontSize: 13 },
     quoteTextContainer: { fontSize: 17, lineHeight: 26, marginBottom: 12 },
-    quoteTextNormal: { color: colors.textDark, fontStyle: 'italic' },
+    quoteTextNormal: { fontStyle: 'italic' },
     hashtag: { color: colors.primary, fontWeight: 'bold', fontStyle: 'normal' },
-
     quoteAuthor: {
       fontSize: 14,
       fontWeight: 'bold',
-      color: colors.textLight,
       textAlign: 'right',
       marginBottom: 15,
     },
-
     reactionsBar: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
       borderTopWidth: 1,
-      borderTopColor: colors.border,
       paddingTop: 12,
     },
     reactionBtn: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: colors.primary + '15',
       paddingHorizontal: 10,
       paddingVertical: 6,
       borderRadius: 20,
     },
-    reactionCount: { fontSize: 14, fontWeight: 'bold', color: colors.primary, marginLeft: 6 },
+    reactionCount: { fontSize: 14, fontWeight: 'bold', marginLeft: 6 },
     commentBtn: { padding: 5 },
-
     emptyContainer: { alignItems: 'center', marginTop: 60, paddingHorizontal: 20 },
     emptyText: {
       marginTop: 15,
       fontSize: 18,
       fontWeight: 'bold',
-      color: colors.textDark,
       textAlign: 'center',
     },
     emptySubText: {
       fontSize: 15,
-      color: colors.textLight,
       textAlign: 'center',
       marginTop: 10,
       lineHeight: 22,

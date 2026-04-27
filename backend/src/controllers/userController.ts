@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import { query } from '../config/db';
-import { AuthRequest } from './quoteController';
+import { AuthRequest } from '../middleware/authMiddleware';
 
 export const searchUsers = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -134,15 +134,14 @@ export const getUserProfile = async (req: AuthRequest, res: Response): Promise<v
       [id],
     );
 
+    const profileData = {
+      ...userProfile,
+      badges: badgesResult.rows,
+    };
+
     res.status(200).json({
       status: 'success',
-      data: {
-        profile: {
-          ...userProfile,
-          badges: badgesResult.rows,
-        },
-        quotes: quotesResult.rows,
-      },
+      data: { profile: profileData, quotes: quotesResult.rows },
     });
   } catch (error) {
     console.error('[Eroare Controller] Nu s-a putut încărca profilul:', error);

@@ -1,50 +1,407 @@
-export type ThemeColors = {
-  background: string;
-  card: string;
+export interface ThemeColors {
   primary: string;
+  primaryLight: string;
+  primaryGradient: string[];
+  primaryGradientSubtle: string[];
   secondary: string;
+  secondaryLight: string;
+  background: string;
+  backgroundGradient: string[];
+  card: string;
+  cardBorder: string;
+  cardShadow: string;
   textDark: string;
+  textPrimary: string;
   textLight: string;
-  white: string;
+  textMuted: string;
+  border: string;
+  borderLight: string;
   error: string;
   errorBg: string;
+  errorLight: string;
   success: string;
+  successBg: string;
+  successLight: string;
+  warning: string;
+  warningBg: string;
+  warningLight: string;
+  info: string;
+  infoBg: string;
   gray: string;
-  border: string;
-  primaryLight?: string;
-  inputBg?: string;
-};
+  grayLight: string;
+  white: string;
+  overlay: string;
+  overlayLight: string;
+  inputBg: string;
+  inputBorder: string;
+  tabBarBg: string;
+  headerBg: string;
+  badgeBg: string;
+  badgeText: string;
+  badgeBorder: string;
+  link: string;
+  muted: string;
+  highlight: string;
+  highlightLight: string;
+  skeleton: string;
+  shimmer: string;
+  reactionBg: string;
+  reactionActiveBg: string;
+  buttonPrimaryBg: string[];
+  buttonPrimaryText: string;
+  buttonSecondaryBg: string;
+  buttonSecondaryText: string;
+  buttonDangerBg: string;
+  buttonDangerText: string;
+  quoteCardBg: string;
+  quoteCardBorder: string;
+  quoteCardAccent: string;
+  topBarBg: string;
+  topBarBorder: string;
+  topBarText: string;
+  footerBg: string;
+  footerBorder: string;
+  footerText: string;
+  notificationDot: string;
+  notificationItemBg: string;
+  modalOverlay: string;
+  modalBg: string;
+  modalBorder: string;
+  switchTrack: string;
+  switchThumb: string;
+  profileHeaderBg: string[];
+  profileStatBg: string;
+  profileStatBorder: string;
+  badgeUnearned: string;
+  badgeEarned: string;
+  badgeEarnedBg: string;
+  commentBg: string;
+  commentBorder: string;
+  mentionBg: string;
+  hashtagColor: string;
+  timestampColor: string;
+  separatorColor: string;
+  iconColor: string;
+  iconColorActive: string;
+  iconBg: string;
+  iconBgActive: string;
+  reactionButtonBg: string;
+  reactionButtonActiveBg: string;
+  reactionButtonBorder: string;
+  reactionButtonActiveBorder: string;
+  reactionEmojiBg: string;
+  reactionEmojiBorder: string;
+  progressBarBg: string;
+  progressBarFill: string;
+  progressBarFillGradient: string[];
+  levelBadgeBg: string;
+  levelBadgeText: string;
+  levelBadgeBorder: string;
+  streakBadgeBg: string;
+  streakBadgeText: string;
+  streakBadgeBorder: string;
+  onlineDot: string;
+  offlineDot: string;
+  typingIndicator: string;
+  messageBubbleSent: string;
+  messageBubbleSentText: string;
+  messageBubbleReceived: string;
+  messageBubbleReceivedText: string;
+  messageInputBg: string;
+  messageInputBorder: string;
+  searchBarBg: string;
+  searchBarBorder: string;
+  searchBarText: string;
+  searchResultBg: string;
+  searchResultBorder: string;
+  tabActiveBg: string;
+  tabInactiveBg: string;
+  tabActiveText: string;
+  tabInactiveText: string;
+  tabIndicator: string;
+  floatingButtonBg: string[];
+  floatingButtonText: string;
+  floatingButtonShadow: string;
+  alertBg: string;
+  alertBorder: string;
+  alertTitle: string;
+  alertMessage: string;
+  alertConfirmBg: string;
+  alertConfirmText: string;
+  alertCancelBg: string;
+  alertCancelText: string;
+  alertDestructiveBg: string;
+  alertDestructiveText: string;
+}
 
-export const lightTheme: ThemeColors = {
-  background: '#FFFFFF',
+export const lightColors: ThemeColors = {
+  primary: '#6C63FF',
+  primaryLight: '#EEEDFF',
+  primaryGradient: ['#6C63FF', '#8B5CF6'],
+  primaryGradientSubtle: ['#EEEDFF', '#E0E7FF'],
+  secondary: '#F59E0B',
+  secondaryLight: '#FEF3C7',
+  background: '#F8F9FE',
+  backgroundGradient: ['#F8F9FE', '#F0F1FF', '#F8F9FE'],
   card: '#FFFFFF',
-  primary: '#1877F2',
-  secondary: '#45BD62',
-  textDark: '#1C1E21',
-  textLight: '#8A8D91',
-  white: '#FFFFFF',
-  error: '#F02849',
+  cardBorder: '#E8E8F0',
+  cardShadow: 'rgba(108, 99, 255, 0.08)',
+  textDark: '#1A1A2E',
+  textPrimary: '#2D2D44',
+  textLight: '#8E8EA0',
+  textMuted: '#B0B0C0',
+  border: '#E8E8F0',
+  borderLight: '#F0F0F8',
+  error: '#EF4444',
   errorBg: '#FEE2E2',
-  success: '#45BD62',
-  gray: '#F0F2F5',
-  border: '#EAEAEA',
-  primaryLight: '#E5EFFF',
-  inputBg: '#F0F2F5',
-};
-
-export const darkTheme: ThemeColors = {
-  background: '#0F172A',
-  card: '#1E293B',
-  primary: '#3B82F6',
-  secondary: '#38BDF8',
-  textDark: '#F1F5F9',
-  textLight: '#94A3B8',
+  errorLight: '#FEF2F2',
+  success: '#10B981',
+  successBg: '#D1FAE5',
+  successLight: '#ECFDF5',
+  warning: '#F59E0B',
+  warningBg: '#FEF3C7',
+  warningLight: '#FFFBEB',
+  info: '#3B82F6',
+  infoBg: '#DBEAFE',
+  gray: '#F3F4F6',
+  grayLight: '#F9FAFB',
   white: '#FFFFFF',
-  error: '#F87171',
-  errorBg: '#450A0A',
-  success: '#34D399',
-  gray: '#475569',
-  border: '#334155',
+  overlay: 'rgba(0, 0, 0, 0.45)',
+  overlayLight: 'rgba(0, 0, 0, 0.25)',
+  inputBg: '#F9FAFB',
+  inputBorder: '#E5E7EB',
+  tabBarBg: '#FFFFFF',
+  headerBg: '#FFFFFF',
+  badgeBg: '#6C63FF',
+  badgeText: '#FFFFFF',
+  badgeBorder: '#6C63FF',
+  link: '#6C63FF',
+  muted: '#9CA3AF',
+  highlight: '#EEEDFF',
+  highlightLight: '#F5F3FF',
+  skeleton: '#E5E7EB',
+  shimmer: '#F3F4F6',
+  reactionBg: '#F3F4F6',
+  reactionActiveBg: '#EEEDFF',
+  buttonPrimaryBg: ['#6C63FF', '#8B5CF6'],
+  buttonPrimaryText: '#FFFFFF',
+  buttonSecondaryBg: '#F3F4F6',
+  buttonSecondaryText: '#1A1A2E',
+  buttonDangerBg: '#EF4444',
+  buttonDangerText: '#FFFFFF',
+  quoteCardBg: '#FFFFFF',
+  quoteCardBorder: '#E8E8F0',
+  quoteCardAccent: '#6C63FF',
+  topBarBg: '#FFFFFF',
+  topBarBorder: '#E8E8F0',
+  topBarText: '#1A1A2E',
+  footerBg: '#F8F9FE',
+  footerBorder: '#E8E8F0',
+  footerText: '#8E8EA0',
+  notificationDot: '#6C63FF',
+  notificationItemBg: '#F5F3FF',
+  modalOverlay: 'rgba(0, 0, 0, 0.5)',
+  modalBg: '#FFFFFF',
+  modalBorder: '#E8E8F0',
+  switchTrack: '#D1D5DB',
+  switchThumb: '#FFFFFF',
+  profileHeaderBg: ['#EEEDFF', '#E0E7FF', '#F0F1FF'],
+  profileStatBg: '#F9FAFB',
+  profileStatBorder: '#E5E7EB',
+  badgeUnearned: '#D1D5DB',
+  badgeEarned: '#F59E0B',
+  badgeEarnedBg: '#FEF3C7',
+  commentBg: '#F9FAFB',
+  commentBorder: '#E5E7EB',
+  mentionBg: '#EEEDFF',
+  hashtagColor: '#6C63FF',
+  timestampColor: '#9CA3AF',
+  separatorColor: '#E5E7EB',
+  iconColor: '#8E8EA0',
+  iconColorActive: '#6C63FF',
+  iconBg: '#F3F4F6',
+  iconBgActive: '#EEEDFF',
+  reactionButtonBg: '#F9FAFB',
+  reactionButtonActiveBg: '#EEEDFF',
+  reactionButtonBorder: '#E5E7EB',
+  reactionButtonActiveBorder: '#6C63FF',
+  reactionEmojiBg: '#F3F4F6',
+  reactionEmojiBorder: '#E5E7EB',
+  progressBarBg: '#E5E7EB',
+  progressBarFill: '#6C63FF',
+  progressBarFillGradient: ['#6C63FF', '#8B5CF6'],
+  levelBadgeBg: '#EEEDFF',
+  levelBadgeText: '#6C63FF',
+  levelBadgeBorder: '#6C63FF',
+  streakBadgeBg: '#FEF3C7',
+  streakBadgeText: '#D97706',
+  streakBadgeBorder: '#F59E0B',
+  onlineDot: '#10B981',
+  offlineDot: '#9CA3AF',
+  typingIndicator: '#8E8EA0',
+  messageBubbleSent: '#6C63FF',
+  messageBubbleSentText: '#FFFFFF',
+  messageBubbleReceived: '#F3F4F6',
+  messageBubbleReceivedText: '#1A1A2E',
+  messageInputBg: '#F9FAFB',
+  messageInputBorder: '#E5E7EB',
+  searchBarBg: '#F3F4F6',
+  searchBarBorder: '#E5E7EB',
+  searchBarText: '#1A1A2E',
+  searchResultBg: '#FFFFFF',
+  searchResultBorder: '#E5E7EB',
+  tabActiveBg: '#EEEDFF',
+  tabInactiveBg: '#F3F4F6',
+  tabActiveText: '#6C63FF',
+  tabInactiveText: '#8E8EA0',
+  tabIndicator: '#6C63FF',
+  floatingButtonBg: ['#6C63FF', '#8B5CF6'],
+  floatingButtonText: '#FFFFFF',
+  floatingButtonShadow: 'rgba(108, 99, 255, 0.3)',
+  alertBg: '#FFFFFF',
+  alertBorder: '#E5E7EB',
+  alertTitle: '#1A1A2E',
+  alertMessage: '#8E8EA0',
+  alertConfirmBg: '#6C63FF',
+  alertConfirmText: '#FFFFFF',
+  alertCancelBg: '#F3F4F6',
+  alertCancelText: '#1A1A2E',
+  alertDestructiveBg: '#EF4444',
+  alertDestructiveText: '#FFFFFF',
 };
 
-export const colors = lightTheme;
+export const darkColors: ThemeColors = {
+  primary: '#8B8CFF',
+  primaryLight: '#2D2B55',
+  primaryGradient: ['#6C63FF', '#8B5CF6'],
+  primaryGradientSubtle: ['#1E1B4B', '#2D2B55'],
+  secondary: '#FBBF24',
+  secondaryLight: '#3B351A',
+  background: '#0F0F23',
+  backgroundGradient: ['#0F0F23', '#1A1A35', '#0F0F23'],
+  card: '#1A1A35',
+  cardBorder: '#2A2A45',
+  cardShadow: 'rgba(0, 0, 0, 0.3)',
+  textDark: '#E8E8F0',
+  textPrimary: '#D1D1E0',
+  textLight: '#9E9EB0',
+  textMuted: '#6B6B80',
+  border: '#2A2A45',
+  borderLight: '#222240',
+  error: '#F87171',
+  errorBg: '#3B1A1A',
+  errorLight: '#4A1F1F',
+  success: '#34D399',
+  successBg: '#1A3B2E',
+  successLight: '#1F4A3A',
+  warning: '#FBBF24',
+  warningBg: '#3B351A',
+  warningLight: '#4A4020',
+  info: '#60A5FA',
+  infoBg: '#1E3A5F',
+  gray: '#252540',
+  grayLight: '#2A2A45',
+  white: '#FFFFFF',
+  overlay: 'rgba(0, 0, 0, 0.65)',
+  overlayLight: 'rgba(0, 0, 0, 0.45)',
+  inputBg: '#252540',
+  inputBorder: '#2A2A45',
+  tabBarBg: '#1A1A35',
+  headerBg: '#1A1A35',
+  badgeBg: '#8B8CFF',
+  badgeText: '#FFFFFF',
+  badgeBorder: '#8B8CFF',
+  link: '#8B8CFF',
+  muted: '#6B6B80',
+  highlight: '#2D2B55',
+  highlightLight: '#252550',
+  skeleton: '#2A2A45',
+  shimmer: '#333350',
+  reactionBg: '#252540',
+  reactionActiveBg: '#2D2B55',
+  buttonPrimaryBg: ['#6C63FF', '#8B5CF6'],
+  buttonPrimaryText: '#FFFFFF',
+  buttonSecondaryBg: '#252540',
+  buttonSecondaryText: '#E8E8F0',
+  buttonDangerBg: '#F87171',
+  buttonDangerText: '#FFFFFF',
+  quoteCardBg: '#1A1A35',
+  quoteCardBorder: '#2A2A45',
+  quoteCardAccent: '#8B8CFF',
+  topBarBg: '#1A1A35',
+  topBarBorder: '#2A2A45',
+  topBarText: '#E8E8F0',
+  footerBg: '#0F0F23',
+  footerBorder: '#2A2A45',
+  footerText: '#9E9EB0',
+  notificationDot: '#8B8CFF',
+  notificationItemBg: '#2D2B55',
+  modalOverlay: 'rgba(0, 0, 0, 0.7)',
+  modalBg: '#1A1A35',
+  modalBorder: '#2A2A45',
+  switchTrack: '#3A3A55',
+  switchThumb: '#FFFFFF',
+  profileHeaderBg: ['#1E1B4B', '#2D2B55', '#1A1A35'],
+  profileStatBg: '#252540',
+  profileStatBorder: '#2A2A45',
+  badgeUnearned: '#3A3A55',
+  badgeEarned: '#FBBF24',
+  badgeEarnedBg: '#3B351A',
+  commentBg: '#252540',
+  commentBorder: '#2A2A45',
+  mentionBg: '#2D2B55',
+  hashtagColor: '#8B8CFF',
+  timestampColor: '#6B6B80',
+  separatorColor: '#2A2A45',
+  iconColor: '#9E9EB0',
+  iconColorActive: '#8B8CFF',
+  iconBg: '#252540',
+  iconBgActive: '#2D2B55',
+  reactionButtonBg: '#252540',
+  reactionButtonActiveBg: '#2D2B55',
+  reactionButtonBorder: '#2A2A45',
+  reactionButtonActiveBorder: '#8B8CFF',
+  reactionEmojiBg: '#252540',
+  reactionEmojiBorder: '#2A2A45',
+  progressBarBg: '#2A2A45',
+  progressBarFill: '#8B8CFF',
+  progressBarFillGradient: ['#6C63FF', '#8B5CF6'],
+  levelBadgeBg: '#2D2B55',
+  levelBadgeText: '#8B8CFF',
+  levelBadgeBorder: '#8B8CFF',
+  streakBadgeBg: '#3B351A',
+  streakBadgeText: '#FBBF24',
+  streakBadgeBorder: '#FBBF24',
+  onlineDot: '#34D399',
+  offlineDot: '#6B6B80',
+  typingIndicator: '#9E9EB0',
+  messageBubbleSent: '#8B8CFF',
+  messageBubbleSentText: '#FFFFFF',
+  messageBubbleReceived: '#252540',
+  messageBubbleReceivedText: '#E8E8F0',
+  messageInputBg: '#252540',
+  messageInputBorder: '#2A2A45',
+  searchBarBg: '#252540',
+  searchBarBorder: '#2A2A45',
+  searchBarText: '#E8E8F0',
+  searchResultBg: '#1A1A35',
+  searchResultBorder: '#2A2A45',
+  tabActiveBg: '#2D2B55',
+  tabInactiveBg: '#252540',
+  tabActiveText: '#8B8CFF',
+  tabInactiveText: '#9E9EB0',
+  tabIndicator: '#8B8CFF',
+  floatingButtonBg: ['#6C63FF', '#8B5CF6'],
+  floatingButtonText: '#FFFFFF',
+  floatingButtonShadow: 'rgba(108, 99, 255, 0.3)',
+  alertBg: '#1A1A35',
+  alertBorder: '#2A2A45',
+  alertTitle: '#E8E8F0',
+  alertMessage: '#9E9EB0',
+  alertConfirmBg: '#8B8CFF',
+  alertConfirmText: '#FFFFFF',
+  alertCancelBg: '#252540',
+  alertCancelText: '#E8E8F0',
+  alertDestructiveBg: '#F87171',
+  alertDestructiveText: '#FFFFFF',
+};

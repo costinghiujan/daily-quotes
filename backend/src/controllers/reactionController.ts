@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import { query } from '../config/db';
-import { AuthRequest } from './authController';
+import { AuthRequest } from '../middleware/authMiddleware';
 import { sendNotification, removeNotification } from '../utils/notificationHelper';
 import { sendPushNotification } from '../services/expoPushService';
 import { GamificationService, XP_VALUES } from '../services/gamificationService';

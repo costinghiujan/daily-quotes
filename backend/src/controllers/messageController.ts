@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import { query } from '../config/db';
-import { AuthRequest } from './quoteController';
+import { AuthRequest } from '../middleware/authMiddleware';
 
 export const getConversations = async (req: AuthRequest, res: Response): Promise<void> => {
   try {

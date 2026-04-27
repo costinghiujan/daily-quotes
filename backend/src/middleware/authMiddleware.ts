@@ -4,7 +4,7 @@ import { query } from '../config/db';
 
 interface DecodedToken {
   id: number;
-  sessionId?: string;
+  sessionId?: number;
 }
 
 interface RequestUser {
@@ -14,7 +14,7 @@ interface RequestUser {
 
 export interface AuthRequest extends Request {
   user?: RequestUser;
-  sessionId?: string;
+  sessionId?: number;
 }
 
 export const protect = async (

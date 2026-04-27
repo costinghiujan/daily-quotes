@@ -9,18 +9,21 @@ import {
   Platform,
   Keyboard,
   ScrollView,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
 import { authService } from '../api/authService';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { ThemeContext } from '../context/ThemeContext';
-import { ThemeColors } from '../theme/colors';
+import { AlertContext } from '../context/AlertContext';
 
 export default function RegisterScreen({ navigation }: any) {
   const { colors } = useContext(ThemeContext);
   const styles = useMemo(() => getStyles(colors), [colors]);
+  const { showAlert } = useContext(AlertContext);
+  const { t } = useTranslation();
 
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -84,11 +87,20 @@ export default function RegisterScreen({ navigation }: any) {
           password: password,
         });
 
-        Alert.alert('Cont Creat!', 'Te-ai înregistrat cu succes. Te rugăm să te loghezi.', [
-          { text: 'OK', onPress: () => navigation.navigate('Login') },
-        ]);
+        showAlert({
+          title: t('auth.registerSuccess'),
+          message: t('auth.registerSuccessMsg'),
+          confirmText: t('common.ok'),
+          hideCancel: true,
+          onConfirm: () => navigation.navigate('Login'),
+        });
       } catch (error: any) {
-        Alert.alert('Eroare la înregistrare', error.message);
+        showAlert({
+          title: t('auth.registerError'),
+          message: error.message,
+          confirmText: t('common.ok'),
+          hideCancel: true,
+        });
       } finally {
         setIsSubmitting(false);
       }
@@ -106,9 +118,9 @@ export default function RegisterScreen({ navigation }: any) {
 
   const getStrengthLabel = () => {
     if (passwordStrength === 0) return '';
-    if (passwordStrength <= 2) return 'Slabă';
-    if (passwordStrength <= 4) return 'Medie';
-    return 'Puternică';
+    if (passwordStrength <= 2) return t('auth.weak');
+    if (passwordStrength <= 4) return t('auth.medium');
+    return t('auth.strong');
   };
 
   return (
@@ -116,14 +128,28 @@ export default function RegisterScreen({ navigation }: any) {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
+      <LinearGradient
+        colors={colors.backgroundGradient as [string, string, string]}
+        style={StyleSheet.absoluteFill}
+      />
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <View style={styles.formContainer}>
-          <Text style={styles.title}>Creare Cont</Text>
-          <Text style={styles.subtitle}>Alătură-te comunității noastre</Text>
+          <View style={styles.logoSection}>
+            <LinearGradient
+              colors={colors.primaryGradient as [string, string]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.logoIcon}
+            >
+              <Ionicons name="book" size={28} color="#fff" />
+            </LinearGradient>
+            <Text style={styles.title}>{t('auth.createAccount')}</Text>
+            <Text style={styles.subtitle}>{t('auth.registerSubtitle')}</Text>
+          </View>
 
           <TextInput
             style={[styles.input, usernameError && styles.inputError]}
-            placeholder="Username"
+            placeholder={t('auth.username')}
             placeholderTextColor={colors.textLight}
             value={username}
             onChangeText={(t) => {
@@ -133,12 +159,12 @@ export default function RegisterScreen({ navigation }: any) {
             autoCapitalize="none"
           />
           {usernameError && (
-            <Text style={styles.errorText}>Introduceți un nume de utilizator.</Text>
+            <Text style={styles.errorText}>{t('auth.usernameRequired')}</Text>
           )}
 
           <TextInput
             style={[styles.input, emailError && styles.inputError]}
-            placeholder="Email"
+            placeholder={t('auth.email')}
             placeholderTextColor={colors.textLight}
             value={email}
             onChangeText={(t) => {
@@ -148,12 +174,12 @@ export default function RegisterScreen({ navigation }: any) {
             keyboardType="email-address"
             autoCapitalize="none"
           />
-          {emailError && <Text style={styles.errorText}>Introduceți un email valid.</Text>}
+          {emailError && <Text style={styles.errorText}>{t('auth.emailRequired')}</Text>}
 
           <View style={{ width: '100%', justifyContent: 'center' }}>
             <TextInput
               style={[styles.input, passwordError && styles.inputError, { paddingRight: 50 }]}
-              placeholder="Parolă"
+              placeholder={t('auth.password')}
               placeholderTextColor={colors.textLight}
               value={password}
               onChangeText={(t) => {
@@ -178,12 +204,12 @@ export default function RegisterScreen({ navigation }: any) {
 
           {passwordError && (
             <Text style={styles.errorText}>
-              Introduceți o parolă ce are minim 6 caractere și o putere cel puțin medie.
+              {t('auth.passwordStrength')}
             </Text>
           )}
 
           <View style={styles.strengthContainer}>
-            <View style={styles.strengthBarBackground}>
+            <View style={[styles.strengthBarBackground, { backgroundColor: colors.progressBarBg }]}>
               <View
                 style={[
                   styles.strengthBarFill,
@@ -197,21 +223,29 @@ export default function RegisterScreen({ navigation }: any) {
           </View>
 
           <TouchableOpacity
-            style={[styles.button, isSubmitting && { backgroundColor: colors.primary + '80' }]}
+            style={[styles.button, isSubmitting && { opacity: 0.7 }]}
             onPress={handleRegister}
             disabled={isSubmitting}
+            activeOpacity={0.8}
           >
-            {isSubmitting ? (
-              <ActivityIndicator color={colors.white} />
-            ) : (
-              <Text style={styles.buttonText}>Înregistrare</Text>
-            )}
+            <LinearGradient
+              colors={colors.buttonPrimaryBg as [string, string]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.buttonGradient}
+            >
+              {isSubmitting ? (
+                <ActivityIndicator color={colors.buttonPrimaryText} />
+              ) : (
+                <Text style={styles.buttonText}>{t('auth.register')}</Text>
+              )}
+            </LinearGradient>
           </TouchableOpacity>
 
           <View style={styles.footer}>
-            <Text style={styles.footerText}>Ai deja un cont? </Text>
+            <Text style={styles.footerText}>{t('auth.haveAccount')}</Text>
             <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-              <Text style={styles.link}>Loghează-te aici</Text>
+              <Text style={styles.link}>{t('auth.loginHere')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -220,34 +254,46 @@ export default function RegisterScreen({ navigation }: any) {
   );
 }
 
-const getStyles = (colors: ThemeColors) =>
+const getStyles = (colors: any) =>
   StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.background },
+    container: { flex: 1 },
     scrollContent: { flexGrow: 1, justifyContent: 'center', padding: 20 },
     formContainer: {
       backgroundColor: colors.card,
-      padding: 20,
-      borderRadius: 15,
-      elevation: 3,
-      shadowColor: '#000',
-      shadowOpacity: 0.1,
-      shadowRadius: 10,
-      shadowOffset: { width: 0, height: 5 },
+      padding: 24,
+      borderRadius: 20,
+      elevation: 5,
+      shadowColor: colors.cardShadow,
+      shadowOpacity: 0.15,
+      shadowRadius: 15,
+      shadowOffset: { width: 0, height: 8 },
+    },
+    logoSection: {
+      alignItems: 'center',
+      marginBottom: 25,
+    },
+    logoIcon: {
+      width: 56,
+      height: 56,
+      borderRadius: 16,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 15,
     },
     title: {
       fontSize: 28,
       fontWeight: 'bold',
-      color: colors.primary,
+      color: colors.textDark,
       marginBottom: 5,
       textAlign: 'center',
     },
-    subtitle: { fontSize: 16, color: colors.textLight, marginBottom: 25, textAlign: 'center' },
+    subtitle: { fontSize: 15, color: colors.textLight, textAlign: 'center' },
 
     input: {
-      backgroundColor: colors.background,
+      backgroundColor: colors.inputBg,
       borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: 10,
+      borderColor: colors.inputBorder,
+      borderRadius: 12,
       padding: 15,
       marginBottom: 15,
       fontSize: 16,
@@ -263,16 +309,18 @@ const getStyles = (colors: ThemeColors) =>
     },
 
     button: {
-      backgroundColor: colors.primary,
-      paddingVertical: 15,
-      borderRadius: 10,
-      alignItems: 'center',
+      borderRadius: 12,
+      overflow: 'hidden',
       marginTop: 10,
     },
-    buttonText: { color: colors.white, fontSize: 18, fontWeight: 'bold' },
+    buttonGradient: {
+      paddingVertical: 15,
+      alignItems: 'center',
+    },
+    buttonText: { color: colors.buttonPrimaryText, fontSize: 18, fontWeight: 'bold' },
 
     footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 20 },
-    footerText: { color: colors.textDark, fontSize: 14 },
+    footerText: { color: colors.textLight, fontSize: 14 },
     link: { color: colors.primary, fontSize: 14, fontWeight: 'bold' },
 
     strengthContainer: {
@@ -284,7 +332,6 @@ const getStyles = (colors: ThemeColors) =>
     strengthBarBackground: {
       flex: 1,
       height: 6,
-      backgroundColor: colors.border,
       borderRadius: 3,
       marginRight: 10,
     },

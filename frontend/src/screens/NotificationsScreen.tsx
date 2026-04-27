@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useContext, useLayoutEffect } from 'react';
+import React, { useState, useCallback, useContext, useLayoutEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,27 +8,31 @@ import {
   ActivityIndicator,
   Image,
   RefreshControl,
-  Alert,
 } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { notificationService, AppNotification } from '../api/notificationService';
 import { friendshipService } from '../api/friendshipService';
 import { ThemeContext } from '../context/ThemeContext';
+import { AlertContext } from '../context/AlertContext';
+import { useTranslation } from 'react-i18next';
 
 export default function NotificationsScreen() {
-  const { theme } = useContext(ThemeContext);
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
+  const { showAlert } = useContext(AlertContext);
 
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isMarkingAllRead, setIsMarkingAllRead] = useState(false);
 
   const { colors } = useContext(ThemeContext);
-  const styles = React.useMemo(() => getStyles(colors), [colors]);
+  const styles = useMemo(() => getStyles(colors), [colors]);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -42,7 +46,7 @@ export default function NotificationsScreen() {
       const data = await notificationService.getHistory();
       setNotifications(data);
     } catch (error) {
-      console.error('Eroare la încărcarea notificărilor:', error);
+      console.error('Eroare la incarcarea notificarilor:', error);
     } finally {
       setIsLoading(false);
     }
@@ -60,18 +64,23 @@ export default function NotificationsScreen() {
       const data = await notificationService.getHistory();
       setNotifications(data);
     } catch (error) {
-      console.error('Eroare la reîmprospătare:', error);
+      console.error('Eroare la reinprospatare:', error);
     } finally {
       setIsRefreshing(false);
     }
   }, []);
 
   const handleMarkAllRead = async () => {
+    if (isMarkingAllRead) return;
+    setIsMarkingAllRead(true);
     try {
       await notificationService.markAllAsRead();
       setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
     } catch (error) {
-      console.log(error);
+      console.error('[Eroare] Mark all as read failed:', error);
+      showAlert({ title: t('common.error'), message: t('notifications.errorMarkRead'), hideCancel: true, confirmText: t('common.ok') });
+    } finally {
+      setIsMarkingAllRead(false);
     }
   };
 
@@ -81,11 +90,11 @@ export default function NotificationsScreen() {
     );
     try {
       await friendshipService.acceptRequest(friendshipId);
-      Alert.alert('Succes', `Acum ești prieten cu ${username}!`);
+      showAlert({ title: t('common.success'), message: t('notifications.accepted', { username }), hideCancel: true, confirmText: t('common.ok') });
     } catch (error) {
       console.error(error);
       fetchNotifications();
-      Alert.alert('Eroare', 'Nu s-a putut accepta cererea.');
+      showAlert({ title: t('common.error'), message: t('notifications.errorAccept'), hideCancel: true, confirmText: t('common.ok') });
     }
   };
 
@@ -96,7 +105,7 @@ export default function NotificationsScreen() {
     } catch (error) {
       console.error(error);
       fetchNotifications();
-      Alert.alert('Eroare', 'Nu s-a putut respinge cererea.');
+      showAlert({ title: t('common.error'), message: t('notifications.errorDecline'), hideCancel: true, confirmText: t('common.ok') });
     }
   };
 
@@ -107,24 +116,26 @@ export default function NotificationsScreen() {
     const isFriendRequest = item.type === 'FRIEND_REQUEST';
     const displayName = item.full_name || item.username || 'User';
 
-    let actionText = ' interacted with you.';
+    let actionText = t('notifications.interacted');
     let IconComponent = <Ionicons name="notifications" size={14} color={colors.primary} />;
 
     if (item.type === 'FRIEND_REQUEST') {
-      actionText = ' sent you a friend request.';
+      actionText = t('notifications.friendRequest');
       IconComponent = <Ionicons name="person-add" size={14} color={colors.primary} />;
     } else if (item.type === 'REACTION_ADDED') {
-      actionText = ' reacted to your quote.';
+      actionText = t('notifications.reacted');
       IconComponent = <Ionicons name="heart" size={14} color="#F02849" />;
     } else if (item.type === 'FRIEND_ACCEPTED' || item.type === 'FRIEND_REQUEST_ACCEPTED') {
-      actionText = ' and you are now friends.';
+      actionText = t('notifications.friendAccepted');
       IconComponent = <Ionicons name="people" size={14} color="#45BD62" />;
     } else if (item.type === 'COMMENT_ADDED') {
-      actionText = ' replied to your post.';
+      actionText = t('notifications.commented');
       IconComponent = <Ionicons name="arrow-undo" size={14} color={colors.primary} />;
     }
 
-    const dateStr = item.created_at ? new Date(item.created_at).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' }) : 'Just now';
+    const dateStr = item.created_at
+      ? new Date(item.created_at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+      : t('notifications.justNow');
 
     return (
       <View style={[styles.card, isUnread && styles.cardUnread]}>
@@ -145,7 +156,7 @@ export default function NotificationsScreen() {
                   onPress={() => handleAccept(item.id, item.reference_id, item.username)}
                 >
                   <Ionicons name="checkmark" size={16} color={colors.white} />
-                  <Text style={styles.actionBtnText}>Accept</Text>
+                  <Text style={styles.actionBtnText}>{t('notifications.accept')}</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -153,7 +164,7 @@ export default function NotificationsScreen() {
                   onPress={() => handleDecline(item.id, item.reference_id)}
                 >
                   <Ionicons name="close" size={16} color={colors.white} />
-                  <Text style={styles.actionBtnText}>Decline</Text>
+                  <Text style={styles.actionBtnText}>{t('notifications.decline')}</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -177,11 +188,29 @@ export default function NotificationsScreen() {
     );
   }
 
+  const unreadCount = notifications.filter(n => n.is_read === false).length;
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 10, paddingBottom: 15, marginBottom: 20, borderBottomWidth: 1, borderBottomColor: colors.border }}>
-        <Ionicons name="book" size={28} color={colors.primary} style={{ marginRight: 10 }} />
-        <Text style={{ fontSize: 24, fontWeight: '800', color: colors.textDark }}>DailyQuotes</Text>
+      {/* Top Bar */}
+      <View style={[styles.topBar, { borderBottomColor: colors.separatorColor }]}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <LinearGradient
+            colors={colors.primaryGradient as [string, string]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.logoIcon}
+          >
+            <Ionicons name="book" size={18} color="#fff" />
+          </LinearGradient>
+          <Text style={[styles.logoText, { color: colors.textDark }]}>{t('home.title')}</Text>
+        </View>
+        <TouchableOpacity
+          style={[styles.profileBtn, { backgroundColor: colors.iconBg }]}
+          onPress={() => navigation.navigate('ProfileScreen')}
+        >
+          <Ionicons name="person" size={20} color={colors.iconColor} />
+        </TouchableOpacity>
       </View>
 
       <FlatList
@@ -195,17 +224,30 @@ export default function NotificationsScreen() {
         renderItem={renderNotificationItem}
         ListHeaderComponent={() => (
           <View style={styles.subHeaderRow}>
-            <Text style={styles.subHeaderTitle}>New</Text>
-            <TouchableOpacity onPress={handleMarkAllRead}>
-              <Text style={styles.markReadText}>Mark all as read</Text>
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={[styles.subHeaderTitle, { color: colors.textDark }]}>{t('notifications.new')}</Text>
+              {unreadCount > 0 && (
+                <View style={[styles.unreadBadge, { backgroundColor: colors.primary }]}>
+                  <Text style={styles.unreadBadgeText}>{unreadCount}</Text>
+                </View>
+              )}
+            </View>
+            {unreadCount > 0 && (
+              <TouchableOpacity onPress={handleMarkAllRead} disabled={isMarkingAllRead}>
+                {isMarkingAllRead ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : (
+                  <Text style={[styles.markReadText, { color: colors.primary }]}>{t('notifications.markAllAsRead')}</Text>
+                )}
+              </TouchableOpacity>
+            )}
           </View>
         )}
         ListEmptyComponent={
           <View style={{ alignItems: 'center', marginTop: 80, paddingHorizontal: 20 }}>
             <Ionicons name="notifications-off-outline" size={64} color={colors.textLight} />
-            <Text style={{ marginTop: 15, fontSize: 18, fontWeight: 'bold', color: colors.textDark }}>Nu ai nicio notificare încă.</Text>
-            <Text style={{ fontSize: 15, color: colors.textLight, textAlign: 'center', marginTop: 10 }}>Aici vor apărea reacțiile, comentariile și cererile de prietenie.</Text>
+            <Text style={{ marginTop: 15, fontSize: 18, fontWeight: 'bold', color: colors.textDark }}>{t('notifications.emptyStateTitle')}</Text>
+            <Text style={{ fontSize: 15, color: colors.textLight, textAlign: 'center', marginTop: 10 }}>{t('notifications.emptyStateSub')}</Text>
           </View>
         }
       />
@@ -218,18 +260,34 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  headerRow: {
+  topBar: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingTop: 10,
-    marginBottom: 20,
+    paddingBottom: 15,
+    marginBottom: 10,
+    borderBottomWidth: 1,
   },
-  headerTitle: {
-    fontSize: 28,
+  logoIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  logoText: {
+    fontSize: 22,
     fontWeight: '800',
-    color: colors.textDark,
+  },
+  profileBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
   },
   listContent: {
     paddingHorizontal: 20,
@@ -244,11 +302,20 @@ const getStyles = (colors: any) => StyleSheet.create({
   subHeaderTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: colors.textDark,
+  },
+  unreadBadge: {
+    marginLeft: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  unreadBadgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   markReadText: {
     fontSize: 14,
-    color: colors.primary,
     fontWeight: '500',
   },
   card: {

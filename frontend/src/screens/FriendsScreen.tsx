@@ -6,22 +6,27 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  Alert,
   Image,
 } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { friendshipService, Friend } from '../api/friendshipService';
 import { ThemeContext } from '../context/ThemeContext';
+import { AlertContext } from '../context/AlertContext';
 import { ThemeColors } from '../theme/colors';
 
 export default function FriendsScreen() {
+
   const { colors } = useContext(ThemeContext);
+  const { showAlert } = useContext(AlertContext);
   const styles = useMemo(() => getStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
+  const { t } = useTranslation();
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -39,7 +44,7 @@ export default function FriendsScreen() {
       setFriends(data);
     } catch (error) {
       console.error('[Eroare UI] Nu am putut încărca prietenii:', error);
-      Alert.alert('Eroare', 'Nu am putut încărca lista de prieteni.');
+      showAlert({ title: t('common.error'), message: t('friends.errorLoad'), hideCancel: true, confirmText: t('common.ok') });
     } finally {
       setIsLoading(false);
     }
@@ -52,51 +57,43 @@ export default function FriendsScreen() {
   );
 
   const handleUnfriend = (friendshipId: number, friendName: string) => {
-    Alert.alert(
-      'Șterge Prieten',
-      `Ești sigur că vrei să îl ștergi pe ${friendName} din lista ta de prieteni?`,
-      [
-        { text: 'Anulează', style: 'cancel' },
-        {
-          text: 'Șterge',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              setFriends((prev) => prev.filter((f) => f.friendship_id !== friendshipId));
-              await friendshipService.removeFriendOrRequest(friendshipId);
-            } catch (error) {
-              console.error('[Eroare UI] Ștergere prieten:', error);
-              fetchFriends();
-              Alert.alert('Eroare', 'Nu s-a putut șterge prietenul.');
-            }
-          },
-        },
-      ],
-    );
+    showAlert({
+      title: t('friends.removeFriend'),
+      message: t('friends.removeConfirm', { name: friendName }) || `${t('friends.removeFriend')} ${friendName}?`,
+      confirmText: t('friends.remove'),
+      cancelText: t('common.cancel'),
+      isDestructive: true,
+      onConfirm: async () => {
+        try {
+          setFriends((prev) => prev.filter((f) => f.friendship_id !== friendshipId));
+          await friendshipService.removeFriendOrRequest(friendshipId);
+        } catch (error) {
+          console.error('[Eroare UI] Ștergere prieten:', error);
+          fetchFriends();
+          showAlert({ title: t('common.error'), message: t('friends.errorRemove'), hideCancel: true, confirmText: t('common.ok') });
+        }
+      },
+    });
   };
 
   const handleBlock = (userId: number, friendName: string) => {
-    Alert.alert(
-      'Blochează Utilizator',
-      `Ești sigur că vrei să îl blochezi pe ${friendName}? Nu îți va mai putea vedea profilul sau trimite mesaje.`,
-      [
-        { text: 'Anulează', style: 'cancel' },
-        {
-          text: 'Blochează',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              setFriends((prev) => prev.filter((f) => f.id !== userId));
-              await friendshipService.blockUser(userId);
-            } catch (error) {
-              console.error('[Eroare UI] Blocare utilizator:', error);
-              fetchFriends();
-              Alert.alert('Eroare', 'Nu s-a putut bloca utilizatorul.');
-            }
-          },
-        },
-      ],
-    );
+    showAlert({
+      title: t('friends.blockUser'),
+      message: t('friends.blockConfirm', { name: friendName }),
+      confirmText: t('friends.block'),
+      cancelText: t('common.cancel'),
+      isDestructive: true,
+      onConfirm: async () => {
+        try {
+          setFriends((prev) => prev.filter((f) => f.id !== userId));
+          await friendshipService.blockUser(userId);
+        } catch (error) {
+          console.error('[Eroare UI] Blocare utilizator:', error);
+          fetchFriends();
+          showAlert({ title: t('common.error'), message: t('friends.errorBlock'), hideCancel: true, confirmText: t('common.ok') });
+        }
+      },
+    });
   };
 
   const renderFriendItem = ({ item }: { item: Friend }) => {
@@ -104,7 +101,10 @@ export default function FriendsScreen() {
 
     return (
       <View style={styles.friendCard}>
-        <View style={styles.friendInfo}>
+        <TouchableOpacity
+          style={styles.friendInfo}
+          onPress={() => navigation.navigate('ProfileScreen', { userId: item.id })}
+        >
           {item.profile_picture_url ? (
             <Image source={{ uri: item.profile_picture_url }} style={styles.avatar} />
           ) : (
@@ -117,7 +117,6 @@ export default function FriendsScreen() {
               <Text style={styles.nameText} numberOfLines={1}>
                 {displayName}
               </Text>
-              {/* NOU: AFISARE STREAK (FLACĂRĂ) */}
               {item.streak_count && item.streak_count > 0 ? (
                 <View style={styles.streakBadge}>
                   <Text style={styles.streakText}>🔥 {item.streak_count}</Text>
@@ -126,14 +125,14 @@ export default function FriendsScreen() {
             </View>
             <Text style={styles.usernameText}>@{item.username}</Text>
           </View>
-        </View>
+        </TouchableOpacity>
 
         <View style={styles.actionButtons}>
           <TouchableOpacity
             style={styles.unfriendBtn}
             onPress={() => handleUnfriend(item.friendship_id, displayName)}
           >
-            <Text style={styles.unfriendBtnText}>Șterge</Text>
+            <Text style={styles.unfriendBtnText}>{t('friends.remove')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -157,10 +156,26 @@ export default function FriendsScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 10, paddingBottom: 10 }}>
-        <Ionicons name="book" size={28} color={colors.primary} style={{ marginRight: 10 }} />
-        <Text style={{ fontSize: 24, fontWeight: '800', color: colors.textDark }}>DailyQuotes</Text>
+      <View style={[styles.topBar, { borderBottomColor: colors.separatorColor }]}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <LinearGradient
+            colors={colors.primaryGradient as [string, string]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.logoIcon}
+          >
+            <Ionicons name="people" size={18} color="#fff" />
+          </LinearGradient>
+          <Text style={[styles.logoText, { color: colors.textDark }]}>{t('friends.title')}</Text>
+        </View>
+        <TouchableOpacity
+          style={[styles.profileBtn, { backgroundColor: colors.iconBg }]}
+          onPress={() => navigation.navigate('ProfileScreen')}
+        >
+          <Ionicons name="person" size={20} color={colors.iconColor} />
+        </TouchableOpacity>
       </View>
+
       <FlatList
         data={friends}
         keyExtractor={(item) => item.id.toString()}
@@ -169,9 +184,9 @@ export default function FriendsScreen() {
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Ionicons name="people-outline" size={64} color={colors.textLight} />
-            <Text style={styles.emptyText}>Nu ai niciun prieten în listă.</Text>
+            <Text style={styles.emptyText}>{t('friends.emptyTitle')}</Text>
             <Text style={styles.emptySubText}>
-              Caută utilizatori noi în tab-ul de Căutare pentru a-ți mări comunitatea.
+              {t('friends.emptySub')}
             </Text>
           </View>
         }
@@ -189,7 +204,37 @@ const getStyles = (colors: ThemeColors) =>
       alignItems: 'center',
       backgroundColor: colors.background,
     },
+    topBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 20,
+      paddingBottom: 15,
+      marginBottom: 10,
+      borderBottomWidth: 1,
+    },
+    logoIcon: {
+      width: 34,
+      height: 34,
+      borderRadius: 10,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: 10,
+    },
+    logoText: {
+      fontSize: 22,
+      fontWeight: '800',
+    },
+    profileBtn: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      justifyContent: 'center',
+      alignItems: 'center',
+      overflow: 'hidden',
+    },
     listContent: { padding: 15, paddingBottom: 30 },
+
 
     friendCard: {
       flexDirection: 'row',

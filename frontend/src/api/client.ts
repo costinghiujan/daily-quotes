@@ -24,6 +24,9 @@ apiClient.interceptors.request.use(
       const token = await storage.getToken();
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
+      } else {
+        // Ensure no stale auth header bleeds through
+        delete config.headers.Authorization;
       }
     } catch (error) {
       console.error('[Eroare Axios Interceptor] Nu s-a putut injecta token-ul:', error);
