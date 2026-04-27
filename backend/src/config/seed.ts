@@ -74,12 +74,10 @@ const seedMassive = async () => {
 
         const finalTagsString = generatedTags.map(t => `#${t}`).join(' ');
         const textWithTags = `${q.q} ${finalTagsString}`;
-        const timeOffset = `${i} HOURS`; // Simulează postări în momente diferite
-
         await client.query(
           `INSERT INTO quotes (text, author, category, user_id, hashtags, created_at) 
-           VALUES ($1, $2, $3, $4, $5, NOW() - INTERVAL '${timeOffset}')`,
-          [textWithTags, q.a, generatedTags[0] || 'General', currentUserId, generatedTags]
+           VALUES ($1, $2, $3, $4, $5, NOW() - ($6 || ' hours')::interval)`,
+          [textWithTags, q.a, generatedTags[0] || 'General', currentUserId, generatedTags, i]
         );
 
         if (i % 5 === 0) await delay(200);

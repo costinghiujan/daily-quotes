@@ -274,11 +274,11 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <ThemeProvider>
-        <AuthProvider>
-          <AlertProvider>
+        <AlertProvider>
+          <AuthProvider>
             <RootNavigator />
-          </AlertProvider>
-        </AuthProvider>
+          </AuthProvider>
+        </AlertProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   );

@@ -14,7 +14,7 @@ router.use(protect);
 
 router.get('/conversations', getConversations);
 router.get('/unread-count', getUnreadMessagesCount);
-router.post('/attachment', protect, uploadAttachment.single('file'), uploadChatFile);
+router.post('/attachment', uploadAttachment.single('file'), uploadChatFile);
 router.get('/:id', getMessageHistory);
 
 export default router;

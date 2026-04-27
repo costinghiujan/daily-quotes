@@ -28,10 +28,9 @@ import { ThemeColors } from '../theme/colors';
 import { messageService, Message } from '../api/messageService';
 import { friendshipService } from '../api/friendshipService';
 import { storage } from '../utils/storage';
-import { apiClient } from '../api/client';
+import { apiClient, BASE_URL } from '../api/client';
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useHeaderHeight } from '@react-navigation/elements';
 
 const debuggerHost = Constants.expoConfig?.hostUri;
 const dynamicIp = debuggerHost ? debuggerHost.split(':')[0] : 'localhost';
@@ -47,7 +46,6 @@ export default function ChatScreen() {
   const styles = useMemo(() => getStyles(colors), [colors]);
 
   const insets = useSafeAreaInsets();
-  const headerHeight = useHeaderHeight();
 
   const params = route.params || {};
 
@@ -176,13 +174,13 @@ export default function ChatScreen() {
       formData.append('file', {
         uri: Platform.OS === 'ios' ? fileAsset.uri.replace('file://', '') : fileAsset.uri,
         name: (fileAsset as any).name || (fileAsset as any).fileName || 'upload.jpg',
-        type: fileAsset.mimeType || 'image/jpeg',
+        type: (fileAsset as any).mimeType || (fileAsset as any).type || 'image/jpeg',
       } as any);
 
       setIsUploading(true);
 
       const token = await storage.getToken();
-      const uploadResponse = await fetch(`${apiClient.defaults.baseURL}/messages/attachment`, {
+      const uploadResponse = await fetch(`${BASE_URL}/messages/attachment`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -219,22 +217,10 @@ export default function ChatScreen() {
       title: t('chat.sendFile'),
       message: t('chat.chooseFileType'),
       confirmText: t('chat.photo'),
-      cancelText: t('chat.cancel'),
+      cancelText: t('chat.document'),
       hideCancel: false,
       onConfirm: () => handleSendAttachment('image'),
-      onCancel: () => {
-        // Show document option after a brief delay
-        setTimeout(() => {
-          showAlert({
-            title: t('chat.sendFile'),
-            message: t('chat.chooseFileType'),
-            confirmText: t('chat.document'),
-            cancelText: t('chat.cancel'),
-            hideCancel: false,
-            onConfirm: () => handleSendAttachment('document'),
-          });
-        }, 200);
-      },
+      onCancel: () => handleSendAttachment('document'),
     });
   };
 
@@ -377,7 +363,7 @@ export default function ChatScreen() {
       <KeyboardAvoidingView
         style={styles.container}
         behavior="padding"
-        keyboardVerticalOffset={headerHeight}
+        keyboardVerticalOffset={insets.top}
       >
         {chatContent}
       </KeyboardAvoidingView>

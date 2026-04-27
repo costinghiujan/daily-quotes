@@ -6,7 +6,7 @@ const debuggerHost = Constants.expoConfig?.hostUri;
 
 const dynamicIp = debuggerHost ? debuggerHost.split(':')[0] : null;
 
-const BASE_URL = dynamicIp ? `http://${dynamicIp}:3000/api` : 'http://localhost:3000/api';
+export const BASE_URL = dynamicIp ? `http://${dynamicIp}:3000/api` : 'http://localhost:3000/api';
 
 console.log('[Axios] Instanța a fost inițializată cu BASE_URL:', BASE_URL);
 

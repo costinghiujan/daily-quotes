@@ -166,11 +166,11 @@ export const removeFriendOrRequest = async (req: AuthRequest, res: Response): Pr
     }
 
     const result = await query(
-      `DELETE FROM friendships WHERE id = $1 RETURNING *`,
-      [friendshipId],
+      `DELETE FROM friendships WHERE id = $1 AND (requester_id = $2 OR receiver_id = $2) RETURNING *`,
+      [friendshipId, userId],
     );
 
-    if (result.rowCount === 0) {
+    if (result.rows.length === 0) {
       res.status(404).json({
         status: 'error',
         message: 'Cererea sau prietenia nu există (a fost deja ștearsă).',

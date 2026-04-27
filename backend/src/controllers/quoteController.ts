@@ -357,11 +357,16 @@ export const addComment = async (req: AuthRequest, res: Response): Promise<void>
 
 export const getCommentsForQuote = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const quoteId = req.params.id;
+    const quoteId = parseInt(String(req.params.id), 10);
     const userId = req.user?.id;
 
     if (!userId) {
       res.status(401).json({ status: 'error', message: 'Neautorizat.' });
+      return;
+    }
+
+    if (isNaN(quoteId)) {
+      res.status(400).json({ status: 'error', message: 'ID-ul citatului este invalid.' });
       return;
     }
 
@@ -593,7 +598,7 @@ export const getQuoteOfTheDay = async (req: AuthRequest, res: Response): Promise
 
     const result = await query(sql, [currentUserId]);
 
-    if (result.rowCount === 0) {
+    if (result.rows.length === 0) {
       res.status(200).json({ status: 'success', data: null });
       return;
     }

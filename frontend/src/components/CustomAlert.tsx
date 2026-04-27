@@ -113,7 +113,7 @@ export const CustomAlert: React.FC<CustomAlertProps> = ({
               activeOpacity={0.8}
             >
               <LinearGradient
-                colors={isDestructive ? [colors.error, '#E11D48'] : colors.primaryGradient}
+                colors={isDestructive ? [colors.error, '#E11D48'] as const : colors.primaryGradient}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={[styles.confirmGradient]}

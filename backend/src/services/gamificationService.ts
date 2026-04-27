@@ -15,7 +15,7 @@ export const GamificationService = {
     try {
       const userRes = await query('SELECT xp, level FROM users WHERE id = $1', [userId]);
 
-      if (userRes.rowCount === 0) {
+      if (userRes.rows.length === 0) {
         throw new Error('Utilizatorul nu a fost găsit.');
       }
 
@@ -93,6 +93,20 @@ export const GamificationService = {
               [userId],
             );
             if (parseInt(friendsRes.rows[0].count, 10) >= badge.requirement_value)
+              criteriaMet = true;
+            break;
+          }
+
+          case 'QUOTE_LIKES': {
+            const likesRes = await query(
+              `
+              SELECT COUNT(*) FROM quote_reactions qr
+              JOIN quotes q ON qr.quote_id = q.id
+              WHERE q.user_id = $1 AND qr.reaction_type = 'BLUE_HEART'
+            `,
+              [userId],
+            );
+            if (parseInt(likesRes.rows[0].count, 10) >= badge.requirement_value)
               criteriaMet = true;
             break;
           }

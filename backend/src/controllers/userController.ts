@@ -62,7 +62,7 @@ export const getMyProfile = async (req: AuthRequest, res: Response): Promise<voi
       [currentUserId],
     );
 
-    if (userResult.rowCount === 0) {
+    if (userResult.rows.length === 0) {
       res.status(404).json({ status: 'error', message: 'Utilizatorul nu a fost găsit.' });
       return;
     }
@@ -111,7 +111,7 @@ export const getUserProfile = async (req: AuthRequest, res: Response): Promise<v
       [id],
     );
 
-    if (userResult.rowCount === 0) {
+    if (userResult.rows.length === 0) {
       res.status(404).json({ status: 'error', message: 'Utilizatorul nu a fost găsit.' });
       return;
     }

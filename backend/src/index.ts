@@ -81,7 +81,7 @@ io.on('connection', (socket) => {
         [senderId, receiverId],
       );
 
-      if (blockCheck.rowCount && blockCheck.rowCount > 0) {
+      if (blockCheck.rows.length > 0) {
         console.warn(
           `[Sockets] ⛔ Mesaj respins: Relație blocată între ${senderId} și ${receiverId}.`,
         );

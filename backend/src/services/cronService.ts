@@ -13,19 +13,19 @@ export const initCronJobs = () => {
           AND streak_count > 0
         RETURNING id;
       `);
-      console.log(`[Cron] 🔥 S-au resetat ${resetStreaksResult.rowCount} flăcări expirate.`);
+      console.log(`[Cron] 🔥 S-au resetat ${resetStreaksResult.rows.length} flăcări expirate.`);
 
       const cleanupNotifications = await query(`
         DELETE FROM notifications 
         WHERE created_at < NOW() - INTERVAL '30 DAYS';
       `);
-      console.log(`[Cron] 🧹 S-au șters ${cleanupNotifications.rowCount} notificări vechi.`);
+      console.log(`[Cron] 🧹 S-au șters ${cleanupNotifications.rows.length} notificări vechi.`);
 
       const cleanupSessions = await query(`
         DELETE FROM sessions 
         WHERE created_at < NOW() - INTERVAL '60 DAYS';
       `);
-      console.log(`[Cron] 🧹 S-au curățat ${cleanupSessions.rowCount} sesiuni inactive.`);
+      console.log(`[Cron] 🧹 S-au curățat ${cleanupSessions.rows.length} sesiuni inactive.`);
     } catch (error) {
       console.error('[Eroare Cron] Mentenanța de noapte a eșuat:', error);
     }

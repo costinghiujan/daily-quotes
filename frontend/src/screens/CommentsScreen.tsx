@@ -21,7 +21,6 @@ import { AlertContext } from '../context/AlertContext';
 import { ThemeColors } from '../theme/colors';
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useHeaderHeight } from '@react-navigation/elements';
 
 export default function CommentsScreen({ route, navigation }: any) {
   const { quoteId } = route.params;
@@ -32,7 +31,6 @@ export default function CommentsScreen({ route, navigation }: any) {
   const { showAlert } = useContext(AlertContext);
 
   const insets = useSafeAreaInsets();
-  const headerHeight = useHeaderHeight();
   const flatListRef = useRef<FlatList>(null);
 
   const [comments, setComments] = useState<Comment[]>([]);
@@ -174,7 +172,7 @@ export default function CommentsScreen({ route, navigation }: any) {
       <KeyboardAvoidingView
         style={styles.container}
         behavior="padding"
-        keyboardVerticalOffset={headerHeight}
+        keyboardVerticalOffset={insets.top}
       >
         {commentsContent}
       </KeyboardAvoidingView>

@@ -1,12 +1,12 @@
 export interface ThemeColors {
   primary: string;
   primaryLight: string;
-  primaryGradient: string[];
-  primaryGradientSubtle: string[];
+  primaryGradient: readonly [string, string, ...string[]];
+  primaryGradientSubtle: readonly [string, string, ...string[]];
   secondary: string;
   secondaryLight: string;
   background: string;
-  backgroundGradient: string[];
+  backgroundGradient: readonly [string, string, ...string[]];
   card: string;
   cardBorder: string;
   cardShadow: string;
@@ -47,7 +47,7 @@ export interface ThemeColors {
   shimmer: string;
   reactionBg: string;
   reactionActiveBg: string;
-  buttonPrimaryBg: string[];
+  buttonPrimaryBg: readonly [string, string, ...string[]];
   buttonPrimaryText: string;
   buttonSecondaryBg: string;
   buttonSecondaryText: string;
@@ -69,7 +69,7 @@ export interface ThemeColors {
   modalBorder: string;
   switchTrack: string;
   switchThumb: string;
-  profileHeaderBg: string[];
+  profileHeaderBg: readonly [string, string, ...string[]];
   profileStatBg: string;
   profileStatBorder: string;
   badgeUnearned: string;
@@ -93,7 +93,7 @@ export interface ThemeColors {
   reactionEmojiBorder: string;
   progressBarBg: string;
   progressBarFill: string;
-  progressBarFillGradient: string[];
+  progressBarFillGradient: readonly [string, string, ...string[]];
   levelBadgeBg: string;
   levelBadgeText: string;
   levelBadgeBorder: string;
@@ -119,7 +119,7 @@ export interface ThemeColors {
   tabActiveText: string;
   tabInactiveText: string;
   tabIndicator: string;
-  floatingButtonBg: string[];
+  floatingButtonBg: readonly [string, string, ...string[]];
   floatingButtonText: string;
   floatingButtonShadow: string;
   alertBg: string;
