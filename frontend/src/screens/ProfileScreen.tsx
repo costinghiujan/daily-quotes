@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useContext, useLayoutEffect, useMemo } from 'react';
+import React, { useState, useCallback, useContext, useEffect, useLayoutEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -49,6 +49,8 @@ export default function ProfileScreen() {
   // Friends state
   const [friends, setFriends] = useState<Friend[]>([]);
   const [isFriendsLoading, setIsFriendsLoading] = useState(false);
+  const [friendsSearchQuery, setFriendsSearchQuery] = useState('');
+  const [debouncedFriendsQuery, setDebouncedFriendsQuery] = useState('');
 
   // All badges state
   const [allBadges, setAllBadges] = useState<AllBadge[]>([]);
@@ -104,6 +106,34 @@ export default function ProfileScreen() {
       fetchProfileData();
     }, []),
   );
+
+  // Debounce friends search query
+  useEffect(() => {
+    const cleanQuery = friendsSearchQuery?.trim() || '';
+
+    if (!cleanQuery) {
+      setDebouncedFriendsQuery('');
+      return;
+    }
+
+    const delayDebounceFn = setTimeout(() => {
+      setDebouncedFriendsQuery(cleanQuery);
+    }, 500);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [friendsSearchQuery]);
+
+  // Filtered friends based on debounced search query
+  const filteredFriends = useMemo(() => {
+    const cleanQuery = debouncedFriendsQuery?.trim().toLowerCase() || '';
+    if (!cleanQuery) return friends;
+
+    return friends.filter((friend) => {
+      const fullName = (friend.full_name || '').toLowerCase();
+      const username = (friend.username || '').toLowerCase();
+      return fullName.includes(cleanQuery) || username.includes(cleanQuery);
+    });
+  }, [friends, debouncedFriendsQuery]);
 
   // Fetch friends/badges data when tab changes
   const handleTabChange = (tab: ActiveTab) => {
@@ -536,14 +566,40 @@ export default function ProfileScreen() {
 
         {activeTab === 'friends' && (
           <>
+            {/* Friends Search Bar */}
+            <View style={[styles.friendsSearchContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Ionicons name="search" size={18} color={colors.textLight} style={styles.friendsSearchIcon} />
+              <TextInput
+                style={[styles.friendsSearchInput, { color: colors.textDark }]}
+                placeholder={t('friends.searchPlaceholder')}
+                placeholderTextColor={colors.textLight}
+                value={friendsSearchQuery}
+                onChangeText={setFriendsSearchQuery}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              {friendsSearchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setFriendsSearchQuery('')}>
+                  <Ionicons name="close-circle" size={18} color={colors.textLight} />
+                </TouchableOpacity>
+              )}
+            </View>
+
             {isFriendsLoading ? (
               <ActivityIndicator size="large" color={colors.primary} style={{ marginVertical: 30 }} />
-            ) : friends.length > 0 ? (
-              friends.map((friend) => (
+            ) : filteredFriends.length > 0 ? (
+              filteredFriends.map((friend) => (
                 <View key={friend.id}>
                   {renderFriendItem({ item: friend })}
                 </View>
               ))
+            ) : friends.length > 0 && friendsSearchQuery.trim() !== '' ? (
+              <View style={styles.emptySection}>
+                <Ionicons name="search-outline" size={48} color={colors.textMuted} />
+                <Text style={[styles.emptySectionText, { color: colors.textLight }]}>
+                  {t('friends.noFriendsFound')}
+                </Text>
+              </View>
             ) : (
               <View style={styles.emptySection}>
                 <Ionicons name="people-outline" size={48} color={colors.textMuted} />
@@ -836,6 +892,18 @@ const getStyles = (colors: any) => StyleSheet.create({
     fontSize: 15,
     marginTop: 8,
   },
+  // Friends Search
+  friendsSearchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 14,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+  },
+  friendsSearchIcon: { marginRight: 8 },
+  friendsSearchInput: { flex: 1, height: 44, fontSize: 15 },
+
   // Friends
   friendCard: {
     flexDirection: 'row',
