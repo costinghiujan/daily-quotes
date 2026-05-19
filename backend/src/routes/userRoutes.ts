@@ -5,6 +5,7 @@ import {
   getUserProfile,
   updateProfile,
   getMyProfile,
+  getAllBadges,
   uploadAvatar,
 } from '../controllers/userController';
 import { upload } from '../middleware/uploadMiddleware';
@@ -15,6 +16,7 @@ router.use(protect);
 
 router.get('/search', searchUsers);
 router.get('/me', getMyProfile);
+router.get('/badges/all', getAllBadges);
 router.get('/:id', getUserProfile);
 router.put('/profile', updateProfile);
 

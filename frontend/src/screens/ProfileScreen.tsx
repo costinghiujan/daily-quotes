@@ -15,13 +15,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 
-import { userService, UserProfile } from '../api/userService';
+import { userService, UserProfile, AllBadge } from '../api/userService';
 import { quoteService } from '../api/quoteService';
+import { friendshipService, Friend } from '../api/friendshipService';
 
 import { ThemeContext } from '../context/ThemeContext';
 import { AuthContext } from '../context/AuthContext';
 import { AlertContext } from '../context/AlertContext';
 import { useTranslation } from 'react-i18next';
+
+type ActiveTab = 'posts' | 'friends' | 'badges';
 
 export default function ProfileScreen() {
   const { colors } = useContext(ThemeContext);
@@ -40,6 +43,16 @@ export default function ProfileScreen() {
   const [isEditing, setIsEditing] = useState(false);
   const [editFullName, setEditFullName] = useState('');
   const [editBio, setEditBio] = useState('');
+
+  const [activeTab, setActiveTab] = useState<ActiveTab>('posts');
+
+  // Friends state
+  const [friends, setFriends] = useState<Friend[]>([]);
+  const [isFriendsLoading, setIsFriendsLoading] = useState(false);
+
+  // All badges state
+  const [allBadges, setAllBadges] = useState<AllBadge[]>([]);
+  const [isBadgesLoading, setIsBadgesLoading] = useState(false);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -62,11 +75,46 @@ export default function ProfileScreen() {
     }
   };
 
+  const fetchFriends = async () => {
+    setIsFriendsLoading(true);
+    try {
+      const data = await friendshipService.getFriends();
+      setFriends(data);
+    } catch (error) {
+      console.error('[Eroare UI] Nu am putut încărca prietenii:', error);
+    } finally {
+      setIsFriendsLoading(false);
+    }
+  };
+
+  const fetchAllBadges = async () => {
+    setIsBadgesLoading(true);
+    try {
+      const data = await userService.getAllBadges();
+      setAllBadges(data);
+    } catch (error) {
+      console.error('[Eroare UI] Nu am putut încărca toate insignele:', error);
+    } finally {
+      setIsBadgesLoading(false);
+    }
+  };
+
   useFocusEffect(
     useCallback(() => {
       fetchProfileData();
     }, []),
   );
+
+  // Fetch friends/badges data when tab changes
+  const handleTabChange = (tab: ActiveTab) => {
+    setActiveTab(tab);
+    if (tab === 'friends' && friends.length === 0) {
+      fetchFriends();
+    }
+    if (tab === 'badges' && allBadges.length === 0) {
+      fetchAllBadges();
+    }
+  };
 
   const handleSaveProfile = async () => {
     try {
@@ -138,6 +186,46 @@ export default function ProfileScreen() {
     });
   };
 
+  const handleUnfriend = (friendshipId: number, friendName: string) => {
+    showAlert({
+      title: t('friends.removeFriend'),
+      message: t('friends.removeConfirm', { name: friendName }) || `${t('friends.removeFriend')} ${friendName}?`,
+      confirmText: t('friends.remove'),
+      cancelText: t('common.cancel'),
+      isDestructive: true,
+      onConfirm: async () => {
+        try {
+          setFriends((prev) => prev.filter((f) => f.friendship_id !== friendshipId));
+          await friendshipService.removeFriendOrRequest(friendshipId);
+        } catch (error) {
+          console.error('[Eroare UI] Ștergere prieten:', error);
+          fetchFriends();
+          showAlert({ title: t('common.error'), message: t('friends.errorRemove'), hideCancel: true, confirmText: t('common.ok') });
+        }
+      },
+    });
+  };
+
+  const handleBlock = (userId: number, friendName: string) => {
+    showAlert({
+      title: t('friends.blockUser'),
+      message: t('friends.blockConfirm', { name: friendName }),
+      confirmText: t('friends.block'),
+      cancelText: t('common.cancel'),
+      isDestructive: true,
+      onConfirm: async () => {
+        try {
+          setFriends((prev) => prev.filter((f) => f.id !== userId));
+          await friendshipService.blockUser(userId);
+        } catch (error) {
+          console.error('[Eroare UI] Blocare utilizator:', error);
+          fetchFriends();
+          showAlert({ title: t('common.error'), message: t('friends.errorBlock'), hideCancel: true, confirmText: t('common.ok') });
+        }
+      },
+    });
+  };
+
   const currentXp = profile?.xp || 0;
   const currentLevel = profile?.level || 1;
   const xpInCurrentLevel = currentXp % 50;
@@ -170,6 +258,83 @@ export default function ProfileScreen() {
         <Text style={[styles.postText, { color: colors.textPrimary }]}>
           {'\u201C'}{item.text}{'\u201D'} — {item.author}
         </Text>
+      </View>
+    );
+  };
+
+  const renderFriendItem = ({ item }: { item: Friend }) => {
+    const displayName = item.full_name || item.username;
+
+    return (
+      <View style={styles.friendCard}>
+        <TouchableOpacity
+          style={styles.friendInfo}
+          onPress={() => navigation.navigate('ProfileScreen', { userId: item.id })}
+        >
+          {item.profile_picture_url ? (
+            <Image source={{ uri: item.profile_picture_url }} style={styles.friendAvatar} />
+          ) : (
+            <View style={[styles.friendAvatarPlaceholder, { backgroundColor: colors.primary }]}>
+              <Ionicons name="person" size={20} color={colors.white} />
+            </View>
+          )}
+          <View style={styles.friendTextContainer}>
+            <View style={styles.friendNameRow}>
+              <Text style={[styles.friendNameText, { color: colors.textDark }]} numberOfLines={1}>
+                {displayName}
+              </Text>
+              {item.streak_count && item.streak_count > 0 ? (
+                <View style={[styles.streakBadge, { backgroundColor: colors.streakBadgeBg }]}>
+                  <Text style={[styles.streakText, { color: colors.streakBadgeText }]}>🔥 {item.streak_count}</Text>
+                </View>
+              ) : null}
+            </View>
+            <Text style={[styles.friendUsernameText, { color: colors.textLight }]}>@{item.username}</Text>
+          </View>
+        </TouchableOpacity>
+
+        <View style={styles.friendActionButtons}>
+          <TouchableOpacity
+            style={[styles.unfriendBtn, { backgroundColor: colors.background, borderColor: colors.border }]}
+            onPress={() => handleUnfriend(item.friendship_id, displayName)}
+          >
+            <Text style={[styles.unfriendBtnText, { color: colors.textDark }]}>{t('friends.remove')}</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.blockBtn, { backgroundColor: colors.error }]}
+            onPress={() => handleBlock(item.id, displayName)}
+          >
+            <Ionicons name="ban" size={18} color={colors.white} />
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
+
+  const renderBadgeItem = (badge: AllBadge) => {
+    const isEarned = badge.earned;
+    return (
+      <View key={badge.id} style={styles.allBadgeItem}>
+        <LinearGradient
+          colors={isEarned ? (colors.primaryGradient as [string, string]) : [colors.badgeUnearned, colors.badgeUnearned]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.allBadgeIcon, !isEarned && { opacity: 0.6 }]}
+        >
+          <Ionicons name={badge.icon_name as any} size={24} color={isEarned ? '#fff' : colors.textMuted} />
+        </LinearGradient>
+        <Text style={[styles.allBadgeName, { color: isEarned ? colors.textDark : colors.textMuted }]} numberOfLines={2}>
+          {badge.name}
+        </Text>
+        <Text style={[styles.allBadgeDesc, { color: colors.textLight }]} numberOfLines={2}>
+          {badge.description}
+        </Text>
+        {isEarned && badge.earned_at && (
+          <Text style={[styles.allBadgeDate, { color: colors.primary }]}>
+            {new Date(badge.earned_at).toLocaleDateString()}
+          </Text>
+        )}
       </View>
     );
   };
@@ -278,7 +443,7 @@ export default function ProfileScreen() {
                 </View>
               </View>
 
-              {/* Stats Row */}
+              {/* Stats Row - smaller numbers */}
               <View style={styles.statsRow}>
                 <View style={[styles.statItem, { backgroundColor: colors.profileStatBg, borderColor: colors.profileStatBorder }]}>
                   <Text style={[styles.statNumber, { color: colors.textDark }]}>{quotes.length}</Text>
@@ -330,55 +495,80 @@ export default function ProfileScreen() {
 
         {/* Tabs */}
         <View style={[styles.tabsContainer, { borderBottomColor: colors.separatorColor }]}>
-          <View style={styles.tabItem}>
-            <Text style={[styles.tabTextActive, { color: colors.textDark }]}>{t('profile.posts')}</Text>
-            <View style={[styles.activeTabLine, { backgroundColor: colors.primary }]} />
-          </View>
-          <TouchableOpacity style={styles.tabItem} onPress={() => navigation.navigate('FriendsScreen')}>
-            <Text style={[styles.tabText, { color: colors.textLight }]}>{t('profile.friends')}</Text>
+          <TouchableOpacity style={styles.tabItem} onPress={() => handleTabChange('posts')}>
+            <Text style={[activeTab === 'posts' ? styles.tabTextActive : styles.tabText, { color: activeTab === 'posts' ? colors.textDark : colors.textLight }]}>
+              {t('profile.posts')}
+            </Text>
+            {activeTab === 'posts' && <View style={[styles.activeTabLine, { backgroundColor: colors.primary }]} />}
           </TouchableOpacity>
-          <View style={styles.tabItem}>
-            <Text style={[styles.tabText, { color: colors.textLight }]}>{t('profile.badges')}</Text>
-          </View>
+          <TouchableOpacity style={styles.tabItem} onPress={() => handleTabChange('friends')}>
+            <Text style={[activeTab === 'friends' ? styles.tabTextActive : styles.tabText, { color: activeTab === 'friends' ? colors.textDark : colors.textLight }]}>
+              {t('profile.friends')}
+            </Text>
+            {activeTab === 'friends' && <View style={[styles.activeTabLine, { backgroundColor: colors.primary }]} />}
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.tabItem} onPress={() => handleTabChange('badges')}>
+            <Text style={[activeTab === 'badges' ? styles.tabTextActive : styles.tabText, { color: activeTab === 'badges' ? colors.textDark : colors.textLight }]}>
+              {t('profile.badges')}
+            </Text>
+            {activeTab === 'badges' && <View style={[styles.activeTabLine, { backgroundColor: colors.primary }]} />}
+          </TouchableOpacity>
         </View>
 
-        {/* Badges Section */}
-        {!isEditing && profile?.badges && profile.badges.length > 0 && (
-           <View style={styles.badgesSection}>
-              <View style={styles.sectionHeader}>
-                 <Text style={[styles.sectionTitle, { color: colors.textDark }]}>{t('profile.badges')}</Text>
-                 <Text style={[styles.sectionCount, { color: colors.textLight }]}>{profile.badges.length}</Text>
-              </View>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                 {profile.badges.map(badge => (
-                    <View key={badge.id} style={styles.badgeItem}>
-                       <LinearGradient
-                         colors={colors.primaryGradient as [string, string]}
-                         start={{ x: 0, y: 0 }}
-                         end={{ x: 1, y: 1 }}
-                         style={styles.badgeIcon}
-                       >
-                          <Ionicons name={badge.icon_name as any} size={22} color="#fff" />
-                       </LinearGradient>
-                       <Text style={[styles.badgeName, { color: colors.textDark }]} numberOfLines={2}>{badge.name}</Text>
-                    </View>
-                 ))}
-              </ScrollView>
-           </View>
+        {/* Tab Content */}
+        {activeTab === 'posts' && (
+          <>
+            {/* Posts */}
+            {quotes.map((item, index) => (
+               <View key={item.id || index}>
+                 {renderTimelinePost({ item, index })}
+               </View>
+            ))}
+
+            {quotes.length === 0 && (
+               <View style={styles.emptyQuotes}>
+                 <Ionicons name="chatbubble-ellipses-outline" size={48} color={colors.textMuted} />
+                 <Text style={[styles.emptyQuotesText, { color: colors.textLight }]}>{t('profile.noQuotes')}</Text>
+               </View>
+            )}
+          </>
         )}
 
-        {/* Timeline Posts */}
-        {quotes.map((item, index) => (
-           <View key={item.id || index}>
-             {renderTimelinePost({ item, index })}
-           </View>
-        ))}
+        {activeTab === 'friends' && (
+          <>
+            {isFriendsLoading ? (
+              <ActivityIndicator size="large" color={colors.primary} style={{ marginVertical: 30 }} />
+            ) : friends.length > 0 ? (
+              friends.map((friend) => (
+                <View key={friend.id}>
+                  {renderFriendItem({ item: friend })}
+                </View>
+              ))
+            ) : (
+              <View style={styles.emptySection}>
+                <Ionicons name="people-outline" size={48} color={colors.textMuted} />
+                <Text style={[styles.emptySectionText, { color: colors.textLight }]}>{t('friends.emptyTitle')}</Text>
+                <Text style={[styles.emptySectionSubtext, { color: colors.textMuted }]}>{t('friends.emptySub')}</Text>
+              </View>
+            )}
+          </>
+        )}
 
-        {quotes.length === 0 && (
-           <View style={styles.emptyQuotes}>
-             <Ionicons name="chatbubble-ellipses-outline" size={48} color={colors.textMuted} />
-             <Text style={[styles.emptyQuotesText, { color: colors.textLight }]}>{t('profile.noQuotes')}</Text>
-           </View>
+        {activeTab === 'badges' && (
+          <>
+            {isBadgesLoading ? (
+              <ActivityIndicator size="large" color={colors.primary} style={{ marginVertical: 30 }} />
+            ) : allBadges.length > 0 ? (
+              <View style={styles.allBadgesGrid}>
+                {allBadges.map((badge) => renderBadgeItem(badge))}
+              </View>
+            ) : (
+              <View style={styles.emptySection}>
+                <Ionicons name="trophy-outline" size={48} color={colors.textMuted} />
+                <Text style={[styles.emptySectionText, { color: colors.textLight }]}>{t('profile.noBadges')}</Text>
+              </View>
+            )}
+          </>
         )}
 
       </View>
@@ -559,16 +749,16 @@ const getStyles = (colors: any) => StyleSheet.create({
   statItem: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 10,
     borderRadius: 12,
     borderWidth: 1,
   },
   statNumber: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '800',
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '500',
     marginTop: 2,
   },
@@ -581,6 +771,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   tabItem: {
     alignItems: 'center',
+    paddingHorizontal: 8,
   },
   tabTextActive: {
     fontSize: 14,
@@ -596,41 +787,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     height: 3,
     borderRadius: 2,
   },
-  badgesSection: {
-    marginBottom: 20,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  sectionTitle: {
-    fontSize: 17,
-    fontWeight: '800',
-  },
-  sectionCount: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  badgeItem: {
-    alignItems: 'center',
-    marginRight: 16,
-    width: 72,
-  },
-  badgeIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  badgeName: {
-    fontSize: 11,
-    textAlign: 'center',
-    lineHeight: 14,
-  },
+  // Posts
   feedItem: {
     marginBottom: 14,
     padding: 14,
@@ -678,5 +835,110 @@ const getStyles = (colors: any) => StyleSheet.create({
   emptyQuotesText: {
     fontSize: 15,
     marginTop: 8,
+  },
+  // Friends
+  friendCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.card,
+    padding: 12,
+    marginBottom: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  friendInfo: { flexDirection: 'row', alignItems: 'center', flex: 1, paddingRight: 10 },
+  friendAvatar: { width: 42, height: 42, borderRadius: 21, marginRight: 12 },
+  friendAvatarPlaceholder: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  friendTextContainer: { flex: 1, justifyContent: 'center' },
+  friendNameRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 2 },
+  friendNameText: { fontSize: 15, fontWeight: 'bold', flexShrink: 1 },
+  streakBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    marginLeft: 6,
+  },
+  streakText: { fontSize: 11, fontWeight: 'bold' },
+  friendUsernameText: { fontSize: 12 },
+  friendActionButtons: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  unfriendBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  unfriendBtnText: { fontSize: 12, fontWeight: 'bold' },
+  blockBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  // All Badges
+  allBadgesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  allBadgeItem: {
+    width: '47%',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.card,
+    marginBottom: 12,
+  },
+  allBadgeIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  allBadgeName: {
+    fontSize: 13,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  allBadgeDesc: {
+    fontSize: 11,
+    textAlign: 'center',
+    lineHeight: 15,
+  },
+  allBadgeDate: {
+    fontSize: 10,
+    marginTop: 6,
+    fontWeight: '600',
+  },
+  emptySection: {
+    alignItems: 'center',
+    marginTop: 30,
+    paddingHorizontal: 20,
+  },
+  emptySectionText: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginTop: 10,
+  },
+  emptySectionSubtext: {
+    fontSize: 13,
+    textAlign: 'center',
+    marginTop: 6,
+    lineHeight: 18,
   },
 });

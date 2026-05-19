@@ -8,6 +8,12 @@ export interface Badge {
   earned_at?: string;
 }
 
+export interface AllBadge extends Badge {
+  requirement_type: string;
+  requirement_value: number;
+  earned: boolean;
+}
+
 export interface UserProfile {
   id: number;
   username: string;
@@ -74,6 +80,16 @@ export const userService = {
       return response.data.data;
     } catch (error) {
       console.error('[Eroare Frontend] Actualizare profil:', error);
+      throw error;
+    }
+  },
+
+  getAllBadges: async (): Promise<AllBadge[]> => {
+    try {
+      const response = await apiClient.get('/users/badges/all');
+      return response.data.data;
+    } catch (error) {
+      console.error('[Eroare Frontend] Preluare toate insignele:', error);
       throw error;
     }
   },

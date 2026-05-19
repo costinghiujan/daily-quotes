@@ -118,6 +118,7 @@
     "delete": "Delete",
     "errorDelete": "Failed to delete quote",
     "noQuotes": "No quotes shared yet",
+    "noBadges": "No badges earned yet",
     "publicProfile": "Public Profile",
     "privateProfile": "Private Profile",
     "addFriend": "Add Friend",

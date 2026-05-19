@@ -179,6 +179,38 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
   }
 };
 
+export const getAllBadges = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const currentUserId = req.user?.id;
+
+    const result = await query(
+      `
+      SELECT 
+        b.id, 
+        b.name, 
+        b.description, 
+        b.icon_name, 
+        b.requirement_type, 
+        b.requirement_value,
+        ub.earned_at,
+        CASE WHEN ub.badge_id IS NOT NULL THEN true ELSE false END AS earned
+      FROM badges b
+      LEFT JOIN user_badges ub ON b.id = ub.badge_id AND ub.user_id = $1
+      ORDER BY b.id;
+      `,
+      [currentUserId],
+    );
+
+    res.status(200).json({
+      status: 'success',
+      data: result.rows,
+    });
+  } catch (error) {
+    console.error('[Eroare Controller] Nu s-au putut încărca toate insignele:', error);
+    res.status(500).json({ status: 'error', message: 'Eroare internă a serverului.' });
+  }
+};
+
 export const uploadAvatar = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user?.id;
