@@ -331,15 +331,12 @@ export default function ProfileScreen() {
         {/* Tabs */}
         <View style={[styles.tabsContainer, { borderBottomColor: colors.separatorColor }]}>
           <View style={styles.tabItem}>
-            <Text style={[styles.tabTextActive, { color: colors.textDark }]}>{t('profile.timeline')}</Text>
+            <Text style={[styles.tabTextActive, { color: colors.textDark }]}>{t('profile.posts')}</Text>
             <View style={[styles.activeTabLine, { backgroundColor: colors.primary }]} />
           </View>
-          <View style={styles.tabItem}>
-            <Text style={[styles.tabText, { color: colors.textLight }]}>{t('profile.about')}</Text>
-          </View>
-          <View style={styles.tabItem}>
+          <TouchableOpacity style={styles.tabItem} onPress={() => navigation.navigate('FriendsScreen')}>
             <Text style={[styles.tabText, { color: colors.textLight }]}>{t('profile.friends')}</Text>
-          </View>
+          </TouchableOpacity>
           <View style={styles.tabItem}>
             <Text style={[styles.tabText, { color: colors.textLight }]}>{t('profile.badges')}</Text>
           </View>

@@ -207,12 +207,6 @@ export default function SettingsScreen() {
       <Text style={styles.sectionHeader}>{t('settings.privacy')}</Text>
       <View style={styles.sectionBlock}>
         <SettingItem
-          icon="people-outline"
-          title={t('settings.friends')}
-          subtitle={t('settings.friendsDesc')}
-          onPress={() => navigation.navigate('FriendsScreen')}
-        />
-        <SettingItem
           icon="shield-half-outline"
           title={t('settings.blocked')}
           subtitle={t('settings.blockedDesc')}
