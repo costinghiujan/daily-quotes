@@ -170,6 +170,7 @@ export const initDB = async () => {
       await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS xp INTEGER DEFAULT 0;`);
       await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS level INTEGER DEFAULT 1;`);
       await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_daily_prompt_date DATE;`);
+      await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS cover_photo_url TEXT;`);
 
       await pool.query(
         `ALTER TABLE friendships ADD COLUMN IF NOT EXISTS streak_count INTEGER DEFAULT 0;`,

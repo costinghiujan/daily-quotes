@@ -39,6 +39,7 @@ export default function ProfileScreen() {
   const [quotes, setQuotes] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
 
   const [isEditing, setIsEditing] = useState(false);
   const [editFullName, setEditFullName] = useState('');
@@ -192,6 +193,37 @@ export default function ProfileScreen() {
     }
   };
 
+  const handlePickCoverPhoto = async () => {
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (permissionResult.granted === false) {
+      showAlert({ title: t('profile.permissionDenied'), message: '', hideCancel: true, confirmText: 'OK' });
+      return;
+    }
+
+    const pickerResult = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [16, 9],
+      quality: 0.7,
+    });
+
+    if (!pickerResult.canceled && pickerResult.assets[0]) {
+      setIsUploadingCover(true);
+      try {
+        const response = await userService.uploadCoverPhoto(pickerResult.assets[0].uri);
+        setProfile((prev) =>
+          prev ? { ...prev, cover_photo_url: response.data.cover_photo_url } : null,
+        );
+        showAlert({ title: t('settings.success'), message: t('profile.photoUpdated'), hideCancel: true, confirmText: t('common.ok') });
+      } catch (error) {
+        console.error(error);
+        showAlert({ title: t('settings.error'), message: t('profile.photoError'), hideCancel: true, confirmText: t('common.ok') });
+      } finally {
+        setIsUploadingCover(false);
+      }
+    }
+  };
+
   const handleDeleteQuote = (quoteId: number) => {
     showAlert({
       title: t('profile.deleteQuoteTitle'),
@@ -262,7 +294,8 @@ export default function ProfileScreen() {
   const progressPercentage = (xpInCurrentLevel / 50) * 100;
 
   const getMockImage = (id: number) => `https://picsum.photos/seed/${id}/400/400`;
-  const coverPhotoUrl = 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=1200';
+  const defaultCoverPhoto = 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=1200';
+  const coverPhotoUrl = profile?.cover_photo_url || defaultCoverPhoto;
 
   const renderTimelinePost = ({ item, index }: { item: any, index: number }) => {
     return (
@@ -386,6 +419,20 @@ export default function ProfileScreen() {
           colors={['rgba(0,0,0,0.1)', 'rgba(0,0,0,0.4)']}
           style={styles.coverGradient}
         />
+        {isEditing && (
+          <TouchableOpacity
+            style={[styles.coverCameraBtn, { backgroundColor: 'rgba(0,0,0,0.5)' }]}
+            onPress={handlePickCoverPhoto}
+            disabled={isUploadingCover}
+            activeOpacity={0.8}
+          >
+            {isUploadingCover ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Ionicons name="camera" size={22} color="#fff" />
+            )}
+          </TouchableOpacity>
+        )}
         <View style={[styles.topBar, { paddingTop: insets.top + 10 }]}>
           <LinearGradient
             colors={colors.primaryGradient as [string, string]}
@@ -651,6 +698,17 @@ const getStyles = (colors: any) => StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+  },
+  coverCameraBtn: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
   },
   topBar: {
     position: 'absolute',

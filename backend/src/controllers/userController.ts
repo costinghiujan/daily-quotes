@@ -56,7 +56,7 @@ export const getMyProfile = async (req: AuthRequest, res: Response): Promise<voi
 
     const userResult = await query(
       `
-      SELECT id, username, full_name, bio, profile_picture_url, created_at, xp, level 
+      SELECT id, username, full_name, bio, profile_picture_url, cover_photo_url, created_at, xp, level 
       FROM users WHERE id = $1;
     `,
       [currentUserId],
@@ -208,6 +208,42 @@ export const getAllBadges = async (req: AuthRequest, res: Response): Promise<voi
   } catch (error) {
     console.error('[Eroare Controller] Nu s-au putut încărca toate insignele:', error);
     res.status(500).json({ status: 'error', message: 'Eroare internă a serverului.' });
+  }
+};
+
+export const uploadCoverPhoto = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      res.status(401).json({ status: 'error', message: 'Neautorizat.' });
+      return;
+    }
+    if (!req.file) {
+      res.status(400).json({ status: 'error', message: 'Niciun fișier nu a fost recepționat.' });
+      return;
+    }
+
+    const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+
+    const result = await query(
+      `
+      UPDATE users 
+      SET cover_photo_url = $1
+      WHERE id = $2
+      RETURNING id, username, full_name, bio, profile_picture_url, cover_photo_url;
+    `,
+      [fileUrl, userId],
+    );
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Fotografie de copertă actualizată!',
+      data: result.rows[0],
+    });
+  } catch (error) {
+    console.error('[Eroare Controller] Încărcare copertă:', error);
+    res.status(500).json({ status: 'error', message: 'Eroare internă la salvarea copertei.' });
   }
 };
 

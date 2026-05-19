@@ -7,6 +7,7 @@ import {
   getMyProfile,
   getAllBadges,
   uploadAvatar,
+  uploadCoverPhoto,
 } from '../controllers/userController';
 import { upload } from '../middleware/uploadMiddleware';
 
@@ -21,5 +22,6 @@ router.get('/:id', getUserProfile);
 router.put('/profile', updateProfile);
 
 router.post('/avatar', upload.single('avatar'), uploadAvatar);
+router.post('/cover-photo', upload.single('cover'), uploadCoverPhoto);
 
 export default router;

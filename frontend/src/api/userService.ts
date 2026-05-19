@@ -20,6 +20,7 @@ export interface UserProfile {
   full_name: string | null;
   bio: string | null;
   profile_picture_url: string | null;
+  cover_photo_url: string | null;
   created_at?: string;
   xp?: number;
   level?: number;
@@ -90,6 +91,33 @@ export const userService = {
       return response.data.data;
     } catch (error) {
       console.error('[Eroare Frontend] Preluare toate insignele:', error);
+      throw error;
+    }
+  },
+
+  uploadCoverPhoto: async (imageUri: string) => {
+    try {
+      const formData = new FormData();
+
+      const filename = imageUri.split('/').pop() || 'cover-photo.jpg';
+      const match = /\.(\w+)$/.exec(filename);
+      const type = match ? `image/${match[1]}` : `image/jpeg`;
+
+      formData.append('cover', {
+        uri: imageUri,
+        name: filename,
+        type: type,
+      } as any);
+
+      const response = await apiClient.post('/users/cover-photo', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      return response.data;
+    } catch (error) {
+      console.error('[Eroare Frontend] Upload copertă:', error);
       throw error;
     }
   },
