@@ -12,7 +12,6 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { LinearGradient } from 'expo-linear-gradient';
 
 import { friendshipService, Friend } from '../api/friendshipService';
 import { ThemeContext } from '../context/ThemeContext';
@@ -158,22 +157,14 @@ export default function FriendsScreen() {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={[styles.topBar, { borderBottomColor: colors.separatorColor }]}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <LinearGradient
-            colors={colors.primaryGradient as [string, string]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.logoIcon}
+          <TouchableOpacity
+            style={[styles.backBtn, { backgroundColor: colors.iconBg }]}
+            onPress={() => navigation.goBack()}
           >
-            <Ionicons name="people" size={18} color="#fff" />
-          </LinearGradient>
+            <Ionicons name="arrow-back" size={20} color={colors.iconColor} />
+          </TouchableOpacity>
           <Text style={[styles.logoText, { color: colors.textDark }]}>{t('friends.title')}</Text>
         </View>
-        <TouchableOpacity
-          style={[styles.profileBtn, { backgroundColor: colors.iconBg }]}
-          onPress={() => navigation.navigate('ProfileScreen')}
-        >
-          <Ionicons name="person" size={20} color={colors.iconColor} />
-        </TouchableOpacity>
       </View>
 
       <FlatList
@@ -213,25 +204,17 @@ const getStyles = (colors: ThemeColors) =>
       marginBottom: 10,
       borderBottomWidth: 1,
     },
-    logoIcon: {
-      width: 34,
-      height: 34,
-      borderRadius: 10,
-      justifyContent: 'center',
-      alignItems: 'center',
-      marginRight: 10,
-    },
     logoText: {
       fontSize: 22,
       fontWeight: '800',
     },
-    profileBtn: {
+    backBtn: {
       width: 36,
       height: 36,
       borderRadius: 18,
       justifyContent: 'center',
       alignItems: 'center',
-      overflow: 'hidden',
+      marginRight: 10,
     },
     listContent: { padding: 15, paddingBottom: 30 },
 

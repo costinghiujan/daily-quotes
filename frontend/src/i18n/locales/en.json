@@ -180,6 +180,7 @@
     "title": "Notifications",
     "empty": "No notifications yet",
     "new": "New",
+    "old": "Old",
     "markAllRead": "Mark All as Read",
     "markAllAsRead": "Mark All as Read",
     "markRead": "Mark as Read",

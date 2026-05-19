@@ -83,6 +83,14 @@ export default function ConversationsScreen() {
       }
     });
 
+    socketRef.current.on('messages_read', (data: { otherUserId: number }) => {
+      setConversations((prevConversations) =>
+        prevConversations.map((conv) =>
+          conv.user_id === data.otherUserId ? { ...conv, is_read: true } : conv,
+        ),
+      );
+    });
+
     socketRef.current.on('receive_message', (newMessage: Message) => {
       setConversations((prevConversations) => {
         const otherUserId =
@@ -161,16 +169,24 @@ export default function ConversationsScreen() {
       (friend.full_name && friend.full_name.toLowerCase().includes(searchQuery.toLowerCase())),
   );
 
+  const handleOpenConversation = (item: Conversation) => {
+    // Optimistically mark as read in local state
+    setConversations((prev) =>
+      prev.map((conv) =>
+        conv.user_id === item.user_id ? { ...conv, is_read: true } : conv,
+      ),
+    );
+    navigation.navigate('ChatScreen', {
+      userId: item.user_id,
+      username: item.username,
+      avatar: item.profile_picture_url,
+    });
+  };
+
   const renderConversationItem = ({ item }: { item: Conversation }) => (
     <TouchableOpacity
       style={[styles.conversationCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}
-      onPress={() =>
-        navigation.navigate('ChatScreen', {
-          userId: item.user_id,
-          username: item.username,
-          avatar: item.profile_picture_url,
-        })
-      }
+      onPress={() => handleOpenConversation(item)}
     >
       <TouchableOpacity
         onPress={() => navigation.navigate('ProfileScreen', { userId: item.user_id })}
@@ -254,7 +270,7 @@ export default function ConversationsScreen() {
           >
             <Ionicons name="chatbubbles" size={18} color="#fff" />
           </LinearGradient>
-          <Text style={[styles.logoText, { color: colors.textDark }]}>{t('conversations.title')}</Text>
+          <Text style={[styles.logoText, { color: colors.textDark }]}>{t('messages.title')}</Text>
         </View>
         <TouchableOpacity
           style={[styles.profileBtn, { backgroundColor: colors.iconBg }]}

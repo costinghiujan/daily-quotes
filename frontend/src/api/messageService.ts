@@ -61,4 +61,15 @@ export const messageService = {
       return 0;
     }
   },
+
+  markAsRead: async (otherUserId: number): Promise<void> => {
+    try {
+      await apiClient.put(`/messages/${otherUserId}/read`);
+    } catch (error: any) {
+      console.error(
+        '[Eroare Frontend] Marcare mesaje ca citite:',
+        error.response?.data?.message || error.message,
+      );
+    }
+  },
 };

@@ -59,7 +59,7 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
     }
 
     const result = await query(
-      'SELECT id, username, email, password_hash FROM users WHERE email = $1 OR username = $1',
+      'SELECT id, username, email, password_hash, profile_picture_url FROM users WHERE email = $1 OR username = $1',
       [identifier],
     );
 
@@ -86,7 +86,8 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
       expiresIn: '30d',
     });
 
-    const { password_hash, ...safeUserData } = user;
+    const safeUserData = { ...user };
+    delete safeUserData.password_hash;
 
     res.status(200).json({
       status: 'success',

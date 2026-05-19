@@ -108,9 +108,17 @@ export default function ChatScreen() {
 
     fetchData();
 
+    // Mark messages as read when entering the chat
+    messageService.markAsRead(otherUserId);
+
     socketRef.current = io(SOCKET_URL);
     if (user?.id) {
       socketRef.current.emit('join_own_room', user.id);
+    }
+
+    // Notify the other user's ConversationsScreen via socket that messages were read
+    if (socketRef.current && user?.id) {
+      socketRef.current.emit('messages_read', { otherUserId, userId: user.id });
     }
 
     socketRef.current.on('receive_message', (newMessage: Message) => {

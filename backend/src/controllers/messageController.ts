@@ -118,6 +118,37 @@ export const getUnreadMessagesCount = async (req: AuthRequest, res: Response): P
   }
 };
 
+export const markConversationAsRead = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const currentUserId = req.user?.id;
+    const otherUserId = parseInt(req.params.id as string, 10);
+
+    if (!currentUserId) {
+      res.status(401).json({ status: 'error', message: 'Neautorizat.' });
+      return;
+    }
+
+    if (isNaN(otherUserId)) {
+      res.status(400).json({ status: 'error', message: 'ID utilizator invalid.' });
+      return;
+    }
+
+    await query(
+      `
+      UPDATE messages 
+      SET is_read = TRUE 
+      WHERE sender_id = $1 AND receiver_id = $2 AND is_read = FALSE
+    `,
+      [otherUserId, currentUserId],
+    );
+
+    res.status(200).json({ status: 'success', message: 'Mesajele au fost marcate ca citite.' });
+  } catch (error) {
+    console.error('[Eroare Controller] Marcare mesaje ca citite:', error);
+    res.status(500).json({ status: 'error', message: 'Eroare internă.' });
+  }
+};
+
 export const uploadChatFile = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     if (!req.file) {

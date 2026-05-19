@@ -2,7 +2,7 @@ import React, { useState, useCallback, useContext, useLayoutEffect, useMemo } fr
 import {
   View,
   Text,
-  FlatList,
+  SectionList,
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
@@ -138,16 +138,16 @@ export default function NotificationsScreen() {
       : t('notifications.justNow');
 
     return (
-      <View style={[styles.card, isUnread && styles.cardUnread]}>
+      <View style={[styles.card, isUnread ? styles.cardUnread : styles.cardRead]}>
         <View style={styles.cardInner}>
           <Image source={{ uri: item.profile_picture_url || getMockAvatar(item.id || 1) }} style={styles.avatar} />
           
           <View style={styles.contentContainer}>
-            <Text style={styles.messageText}>
-              <Text style={styles.usernameText}>{displayName}</Text>
-              <Text style={styles.normalText}>{actionText}</Text>
+            <Text style={[styles.messageText, !isUnread && styles.messageTextRead]}>
+              <Text style={[styles.usernameText, !isUnread && styles.usernameTextRead]}>{displayName}</Text>
+              <Text style={[styles.normalText, !isUnread && styles.normalTextRead]}>{actionText}</Text>
             </Text>
-            <Text style={styles.timeText}>{dateStr}</Text>
+            <Text style={[styles.timeText, !isUnread && styles.timeTextRead]}>{dateStr}</Text>
 
             {isFriendRequest && (
               <View style={styles.actionButtonsRow}>
@@ -188,7 +188,24 @@ export default function NotificationsScreen() {
     );
   }
 
-  const unreadCount = notifications.filter(n => n.is_read === false).length;
+  const unreadNotifications = notifications.filter(n => n.is_read === false);
+  const readNotifications = notifications.filter(n => n.is_read === true);
+
+  const sections = [];
+  if (unreadNotifications.length > 0) {
+    sections.push({
+      title: t('notifications.new'),
+      data: unreadNotifications,
+      showMarkAll: true,
+    });
+  }
+  if (readNotifications.length > 0) {
+    sections.push({
+      title: t('notifications.old'),
+      data: readNotifications,
+      showMarkAll: false,
+    });
+  }
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -213,26 +230,26 @@ export default function NotificationsScreen() {
         </TouchableOpacity>
       </View>
 
-      <FlatList
-        data={notifications}
-        keyExtractor={(item, index) => item.id ? item.id.toString() : index.toString()}
+      <SectionList
+        sections={sections}
+        keyExtractor={(item: any, index: number) => item.id ? item.id.toString() : index.toString()}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
         refreshControl={
           <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={colors.primary} />
         }
         renderItem={renderNotificationItem}
-        ListHeaderComponent={() => (
-          <View style={styles.subHeaderRow}>
+        renderSectionHeader={({ section }) => (
+          <View style={styles.sectionHeaderRow}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Text style={[styles.subHeaderTitle, { color: colors.textDark }]}>{t('notifications.new')}</Text>
-              {unreadCount > 0 && (
+              <Text style={[styles.sectionHeaderTitle, { color: colors.textDark }]}>{section.title}</Text>
+              {section.showMarkAll && (
                 <View style={[styles.unreadBadge, { backgroundColor: colors.primary }]}>
-                  <Text style={styles.unreadBadgeText}>{unreadCount}</Text>
+                  <Text style={styles.unreadBadgeText}>{unreadNotifications.length}</Text>
                 </View>
               )}
             </View>
-            {unreadCount > 0 && (
+            {section.showMarkAll && (
               <TouchableOpacity onPress={handleMarkAllRead} disabled={isMarkingAllRead}>
                 {isMarkingAllRead ? (
                   <ActivityIndicator size="small" color={colors.primary} />
@@ -293,13 +310,14 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 40,
   },
-  subHeaderRow: {
+  sectionHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 15,
+    marginTop: 10,
   },
-  subHeaderTitle: {
+  sectionHeaderTitle: {
     fontSize: 18,
     fontWeight: '700',
   },
@@ -332,6 +350,23 @@ const getStyles = (colors: any) => StyleSheet.create({
   cardUnread: {
     borderLeftWidth: 6,
     borderLeftColor: colors.primary,
+  },
+  cardRead: {
+    borderLeftWidth: 6,
+    borderLeftColor: 'transparent',
+    opacity: 0.75,
+  },
+  messageTextRead: {
+    color: colors.textLight,
+  },
+  usernameTextRead: {
+    color: colors.textLight,
+  },
+  normalTextRead: {
+    color: colors.textLight,
+  },
+  timeTextRead: {
+    color: colors.textMuted,
   },
   cardInner: {
     flexDirection: 'row',

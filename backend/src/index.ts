@@ -129,6 +129,13 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('messages_read', (data: { otherUserId: number; userId: number }) => {
+    // Notify the current user's room so their ConversationsScreen updates immediately
+    io.to(`room_${data.userId}`).emit('messages_read', { otherUserId: data.otherUserId });
+    // Also notify the other user's room so their ConversationsScreen updates too
+    io.to(`room_${data.otherUserId}`).emit('messages_read', { otherUserId: data.userId });
+  });
+
   socket.on('disconnect', () => {
     console.log(`[Sockets] Client deconectat: ${socket.id}`);
   });

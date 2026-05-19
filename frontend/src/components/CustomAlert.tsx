@@ -107,7 +107,7 @@ export const CustomAlert: React.FC<CustomAlertProps> = ({
             )}
 
             <TouchableOpacity
-              style={[styles.button, { flex: hideCancel ? 1 : undefined }]}
+              style={styles.button}
               onPress={onConfirm}
               disabled={isLoading}
               activeOpacity={0.8}

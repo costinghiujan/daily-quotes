@@ -2,7 +2,82 @@
 
 ## 📋 Project Overview
 
-Daily Quotes is a full-stack social media application built with React Native (Expo) for the frontend and Node.js/Express with TypeScript for the backend. The platform allows users to share, discover, and interact with quotes, build friendships, send messages, and earn achievements through a gamification system.
+Daily Quotes is a full-stack social media application built with **React Native (Expo)** for the frontend and **Node.js/Express with TypeScript** for the backend. The platform allows users to share, discover, and interact with quotes, build friendships, send messages, and earn achievements through a gamification system.
+
+## 🛠️ Tech Stack
+
+### Backend
+
+| Category | Technology | Version |
+|---|---|---|
+| **Runtime** | [Node.js](https://nodejs.org/) | v18+ |
+| **Language** | [TypeScript](https://www.typescriptlang.org/) | ^5.9.3 |
+| **Framework** | [Express.js](https://expressjs.com/) | ^5.2.1 |
+| **Database** | [PostgreSQL](https://www.postgresql.org/) | 15 (via `pgvector/pgvector:pg15`) |
+| **Vector Extension** | [pgvector](https://github.com/pgvector/pgvector) | — |
+| **Database Driver** | [node-postgres (pg)](https://node-postgres.com/) | ^8.20.0 |
+| **Real-time** | [Socket.io](https://socket.io/) | ^4.8.3 |
+| **Authentication** | [JWT (jsonwebtoken)](https://github.com/auth0/node-jsonwebtoken) | ^9.0.3 |
+| **Password Hashing** | [bcrypt](https://github.com/kelektiv/node.bcrypt.js) | ^6.0.0 |
+| **File Upload** | [Multer](https://github.com/expressjs/multer) | ^2.1.1 |
+| **Push Notifications** | [expo-server-sdk](https://github.com/expo/expo-server-sdk) | ^6.1.0 |
+| **Scheduled Tasks** | [node-cron](https://github.com/node-cron/node-cron) | ^4.2.1 |
+| **AI/ML** | [Ollama](https://ollama.ai/) (nomic-embed-text & llama3 models) | — |
+| **CORS** | [cors](https://github.com/expressjs/cors) | ^2.8.6 |
+| **Environment Variables** | [dotenv](https://github.com/motdotla/dotenv) | ^17.4.2 |
+| **Dev Server** | [ts-node-dev](https://github.com/wclr/ts-node-dev) | ^2.0.0 |
+| **Linting** | [ESLint](https://eslint.org/) | ^10.2.1 |
+| **Formatting** | [Prettier](https://prettier.io/) | ^3.8.3 |
+| **TypeScript Config** | [typescript-eslint](https://typescript-eslint.io/) | ^8.57.2 |
+
+### Frontend
+
+| Category | Technology | Version |
+|---|---|---|
+| **Framework** | [React Native](https://reactnative.dev/) | 0.81.5 |
+| **Platform** | [Expo](https://expo.dev/) | ~54.0.33 |
+| **Language** | [TypeScript](https://www.typescriptlang.org/) | ~5.9.2 |
+| **UI Language** | [React](https://react.dev/) | 19.1.0 |
+| **Navigation** | [React Navigation](https://reactnavigation.org/) | ^7.x |
+| | ├── `@react-navigation/native` | ^7.1.31 |
+| | ├── `@react-navigation/native-stack` | ^7.14.2 |
+| | └── `@react-navigation/bottom-tabs` | ^7.15.3 |
+| **HTTP Client** | [Axios](https://axios-http.com/) | ^1.13.5 |
+| **Real-time** | [socket.io-client](https://socket.io/) | ^4.8.3 |
+| **Local Storage** | [AsyncStorage](https://github.com/react-native-async-storage/async-storage) | 2.2.0 |
+| **Push Notifications** | [expo-notifications](https://docs.expo.dev/versions/latest/sdk/notifications/) | ~0.32.16 |
+| **Internationalization** | [i18next](https://www.i18next.com/) + [react-i18next](https://react.i18next.com/) | ^26.0.8 / ^17.0.4 |
+| **Device Info** | [expo-device](https://docs.expo.dev/versions/latest/sdk/device/) | ~8.0.10 |
+| **Constants** | [expo-constants](https://docs.expo.dev/versions/latest/sdk/constants/) | ~18.0.13 |
+| **Image Picker** | [expo-image-picker](https://docs.expo.dev/versions/latest/sdk/imagepicker/) | ~17.0.10 |
+| **Document Picker** | [expo-document-picker](https://docs.expo.dev/versions/latest/sdk/document-picker/) | ~14.0.8 |
+| **Fonts** | [expo-font](https://docs.expo.dev/versions/latest/sdk/font/) | ~14.0.11 |
+| **Linear Gradient** | [expo-linear-gradient](https://docs.expo.dev/versions/latest/sdk/linear-gradient/) | ~15.0.8 |
+| **Localization** | [expo-localization](https://docs.expo.dev/versions/latest/sdk/localization/) | ~17.0.8 |
+| **Status Bar** | [expo-status-bar](https://docs.expo.dev/versions/latest/sdk/status-bar/) | ~3.0.9 |
+| **Icons** | [@expo/vector-icons](https://docs.expo.dev/guides/icons/) (Ionicons) | ^15.0.3 |
+| **Safe Area** | [react-native-safe-area-context](https://github.com/th3rdwave/react-native-safe-area-context) | ~5.6.0 |
+| **Screens** | [react-native-screens](https://github.com/software-mansion/react-native-screens) | ~4.16.0 |
+| **Web Support** | [react-native-web](https://necolas.github.io/react-native-web/) | ^0.21.0 |
+| **Dev Client** | [expo-dev-client](https://docs.expo.dev/develop/development-builds/introduction/) | ~6.0.20 |
+| **Linting** | [ESLint](https://eslint.org/) (expo-config) | ^9.0.0 |
+| **Formatting** | [Prettier](https://prettier.io/) | ^3.8.1 |
+
+### Infrastructure & DevOps
+
+| Category | Technology | Version |
+|---|---|---|
+| **Containerization** | [Docker](https://www.docker.com/) & [Docker Compose](https://docs.docker.com/compose/) | — |
+| **Database Image** | [pgvector/pgvector](https://hub.docker.com/r/pgvector/pgvector) | pg15 |
+| **Build Service** | [EAS Build](https://docs.expo.dev/build/introduction/) (Expo Application Services) | — |
+| **Push Notifications** | [Firebase Cloud Messaging](https://firebase.google.com/docs/cloud-messaging) (via `google-services.json`) | — |
+
+### AI Integration (Ollama)
+
+| Model | Purpose |
+|---|---|
+| **nomic-embed-text** | Generating 768-dimensional vector embeddings for semantic quote search |
+| **llama3** | Automatic hashtag/category generation for quotes |
 
 ## 🏗️ Architecture
 
@@ -19,12 +94,13 @@ Daily Quotes is a full-stack social media application built with React Native (E
 ### Frontend (React Native + Expo)
 - **Framework**: React Native with Expo
 - **Navigation**: React Navigation (Stack & Bottom Tabs)
-- **State Management**: React Context API (AuthContext, ThemeContext)
+- **State Management**: React Context API (AuthContext, ThemeContext, AlertContext)
 - **HTTP Client**: Axios for API communication
 - **Real-time**: Socket.io-client for WebSocket connections
 - **Push Notifications**: Expo Notifications
 - **Storage**: AsyncStorage for local data persistence
-- **UI Components**: Expo Vector Icons, React Native components
+- **UI Components**: Expo Vector Icons (Ionicons), React Native components
+- **Internationalization**: i18next with react-i18next (English & Romanian)
 
 ### Database Schema
 The application uses PostgreSQL with the following main tables:

@@ -11,7 +11,6 @@ import {
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { friendshipService, BlockedUser } from '../api/friendshipService';
@@ -117,25 +116,6 @@ export default function BlockedUsersScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={[styles.topBar, { borderBottomColor: colors.separatorColor }]}>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <LinearGradient
-            colors={colors.primaryGradient as [string, string]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.logoIcon}
-          >
-            <Ionicons name="shield" size={18} color="#fff" />
-          </LinearGradient>
-          <Text style={[styles.logoText, { color: colors.textDark }]}>{t('blocked.title')}</Text>
-        </View>
-        <TouchableOpacity
-          style={[styles.profileBtn, { backgroundColor: colors.iconBg }]}
-          onPress={() => navigation.navigate('ProfileScreen')}
-        >
-          <Ionicons name="person" size={20} color={colors.iconColor} />
-        </TouchableOpacity>
-      </View>
       <FlatList
         data={blockedUsers}
         keyExtractor={(item) => item.id.toString()}
@@ -164,35 +144,6 @@ const getStyles = (colors: ThemeColors) =>
       justifyContent: 'center',
       alignItems: 'center',
       backgroundColor: colors.background,
-    },
-    topBar: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingHorizontal: 20,
-      paddingBottom: 15,
-      marginBottom: 10,
-      borderBottomWidth: 1,
-    },
-    logoIcon: {
-      width: 34,
-      height: 34,
-      borderRadius: 10,
-      justifyContent: 'center',
-      alignItems: 'center',
-      marginRight: 10,
-    },
-    logoText: {
-      fontSize: 22,
-      fontWeight: '800',
-    },
-    profileBtn: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
-      justifyContent: 'center',
-      alignItems: 'center',
-      overflow: 'hidden',
     },
     listContent: { padding: 15, paddingBottom: 30 },
 

@@ -1,8 +1,9 @@
-import React, { useContext, useEffect, useState, useMemo } from 'react';
+import React, { useContext, useEffect, useState, useMemo, useCallback } from 'react';
 import { ActivityIndicator, View, StyleSheet, Platform } from 'react-native';
 import { NavigationContainer, Theme as NavigationTheme, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
 import * as Device from 'expo-device';
@@ -104,26 +105,32 @@ const MainTabNavigator = () => {
     }
   };
 
+  const fetchCounts = useCallback(async () => {
+    try {
+      const notifCount = await notificationService.getUnreadCount();
+      setUnreadCount(Number(notifCount)); 
+
+      const msgCount = await messageService.getUnreadCount();
+      setUnreadMessagesCount(Number(msgCount)); 
+    } catch (error) {
+      console.log('[Polling] Eroare preluare badge-uri:', error);
+    }
+  }, []);
+
   useEffect(() => {
     registerForPushNotificationsAsync();
-
-    const fetchCounts = async () => {
-      try {
-        const notifCount = await notificationService.getUnreadCount();
-        setUnreadCount(Number(notifCount)); 
-
-        const msgCount = await messageService.getUnreadCount();
-        setUnreadMessagesCount(Number(msgCount)); 
-      } catch (error) {
-        console.log('[Polling] Eroare preluare badge-uri:', error);
-      }
-    };
 
     fetchCounts(); 
     const intervalId = setInterval(fetchCounts, 10000); 
 
     return () => clearInterval(intervalId);
-  }, []);
+  }, [fetchCounts]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchCounts();
+    }, [fetchCounts])
+  );
 
   return (
     <Tab.Navigator

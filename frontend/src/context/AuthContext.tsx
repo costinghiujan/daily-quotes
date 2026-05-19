@@ -45,7 +45,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         if (token && storedUser) {
           setUserToken(token);
-          setUser(JSON.parse(storedUser));
+          const parsedUser = JSON.parse(storedUser);
+          setUser(parsedUser);
+
+          // Refresh user data from server to get latest profile info (e.g., profile_picture_url)
+          try {
+            const response = await apiClient.get('/users/me');
+            const freshUser = response.data.data?.profile;
+            if (freshUser) {
+              setUser(freshUser);
+              await AsyncStorage.setItem('userData', JSON.stringify(freshUser));
+            }
+          } catch (refreshError) {
+            console.log('[AuthContext] Could not refresh user data, using cached:', refreshError);
+          }
         }
       } catch (error) {
         console.error('[Eroare AuthContext - Încărcare Date]:', error);

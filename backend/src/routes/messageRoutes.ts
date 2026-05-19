@@ -4,6 +4,7 @@ import {
   getConversations,
   getMessageHistory,
   getUnreadMessagesCount,
+  markConversationAsRead,
   uploadChatFile,
 } from '../controllers/messageController';
 import { uploadAttachment } from '../middleware/uploadMiddleware';
@@ -16,5 +17,6 @@ router.get('/conversations', getConversations);
 router.get('/unread-count', getUnreadMessagesCount);
 router.post('/attachment', uploadAttachment.single('file'), uploadChatFile);
 router.get('/:id', getMessageHistory);
+router.put('/:id/read', markConversationAsRead);
 
 export default router;

@@ -10,6 +10,7 @@ import {
   Image,
   RefreshControl,
   Animated,
+  Keyboard,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -208,6 +209,9 @@ export default function HomeScreen({ navigation }: any) {
       showAlert({ title: t('common.error'), message: t('home.fillFields'), hideCancel: true, confirmText: t('common.ok') });
       return;
     }
+
+    Keyboard.dismiss();
+
     setIsSubmitting(true);
     try {
       await quoteService.create({ text: newText, author: newAuthor, category: 'General' });
@@ -359,16 +363,6 @@ export default function HomeScreen({ navigation }: any) {
           </LinearGradient>
           <Text style={[styles.logoText, { color: colors.textDark }]}>{t('home.title')}</Text>
         </View>
-        <TouchableOpacity
-          style={[styles.profileBtn, { backgroundColor: colors.iconBg }]}
-          onPress={() => navigation.navigate('ProfileScreen')}
-        >
-          {user?.profile_picture_url ? (
-            <Image source={{ uri: user.profile_picture_url }} style={styles.profileBtnAvatar} />
-          ) : (
-            <Ionicons name="person" size={20} color={colors.iconColor} />
-          )}
-        </TouchableOpacity>
       </View>
 
       {/* Create Post Card */}
@@ -398,7 +392,6 @@ export default function HomeScreen({ navigation }: any) {
           </View>
         </View>
         <View style={[styles.authorInputWrapper, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder }]}>
-          <Ionicons name="create-outline" size={16} color={colors.iconColor} style={{ marginRight: 8 }} />
           <TextInput
             style={[styles.authorInput, { color: colors.textDark }]}
             placeholder={t('home.authorPlaceholder')}
@@ -452,9 +445,10 @@ export default function HomeScreen({ navigation }: any) {
         data={feedQuotes}
         keyExtractor={(item, index) => item.id ? item.id.toString() : index.toString()}
         renderItem={renderFeedItem}
-        ListHeaderComponent={renderHeader}
+        ListHeaderComponent={renderHeader()}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
