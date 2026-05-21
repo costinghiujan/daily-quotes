@@ -314,6 +314,29 @@
     "errorPost": "Postarea comentariului a eșuat",
     "beFirst": "Fii primul care comentează!"
   },
+  "scheduledNotifications": {
+    "title": "Citate Programate",
+    "emptyTitle": "Nicio citare programată",
+    "emptySub": "Atinge butonul + pentru a programa o notificare zilnică cu emoția preferată.",
+    "addTitle": "Adaugă Citare Programată",
+    "hour": "Ora",
+    "minute": "Minutul",
+    "emotion": "Emoția",
+    "saveError": "Salvarea notificării programate a eșuat",
+    "deleteTitle": "Șterge Citarea Programată",
+    "deleteConfirm": "Ești sigur că vrei să ștergi această notificare programată?",
+    "deleteError": "Ștergerea notificării programate a eșuat",
+    "emotions": {
+      "motivational": "Motivațional",
+      "inspirational": "Inspirațional",
+      "funny": "Amuzant",
+      "philosophical": "Filozofic",
+      "romantic": "Romantic",
+      "sad": "Trist",
+      "calm": "Calm",
+      "energetic": "Energic"
+    }
+  },
   "blocked": {
     "title": "Utilizatori Blocați",
     "empty": "Niciun utilizator blocat",

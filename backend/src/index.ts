@@ -11,6 +11,7 @@ import friendshipRoutes from './routes/friendshipRoutes';
 import sessionRoutes from './routes/sessionRoutes';
 import notificationRoutes from './routes/notificationRoutes';
 import messageRoutes from './routes/messageRoutes';
+import scheduledNotificationRoutes from './routes/scheduledNotificationRoutes';
 
 import { testConnection, initDB, pool } from './config/db';
 import { sendMessagePushNotification } from './utils/notificationHelper';
@@ -42,6 +43,7 @@ app.use('/api/messages', messageRoutes);
 app.use('/api/quotes', quoteRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/scheduled-notifications', scheduledNotificationRoutes);
 
 const server = http.createServer(app);
 

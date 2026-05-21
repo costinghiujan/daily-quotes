@@ -33,6 +33,7 @@ import SettingsScreen from './src/screens/SettingsScreen';
 import FriendsScreen from './src/screens/FriendsScreen';
 import BlockedUsersScreen from './src/screens/BlockedUsersScreen';
 import ExploreScreen from './src/screens/ExploreScreen';
+import ScheduledNotificationsScreen from './src/screens/ScheduledNotificationsScreen';
 
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -140,6 +141,7 @@ const MainTabNavigator = () => {
 
           if (route.name === 'Home') iconName = focused ? 'home' : 'home-outline';
           else if (route.name === 'Search') iconName = focused ? 'search' : 'search-outline';
+          else if (route.name === 'Explore') iconName = focused ? 'compass' : 'compass-outline';
           else if (route.name === 'Notifications') iconName = focused ? 'notifications' : 'notifications-outline';
           else if (route.name === 'Conversations') iconName = focused ? 'chatbubbles' : 'chatbubbles-outline';
           else if (route.name === 'Profile') iconName = focused ? 'person' : 'person-outline';
@@ -273,6 +275,11 @@ const RootNavigator = () => {
               name="BlockedUsersScreen" 
               component={BlockedUsersScreen} 
               options={{ title: t('navigation.blockedUsers') }} 
+            />
+            <Stack.Screen 
+              name="ScheduledNotificationsScreen" 
+              component={ScheduledNotificationsScreen} 
+              options={{ headerShown: false }} 
             />
           </>
         )}

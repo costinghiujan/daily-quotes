@@ -191,6 +191,12 @@ export default function SettingsScreen() {
           onPress={openNotificationsModal}
         />
         <SettingItem
+          icon="alarm-outline"
+          title={t('scheduledNotifications.title')}
+          subtitle={t('scheduledNotifications.emptySub')}
+          onPress={() => navigation.navigate('ScheduledNotificationsScreen')}
+        />
+        <SettingItem
           icon={theme === 'light' ? 'sunny-outline' : 'moon-outline'}
           title={t('settings.theme')}
           subtitle={theme === 'light' ? t('settings.themeLight') : t('settings.themeDark')}

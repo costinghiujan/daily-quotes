@@ -152,6 +152,18 @@ export const initDB = async () => {
       );
     `);
 
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS scheduled_notifications (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        hour INTEGER NOT NULL CHECK (hour >= 0 AND hour <= 23),
+        minute INTEGER NOT NULL CHECK (minute >= 0 AND minute <= 59),
+        emotion VARCHAR(50) NOT NULL,
+        is_active BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
     await pool.query(
       `CREATE INDEX IF NOT EXISTS idx_messages_participants ON messages(sender_id, receiver_id);`,
     );

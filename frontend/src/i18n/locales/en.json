@@ -315,6 +315,29 @@
     "errorPost": "Failed to post comment",
     "beFirst": "Be the first to comment!"
   },
+  "scheduledNotifications": {
+    "title": "Scheduled Quotes",
+    "emptyTitle": "No scheduled quotes",
+    "emptySub": "Tap the + button to schedule a daily quote notification with your preferred emotion.",
+    "addTitle": "Add Scheduled Quote",
+    "hour": "Hour",
+    "minute": "Minute",
+    "emotion": "Emotion",
+    "saveError": "Failed to save scheduled notification",
+    "deleteTitle": "Delete Scheduled Quote",
+    "deleteConfirm": "Are you sure you want to delete this scheduled notification?",
+    "deleteError": "Failed to delete scheduled notification",
+    "emotions": {
+      "motivational": "Motivational",
+      "inspirational": "Inspirational",
+      "funny": "Funny",
+      "philosophical": "Philosophical",
+      "romantic": "Romantic",
+      "sad": "Sad",
+      "calm": "Calm",
+      "energetic": "Energetic"
+    }
+  },
   "blocked": {
     "title": "Blocked Users",
     "empty": "No blocked users",
