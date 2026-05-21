@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   RefreshControl,
   TouchableOpacity,
+  Image,
 } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -91,9 +92,11 @@ export default function ExploreScreen() {
     <View style={[styles.quoteCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
       <View style={styles.quoteHeader}>
         <TouchableOpacity onPress={() => navigation.navigate('ProfileScreen', { userId: item.user_id })}>
-          <View style={[styles.avatarPlaceholderSmall, { backgroundColor: colors.primary }]}>
-            <Ionicons name="person" size={16} color={colors.white} />
-          </View>
+          {item.profile_picture_url ? (
+            <Image source={{ uri: item.profile_picture_url }} style={styles.avatarSmall} />
+          ) : (
+            <Image source={require('../../assets/user-default.jpg')} style={styles.avatarSmall} />
+          )}
         </TouchableOpacity>
         <View>
           <TouchableOpacity onPress={() => navigation.navigate('ProfileScreen', { userId: item.user_id })}>
@@ -327,6 +330,12 @@ const getStyles = (colors: any) =>
       borderWidth: 1,
     },
     quoteHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+    avatarSmall: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      marginRight: 10,
+    },
     avatarPlaceholderSmall: {
       width: 36,
       height: 36,

@@ -104,9 +104,7 @@ export default function CommentsScreen({ route, navigation }: any) {
         {item.profile_picture_url ? (
           <Image source={{ uri: item.profile_picture_url }} style={styles.avatar} />
         ) : (
-          <View style={styles.avatarPlaceholder}>
-            <Ionicons name="person" size={16} color={colors.white} />
-          </View>
+          <Image source={require('../../assets/user-default.jpg')} style={styles.avatar} />
         )}
         <View style={styles.commentContent}>
           <View style={styles.commentHeader}>

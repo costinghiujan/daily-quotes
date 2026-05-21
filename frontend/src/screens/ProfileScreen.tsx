@@ -179,9 +179,9 @@ export default function ProfileScreen() {
     if (!pickerResult.canceled && pickerResult.assets[0]) {
       setIsUploading(true);
       try {
-        const updatedProfile = await userService.uploadAvatar(pickerResult.assets[0].uri);
+        const response = await userService.uploadAvatar(pickerResult.assets[0].uri);
         setProfile((prev) =>
-          prev ? { ...prev, profile_picture_url: updatedProfile.profile_picture_url } : null,
+          prev ? { ...prev, profile_picture_url: response.data.profile_picture_url } : null,
         );
         showAlert({ title: t('settings.success'), message: t('profile.photoUpdated'), hideCancel: true, confirmText: t('common.ok') });
       } catch (error) {
@@ -293,15 +293,17 @@ export default function ProfileScreen() {
   const xpInCurrentLevel = currentXp % 50;
   const progressPercentage = (xpInCurrentLevel / 50) * 100;
 
-  const getMockImage = (id: number) => `https://picsum.photos/seed/${id}/400/400`;
-  const defaultCoverPhoto = 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=1200';
-  const coverPhotoUrl = profile?.cover_photo_url || defaultCoverPhoto;
+  const coverPhotoUrl = profile?.cover_photo_url || null;
 
   const renderTimelinePost = ({ item, index }: { item: any, index: number }) => {
     return (
       <View style={[styles.feedItem, { backgroundColor: colors.commentBg, borderColor: colors.commentBorder }]}>
         <View style={styles.postHeader}>
-          <Image source={{ uri: profile?.profile_picture_url || getMockImage(99) }} style={styles.avatarSmall} />
+          {profile?.profile_picture_url ? (
+            <Image source={{ uri: profile.profile_picture_url }} style={styles.avatarSmall} />
+          ) : (
+            <Image source={require('../../assets/user-default.jpg')} style={styles.avatarSmall} />
+          )}
           <View style={styles.postHeaderInfo}>
             <Text style={[styles.postUserName, { color: colors.textDark }]}>
               {profile?.full_name || profile?.username}
@@ -337,9 +339,7 @@ export default function ProfileScreen() {
           {item.profile_picture_url ? (
             <Image source={{ uri: item.profile_picture_url }} style={styles.friendAvatar} />
           ) : (
-            <View style={[styles.friendAvatarPlaceholder, { backgroundColor: colors.primary }]}>
-              <Ionicons name="person" size={20} color={colors.white} />
-            </View>
+            <Image source={require('../../assets/user-default.jpg')} style={styles.friendAvatar} />
           )}
           <View style={styles.friendTextContainer}>
             <View style={styles.friendNameRow}>
@@ -413,8 +413,10 @@ export default function ProfileScreen() {
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} showsVerticalScrollIndicator={false} bounces={false}>
       {/* Cover Photo Area with Gradient Overlay */}
-      <View style={styles.coverPhotoContainer}>
-        <Image source={{ uri: coverPhotoUrl }} style={styles.coverPhoto} />
+      <View style={[styles.coverPhotoContainer, !coverPhotoUrl && { backgroundColor: colors.coverPhotoPlaceholder }]}>
+        {coverPhotoUrl ? (
+          <Image source={{ uri: coverPhotoUrl }} style={styles.coverPhoto} />
+        ) : null}
         <LinearGradient
           colors={['rgba(0,0,0,0.1)', 'rgba(0,0,0,0.4)']}
           style={styles.coverGradient}
@@ -459,10 +461,17 @@ export default function ProfileScreen() {
       <View style={[styles.profileCard, { backgroundColor: colors.card }]}>
         <View style={styles.avatarWrapper}>
           <TouchableOpacity onPress={isEditing ? handlePickImage : undefined} disabled={!isEditing || isUploading} activeOpacity={0.8}>
-            <Image
-              source={{ uri: profile?.profile_picture_url || getMockImage(99) }}
-              style={[styles.mainAvatar, { borderColor: colors.card }]}
-            />
+            {profile?.profile_picture_url ? (
+              <Image
+                source={{ uri: profile.profile_picture_url }}
+                style={[styles.mainAvatar, { borderColor: colors.card }]}
+              />
+            ) : (
+              <Image
+                source={require('../../assets/user-default.jpg')}
+                style={[styles.mainAvatar, { borderColor: colors.card }]}
+              />
+            )}
             {isUploading && (
                <View style={[styles.avatarOverlay, { borderColor: colors.card }]}>
                   <ActivityIndicator size="small" color="#fff" />
@@ -757,6 +766,14 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 45,
     borderWidth: 4,
   },
+  mainAvatarPlaceholder: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    borderWidth: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   avatarOverlay: {
      position: 'absolute',
      width: 90,
@@ -918,6 +935,14 @@ const getStyles = (colors: any) => StyleSheet.create({
     height: 36,
     borderRadius: 18,
     marginRight: 12,
+  },
+  avatarSmallPlaceholder: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    marginRight: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   postHeaderInfo: {
     flex: 1,

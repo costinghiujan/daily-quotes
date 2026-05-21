@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRoute, useNavigation } from '@react-navigation/native';
@@ -146,9 +147,11 @@ export default function SearchScreen() {
         style={styles.card}
         onPress={() => navigation.navigate('ProfileScreen', { userId: item.id })}
       >
-        <View style={styles.avatarPlaceholder}>
-          <Ionicons name="person" size={24} color={colors.white} />
-        </View>
+        {item.profile_picture_url ? (
+          <Image source={{ uri: item.profile_picture_url }} style={styles.avatar} />
+        ) : (
+          <Image source={require('../../assets/user-default.jpg')} style={styles.avatar} />
+        )}
         <View style={styles.infoContainer}>
           <Text style={styles.mainText}>{item.full_name || item.username}</Text>
           <Text style={styles.subText}>@{item.username}</Text>
@@ -175,9 +178,11 @@ export default function SearchScreen() {
   const renderQuoteItem = ({ item }: { item: any }) => (
     <View style={styles.quoteCard}>
       <View style={styles.quoteHeader}>
-        <View style={styles.avatarPlaceholderSmall}>
-          <Ionicons name="person" size={14} color={colors.white} />
-        </View>
+        {item.profile_picture_url ? (
+          <Image source={{ uri: item.profile_picture_url }} style={styles.avatarSmall} />
+        ) : (
+          <Image source={require('../../assets/user-default.jpg')} style={styles.avatarSmall} />
+        )}
         <Text style={styles.quoteUser}>@{item.username}</Text>
       </View>
 
@@ -344,6 +349,18 @@ const getStyles = (colors: ThemeColors) =>
       borderRadius: 10,
       borderWidth: 1,
       borderColor: colors.border,
+    },
+    avatar: {
+      width: 50,
+      height: 50,
+      borderRadius: 25,
+      marginRight: 15,
+    },
+    avatarSmall: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      marginRight: 8,
     },
     avatarPlaceholder: {
       width: 50,

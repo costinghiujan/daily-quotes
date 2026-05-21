@@ -195,9 +195,7 @@ export default function ConversationsScreen() {
         {item.profile_picture_url ? (
           <Image source={{ uri: item.profile_picture_url }} style={styles.avatar} />
         ) : (
-          <View style={[styles.avatarPlaceholder, { backgroundColor: colors.primary }]}>
-            <Ionicons name="person" size={24} color={colors.white} />
-          </View>
+          <Image source={require('../../assets/user-default.jpg')} style={styles.avatar} />
         )}
       </TouchableOpacity>
 
@@ -237,9 +235,7 @@ export default function ConversationsScreen() {
         {item.profile_picture_url ? (
           <Image source={{ uri: item.profile_picture_url }} style={styles.avatarSmall} />
         ) : (
-          <View style={[styles.avatarPlaceholder, { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.primary }]}>
-            <Ionicons name="person" size={20} color={colors.white} />
-          </View>
+          <Image source={require('../../assets/user-default.jpg')} style={[styles.avatarSmall, { width: 40, height: 40, borderRadius: 20 }]} />
         )}
       </TouchableOpacity>
       <View style={styles.textContainer}>

@@ -62,11 +62,7 @@ export const userService = {
         type: type,
       } as any);
 
-      const response = await apiClient.post('/users/avatar', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      const response = await apiClient.post('/users/avatar', formData);
 
       return response.data;
     } catch (error) {
@@ -109,11 +105,7 @@ export const userService = {
         type: type,
       } as any);
 
-      const response = await apiClient.post('/users/cover-photo', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      const response = await apiClient.post('/users/cover-photo', formData);
 
       return response.data;
     } catch (error) {

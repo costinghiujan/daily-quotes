@@ -84,9 +84,7 @@ export default function BlockedUsersScreen() {
           {item.profile_picture_url ? (
             <Image source={{ uri: item.profile_picture_url }} style={styles.avatar} />
           ) : (
-            <View style={styles.avatarPlaceholder}>
-              <Ionicons name="person-outline" size={20} color={colors.white} />
-            </View>
+            <Image source={require('../../assets/user-default.jpg')} style={styles.avatar} />
           )}
           <View style={styles.textContainer}>
             <Text style={styles.nameText} numberOfLines={1}>

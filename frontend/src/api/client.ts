@@ -13,9 +13,6 @@ console.log('[Axios] Instanța a fost inițializată cu BASE_URL:', BASE_URL);
 export const apiClient = axios.create({
   baseURL: BASE_URL,
   timeout: 5000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
 });
 
 apiClient.interceptors.request.use(

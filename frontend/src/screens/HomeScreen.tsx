@@ -268,7 +268,7 @@ export default function HomeScreen({ navigation }: any) {
             {item.profile_picture_url ? (
               <Image source={{ uri: item.profile_picture_url }} style={styles.avatarSmall} />
             ) : (
-              <Image source={{ uri: getMockAvatar(item.id || index) }} style={styles.avatarSmall} />
+              <Image source={require('../../assets/user-default.jpg')} style={styles.avatarSmall} />
             )}
           </TouchableOpacity>
           <View style={styles.postHeaderInfo}>
@@ -376,9 +376,7 @@ export default function HomeScreen({ navigation }: any) {
           {user?.profile_picture_url ? (
             <Image source={{ uri: user.profile_picture_url }} style={styles.myAvatar} />
           ) : (
-            <View style={[styles.myAvatarPlaceholder, { backgroundColor: colors.primaryLight }]}>
-              <Ionicons name="person" size={22} color={colors.primary} />
-            </View>
+            <Image source={require('../../assets/user-default.jpg')} style={styles.myAvatar} />
           )}
           <View style={[styles.mindInputWrapper, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder }]}>
             <TextInput

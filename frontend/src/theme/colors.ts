@@ -132,6 +132,7 @@ export interface ThemeColors {
   alertCancelText: string;
   alertDestructiveBg: string;
   alertDestructiveText: string;
+  coverPhotoPlaceholder: string;
 }
 
 export const lightColors: ThemeColors = {
@@ -268,6 +269,7 @@ export const lightColors: ThemeColors = {
   alertCancelText: '#1A1A2E',
   alertDestructiveBg: '#EF4444',
   alertDestructiveText: '#FFFFFF',
+  coverPhotoPlaceholder: '#D1D5DB',
 };
 
 export const darkColors: ThemeColors = {
@@ -404,4 +406,5 @@ export const darkColors: ThemeColors = {
   alertCancelText: '#E8E8F0',
   alertDestructiveBg: '#F87171',
   alertDestructiveText: '#FFFFFF',
+  coverPhotoPlaceholder: '#3A3A55',
 };

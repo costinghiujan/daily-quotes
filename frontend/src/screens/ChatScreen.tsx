@@ -240,7 +240,7 @@ export default function ChatScreen() {
         {!isMyMessage && (
           <TouchableOpacity onPress={() => navigation.navigate('ProfileScreen', { userId: item.sender_id })}>
             <Image
-              source={{ uri: otherUserAvatar || 'https://picsum.photos/seed/chat/40/40' }}
+              source={otherUserAvatar ? { uri: otherUserAvatar } : require('../../assets/user-default.jpg')}
               style={styles.avatar}
             />
           </TouchableOpacity>
