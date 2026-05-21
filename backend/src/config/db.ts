@@ -211,9 +211,15 @@ export const initDB = async () => {
       INSERT INTO badges (name, description, icon_name, requirement_type, requirement_value)
       VALUES 
         ('Scriitor Începător', 'Ai adăugat primele 5 citate.', 'pencil', 'QUOTES_COUNT', 5),
+        ('Scriitor Pasionat', 'Ai adăugat 25 de citate.', 'create', 'QUOTES_COUNT', 25),
+        ('Filozof', 'Ai adăugat 50 de citate.', 'book', 'QUOTES_COUNT', 50),
         ('Social Butterfly', 'Ai adunat 10 prieteni.', 'people', 'FRIENDS_COUNT', 10),
+        ('Prieten Adevărat', 'Ai adunat 25 de prieteni.', 'people-circle', 'FRIENDS_COUNT', 25),
         ('Critic Literar', 'Ai lăsat 10 comentarii pe platformă.', 'chatbubbles', 'COMMENTS_COUNT', 10),
-        ('Trendsetter', 'Un citat de-al tău a primit 50 de aprecieri.', 'star', 'QUOTE_LIKES', 50)
+        ('Vorbăreț', 'Ai lăsat 50 de comentarii.', 'chatbox-ellipses', 'COMMENTS_COUNT', 50),
+        ('Trendsetter', 'Un citat de-al tău a primit 50 de aprecieri.', 'star', 'QUOTE_LIKES', 50),
+        ('Influencer', 'Un citat de-al tău a primit 100 de aprecieri.', 'heart', 'QUOTE_LIKES', 100),
+        ('Reacții în Lanț', 'Ai dat 100 de reacții.', 'hand-thumbs-up', 'REACTIONS_GIVEN', 100)
       ON CONFLICT (name) DO NOTHING;
     `);
 

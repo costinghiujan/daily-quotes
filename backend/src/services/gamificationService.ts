@@ -110,6 +110,16 @@ export const GamificationService = {
               criteriaMet = true;
             break;
           }
+
+          case 'REACTIONS_GIVEN': {
+            const reactionsGivenRes = await query(
+              `SELECT COUNT(*) FROM quote_reactions WHERE user_id = $1`,
+              [userId],
+            );
+            if (parseInt(reactionsGivenRes.rows[0].count, 10) >= badge.requirement_value)
+              criteriaMet = true;
+            break;
+          }
         }
 
         if (criteriaMet) {
