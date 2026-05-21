@@ -146,11 +146,15 @@ const MainTabNavigator = () => {
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
+        tabBarShowLabel: false,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textLight,
         tabBarStyle: {
           backgroundColor: colors.card,
           borderTopColor: colors.border,
+          paddingTop: 5,
+          paddingBottom: 5,
+          height: 60,
         },
         headerStyle: {
           backgroundColor: colors.card,

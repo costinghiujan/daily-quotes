@@ -210,12 +210,6 @@ export default function SearchScreen() {
           </LinearGradient>
           <Text style={[styles.logoText, { color: colors.textDark }]}>{t('search.title')}</Text>
         </View>
-        <TouchableOpacity
-          style={[styles.profileBtn, { backgroundColor: colors.iconBg }]}
-          onPress={() => navigation.navigate('ProfileScreen')}
-        >
-          <Ionicons name="person" size={20} color={colors.iconColor} />
-        </TouchableOpacity>
       </View>
 
       <View style={styles.searchContainer}>

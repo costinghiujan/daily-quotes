@@ -222,12 +222,6 @@ export default function NotificationsScreen() {
           </LinearGradient>
           <Text style={[styles.logoText, { color: colors.textDark }]}>{t('home.title')}</Text>
         </View>
-        <TouchableOpacity
-          style={[styles.profileBtn, { backgroundColor: colors.iconBg }]}
-          onPress={() => navigation.navigate('ProfileScreen')}
-        >
-          <Ionicons name="person" size={20} color={colors.iconColor} />
-        </TouchableOpacity>
       </View>
 
       <SectionList
