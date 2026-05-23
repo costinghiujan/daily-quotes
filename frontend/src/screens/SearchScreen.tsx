@@ -178,12 +178,16 @@ export default function SearchScreen() {
   const renderQuoteItem = ({ item }: { item: any }) => (
     <View style={styles.quoteCard}>
       <View style={styles.quoteHeader}>
-        {item.profile_picture_url ? (
-          <Image source={{ uri: item.profile_picture_url }} style={styles.avatarSmall} />
-        ) : (
-          <Image source={require('../../assets/user-default.jpg')} style={styles.avatarSmall} />
-        )}
-        <Text style={styles.quoteUser}>@{item.username}</Text>
+        <TouchableOpacity onPress={() => navigation.navigate('ProfileScreen', { userId: item.user_id })}>
+          {item.profile_picture_url ? (
+            <Image source={{ uri: item.profile_picture_url }} style={styles.avatarSmall} />
+          ) : (
+            <Image source={require('../../assets/user-default.jpg')} style={styles.avatarSmall} />
+          )}
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.navigate('ProfileScreen', { userId: item.user_id })}>
+          <Text style={styles.quoteUser}>@{item.username}</Text>
+        </TouchableOpacity>
       </View>
 
       <Text style={styles.quoteTextContainer}>{'\u201C'}{renderTextWithHashtags(item.text)}{'\u201D'}</Text>

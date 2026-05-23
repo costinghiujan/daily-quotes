@@ -54,6 +54,9 @@ const io = new Server(server, {
   },
 });
 
+// Track active calls: callerId -> calleeId
+const activeCalls = new Map<number, number>();
+
 io.on('connection', (socket) => {
   console.log(`[Sockets] Un client s-a conectat: ${socket.id}`);
 
@@ -138,8 +141,91 @@ io.on('connection', (socket) => {
     io.to(`room_${data.otherUserId}`).emit('messages_read', { otherUserId: data.userId });
   });
 
+  // ========== CALL SIGNALING EVENTS ==========
+
+  socket.on('call_offer', (data: { to: number; offer: any; callerName: string; callerAvatar: string | null; isVideo: boolean }) => {
+    const { to, offer, callerName, callerAvatar, isVideo } = data;
+    console.log(`[Calls] Apel de la ${socket.id} către utilizatorul ${to}`);
+
+    // Find the socket ID of the caller to get their user ID
+    // We need to find which user ID is associated with this socket
+    let callerId: number | null = null;
+    for (const [roomName] of socket.rooms) {
+      if (roomName.startsWith('room_')) {
+        callerId = parseInt(roomName.replace('room_', ''), 10);
+        break;
+      }
+    }
+
+    if (!callerId) {
+      console.log('[Calls] Nu s-a putut determina callerId');
+      return;
+    }
+
+    // Check if the callee is already in a call
+    const calleeInCall = Array.from(activeCalls.entries()).find(
+      ([caller, callee]) => caller === to || callee === to
+    );
+
+    if (calleeInCall) {
+      socket.emit('user_busy');
+      return;
+    }
+
+    // Track the call: caller -> callee
+    activeCalls.set(callerId, to);
+
+    // Forward the offer to the callee
+    io.to(`room_${to}`).emit('call_offer', {
+      offer,
+      callerName,
+      callerAvatar,
+      isVideo,
+    });
+  });
+
+  socket.on('call_answer', (data: { to: number; answer: any }) => {
+    const { to, answer } = data;
+    console.log(`[Calls] Răspuns la apel către utilizatorul ${to}`);
+    io.to(`room_${to}`).emit('call_answer', { answer });
+  });
+
+  socket.on('call_ice_candidate', (data: { to: number; candidate: any }) => {
+    const { to, candidate } = data;
+    io.to(`room_${to}`).emit('call_ice_candidate', { candidate });
+  });
+
+  socket.on('call_end', (data: { to: number }) => {
+    const { to } = data;
+    console.log(`[Calls] Apel încheiat, notific utilizatorul ${to}`);
+
+    // Remove from active calls
+    activeCalls.delete(to);
+
+    io.to(`room_${to}`).emit('call_ended');
+  });
+
+  socket.on('call_decline', (data: { to: number }) => {
+    const { to } = data;
+    console.log(`[Calls] Apel refuzat, notific utilizatorul ${to}`);
+
+    // Remove from active calls
+    activeCalls.delete(to);
+
+    io.to(`room_${to}`).emit('call_declined');
+  });
+
   socket.on('disconnect', () => {
     console.log(`[Sockets] Client deconectat: ${socket.id}`);
+
+    // Clean up any active calls for this user
+    const socketRooms = Array.from(socket.rooms);
+    for (const room of socketRooms) {
+      if (room.startsWith('room_')) {
+        const userId = parseInt(room.replace('room_', ''), 10);
+        activeCalls.delete(userId);
+      }
+    }
   });
 });
 

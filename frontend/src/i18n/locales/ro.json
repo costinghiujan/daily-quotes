@@ -337,6 +337,28 @@
       "energetic": "Energic"
     }
   },
+  "call": {
+    "calling": "Se apelează...",
+    "ringing": "Sună...",
+    "connected": "Conectat",
+    "ended": "Apel încheiat",
+    "declined": "Apel Refuzat",
+    "declinedMessage": "Utilizatorul a refuzat apelul tău.",
+    "busy": "Utilizator Ocupat",
+    "busyMessage": "Utilizatorul este deja într-un alt apel.",
+    "permissionError": "Nu s-a putut accesa microfonul/camera. Verifică permisiunile.",
+    "incomingCall": "Apel Intrare",
+    "incomingVideoCall": "Apel Video Intrare",
+    "audioCall": "Apel Audio",
+    "videoCall": "Apel Video",
+    "accept": "Acceptă",
+    "decline": "Refuză",
+    "endCall": "Încheie Apelul",
+    "mute": "Dezactivează microfonul",
+    "unmute": "Activează microfonul",
+    "speaker": "Difuzor",
+    "switchCamera": "Schimbă camera"
+  },
   "blocked": {
     "title": "Utilizatori Blocați",
     "empty": "Niciun utilizator blocat",

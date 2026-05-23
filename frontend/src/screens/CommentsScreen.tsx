@@ -21,8 +21,10 @@ import { AlertContext } from '../context/AlertContext';
 import { ThemeColors } from '../theme/colors';
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 
-export default function CommentsScreen({ route, navigation }: any) {
+export default function CommentsScreen({ route }: any) {
+  const navigation = useNavigation<any>();
   const { quoteId } = route.params;
   const { t } = useTranslation();
 
@@ -101,14 +103,18 @@ export default function CommentsScreen({ route, navigation }: any) {
 
     return (
       <View style={styles.commentCard}>
-        {item.profile_picture_url ? (
-          <Image source={{ uri: item.profile_picture_url }} style={styles.avatar} />
-        ) : (
-          <Image source={require('../../assets/user-default.jpg')} style={styles.avatar} />
-        )}
+        <TouchableOpacity onPress={() => navigation.navigate('ProfileScreen', { userId: item.user_id })}>
+          {item.profile_picture_url ? (
+            <Image source={{ uri: item.profile_picture_url }} style={styles.avatar} />
+          ) : (
+            <Image source={require('../../assets/user-default.jpg')} style={styles.avatar} />
+          )}
+        </TouchableOpacity>
         <View style={styles.commentContent}>
           <View style={styles.commentHeader}>
-            <Text style={styles.username}>{item.full_name || item.username}</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('ProfileScreen', { userId: item.user_id })}>
+              <Text style={styles.username}>{item.full_name || item.username}</Text>
+            </TouchableOpacity>
             <Text style={styles.timeText}>{date}</Text>
           </View>
           <Text style={styles.commentText}>{item.text}</Text>

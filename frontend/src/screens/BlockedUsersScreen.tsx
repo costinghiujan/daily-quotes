@@ -80,7 +80,7 @@ export default function BlockedUsersScreen() {
 
     return (
       <View style={styles.userCard}>
-        <View style={styles.userInfo}>
+        <TouchableOpacity style={styles.userInfo} onPress={() => navigation.navigate('ProfileScreen', { userId: item.id })}>
           {item.profile_picture_url ? (
             <Image source={{ uri: item.profile_picture_url }} style={styles.avatar} />
           ) : (
@@ -92,7 +92,7 @@ export default function BlockedUsersScreen() {
             </Text>
             <Text style={styles.dateText}>{t('blocked.blockedOn')}: {blockedDate}</Text>
           </View>
-        </View>
+        </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.unblockBtn}

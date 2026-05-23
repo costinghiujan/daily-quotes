@@ -47,6 +47,12 @@ export default function ConversationsScreen() {
   const [friends, setFriends] = useState<Friend[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isFriendsLoading, setIsFriendsLoading] = useState(false);
+  const [isIncomingCall, setIsIncomingCall] = useState(false);
+  const [incomingCallInfo, setIncomingCallInfo] = useState<{
+    callerName: string;
+    callerAvatar: string | null;
+    isVideo: boolean;
+  } | null>(null);
 
   const socketRef = useRef<Socket | null>(null);
 
@@ -89,6 +95,16 @@ export default function ConversationsScreen() {
           conv.user_id === data.otherUserId ? { ...conv, is_read: true } : conv,
         ),
       );
+    });
+
+    // Listen for incoming calls
+    socketRef.current.on('call_offer', (data: { callerName: string; callerAvatar: string | null; isVideo: boolean }) => {
+      setIncomingCallInfo({
+        callerName: data.callerName,
+        callerAvatar: data.callerAvatar,
+        isVideo: data.isVideo,
+      });
+      setIsIncomingCall(true);
     });
 
     socketRef.current.on('receive_message', (newMessage: Message) => {
@@ -227,6 +243,7 @@ export default function ConversationsScreen() {
   );
 
   const renderFriendItem = ({ item }: { item: Friend }) => (
+
     <TouchableOpacity style={[styles.friendCard, { borderBottomColor: colors.separatorColor }]} onPress={() => startChatWithFriend(item)}>
       <TouchableOpacity
         onPress={() => navigation.navigate('ProfileScreen', { userId: item.id })}
@@ -332,6 +349,63 @@ export default function ConversationsScreen() {
           )}
         </SafeAreaView>
       </Modal>
+
+      {/* Incoming Call Overlay */}
+      {isIncomingCall && incomingCallInfo && (
+        <Modal transparent visible={isIncomingCall} animationType="slide">
+          <View style={styles.incomingCallOverlay}>
+            <View style={[styles.incomingCallCard, { backgroundColor: colors.card }]}>
+              <Image
+                source={
+                  incomingCallInfo.callerAvatar
+                    ? { uri: incomingCallInfo.callerAvatar }
+                    : require('../../assets/user-default.jpg')
+                }
+                style={styles.incomingCallAvatar}
+              />
+              <Text style={[styles.incomingCallName, { color: colors.textDark }]}>
+                {incomingCallInfo.callerName}
+              </Text>
+              <Text style={[styles.incomingCallType, { color: colors.textLight }]}>
+                {incomingCallInfo.isVideo ? t('call.incomingVideoCall') : t('call.incomingCall')}
+              </Text>
+              <View style={styles.incomingCallButtons}>
+                <TouchableOpacity
+                  style={[styles.incomingCallDeclineBtn, { backgroundColor: colors.error }]}
+                  onPress={() => {
+                    setIsIncomingCall(false);
+                    setIncomingCallInfo(null);
+                  }}
+                >
+                  <Ionicons name="close" size={28} color={colors.white} />
+                  <Text style={styles.incomingCallBtnLabel}>{t('call.decline')}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.incomingCallAcceptBtn, { backgroundColor: colors.success }]}
+                  onPress={() => {
+                    setIsIncomingCall(false);
+                    navigation.navigate('CallScreen', {
+                      otherUserId: 0,
+                      otherUsername: incomingCallInfo.callerName,
+                      otherUserAvatar: incomingCallInfo.callerAvatar,
+                      isVideo: incomingCallInfo.isVideo,
+                      initiator: 'other',
+                    });
+                    setIncomingCallInfo(null);
+                  }}
+                >
+                  <Ionicons
+                    name={incomingCallInfo.isVideo ? 'videocam' : 'call'}
+                    size={28}
+                    color={colors.white}
+                  />
+                  <Text style={styles.incomingCallBtnLabel}>{t('call.accept')}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
     </View>
   );
 }
@@ -422,6 +496,61 @@ const getStyles = (colors: any) =>
       height: 10,
       borderRadius: 5,
       marginLeft: 10,
+    },
+    incomingCallOverlay: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: 'rgba(0,0,0,0.6)',
+    },
+    incomingCallCard: {
+      width: '80%',
+      borderRadius: 20,
+      padding: 30,
+      alignItems: 'center',
+      elevation: 10,
+      shadowColor: '#000',
+      shadowOpacity: 0.3,
+      shadowRadius: 10,
+    },
+    incomingCallAvatar: {
+      width: 80,
+      height: 80,
+      borderRadius: 40,
+      marginBottom: 15,
+    },
+    incomingCallName: {
+      fontSize: 22,
+      fontWeight: 'bold',
+      marginBottom: 5,
+    },
+    incomingCallType: {
+      fontSize: 16,
+      marginBottom: 25,
+    },
+    incomingCallButtons: {
+      flexDirection: 'row',
+      gap: 30,
+    },
+    incomingCallDeclineBtn: {
+      width: 70,
+      height: 70,
+      borderRadius: 35,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    incomingCallAcceptBtn: {
+      width: 70,
+      height: 70,
+      borderRadius: 35,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    incomingCallBtnLabel: {
+      color: colors.white,
+      fontSize: 11,
+      marginTop: 3,
+      fontWeight: '600',
     },
     emptyContainer: { alignItems: 'center', marginTop: 50, paddingHorizontal: 20 },
     emptyText: { fontSize: 18, fontWeight: 'bold', marginTop: 15 },

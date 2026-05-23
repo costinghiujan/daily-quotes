@@ -338,6 +338,28 @@
       "energetic": "Energetic"
     }
   },
+  "call": {
+    "calling": "Calling...",
+    "ringing": "Ringing...",
+    "connected": "Connected",
+    "ended": "Call ended",
+    "declined": "Call Declined",
+    "declinedMessage": "The user declined your call.",
+    "busy": "User Busy",
+    "busyMessage": "The user is currently in another call.",
+    "permissionError": "Could not access microphone/camera. Please check permissions.",
+    "incomingCall": "Incoming Call",
+    "incomingVideoCall": "Incoming Video Call",
+    "audioCall": "Audio Call",
+    "videoCall": "Video Call",
+    "accept": "Accept",
+    "decline": "Decline",
+    "endCall": "End Call",
+    "mute": "Mute",
+    "unmute": "Unmute",
+    "speaker": "Speaker",
+    "switchCamera": "Switch Camera"
+  },
   "blocked": {
     "title": "Blocked Users",
     "empty": "No blocked users",

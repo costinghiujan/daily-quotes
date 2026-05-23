@@ -126,6 +126,36 @@ export default function FriendsScreen() {
 
         <View style={styles.actionButtons}>
           <TouchableOpacity
+            style={styles.callBtn}
+            onPress={() =>
+              navigation.navigate('CallScreen', {
+                otherUserId: item.id,
+                otherUsername: displayName,
+                otherUserAvatar: item.profile_picture_url,
+                isVideo: false,
+                initiator: 'me',
+              })
+            }
+          >
+            <Ionicons name="call" size={18} color={colors.primary} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.callBtn}
+            onPress={() =>
+              navigation.navigate('CallScreen', {
+                otherUserId: item.id,
+                otherUsername: displayName,
+                otherUserAvatar: item.profile_picture_url,
+                isVideo: true,
+                initiator: 'me',
+              })
+            }
+          >
+            <Ionicons name="videocam" size={18} color={colors.primary} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
             style={styles.unfriendBtn}
             onPress={() => handleUnfriend(item.friendship_id, displayName)}
           >
@@ -255,6 +285,14 @@ const getStyles = (colors: ThemeColors) =>
     usernameText: { fontSize: 13, color: colors.textLight },
 
     actionButtons: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    callBtn: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: colors.iconBg,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
     unfriendBtn: {
       paddingHorizontal: 12,
       paddingVertical: 8,

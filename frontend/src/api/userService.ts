@@ -48,6 +48,16 @@ export const userService = {
     }
   },
 
+  getUserProfile: async (userId: number): Promise<any> => {
+    try {
+      const response = await apiClient.get(`/users/${userId}`);
+      return response.data.data;
+    } catch (error) {
+      console.error('[Eroare Frontend] Preluare profil utilizator:', error);
+      throw error;
+    }
+  },
+
   uploadAvatar: async (imageUri: string) => {
     try {
       const formData = new FormData();

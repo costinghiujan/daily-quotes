@@ -9,7 +9,7 @@ import {
   Image,
   ScrollView,
 } from 'react-native';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
@@ -32,8 +32,13 @@ export default function ProfileScreen() {
   const { showAlert } = useContext(AlertContext);
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => getStyles(colors), [colors]);
+
+  // If userId param is provided, we're viewing someone else's profile
+  const viewedUserId = route.params?.userId;
+  const isOwnProfile = !viewedUserId || viewedUserId === user?.id;
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [quotes, setQuotes] = useState<any[]>([]);
@@ -57,6 +62,10 @@ export default function ProfileScreen() {
   const [allBadges, setAllBadges] = useState<AllBadge[]>([]);
   const [isBadgesLoading, setIsBadgesLoading] = useState(false);
 
+  // Friendship state for viewing other profiles
+  const [friendshipStatus, setFriendshipStatus] = useState<string | null>(null);
+  const [isFriendActionLoading, setIsFriendActionLoading] = useState(false);
+
   useLayoutEffect(() => {
     navigation.setOptions({
       headerShown: false,
@@ -66,11 +75,24 @@ export default function ProfileScreen() {
   const fetchProfileData = async () => {
     setIsLoading(true);
     try {
-      const data = await userService.getMyProfile();
-      setProfile(data.profile);
-      setQuotes(data.quotes);
-      setEditFullName(data.profile.full_name || '');
-      setEditBio(data.profile.bio || '');
+      if (isOwnProfile) {
+        const data = await userService.getMyProfile();
+        setProfile(data.profile);
+        setQuotes(data.quotes);
+        setEditFullName(data.profile.full_name || '');
+        setEditBio(data.profile.bio || '');
+      } else {
+        const data = await userService.getUserProfile(viewedUserId);
+        setProfile(data.profile);
+        setQuotes(data.quotes);
+        // Check friendship status
+        try {
+          const status = await friendshipService.checkStatus(viewedUserId);
+          setFriendshipStatus(status);
+        } catch (error) {
+          console.error('[Eroare] Verificare status prietenie:', error);
+        }
+      }
     } catch (error) {
       console.error('Eroare la incarcare profil:', error);
     } finally {
@@ -105,7 +127,7 @@ export default function ProfileScreen() {
   useFocusEffect(
     useCallback(() => {
       fetchProfileData();
-    }, []),
+    }, [viewedUserId]),
   );
 
   // Debounce friends search query
@@ -288,6 +310,39 @@ export default function ProfileScreen() {
     });
   };
 
+  const handleAddFriend = async () => {
+    if (!viewedUserId) return;
+    setIsFriendActionLoading(true);
+    try {
+      await friendshipService.sendRequest(viewedUserId);
+      setFriendshipStatus('pending');
+      showAlert({ title: t('common.success'), message: t('search.requestSent'), hideCancel: true, confirmText: t('common.ok') });
+    } catch (error: any) {
+      showAlert({ title: t('common.error'), message: error.response?.data?.message || t('search.errorRequest'), hideCancel: true, confirmText: t('common.ok') });
+    } finally {
+      setIsFriendActionLoading(false);
+    }
+  };
+
+  const handleRemoveFriend = async () => {
+    if (!viewedUserId) return;
+    setIsFriendActionLoading(true);
+    try {
+      // Find the friendship_id from the friends list
+      const friendEntry = friends.find(f => f.id === viewedUserId);
+      if (friendEntry) {
+        await friendshipService.removeFriendOrRequest(friendEntry.friendship_id);
+      }
+      setFriendshipStatus(null);
+      showAlert({ title: t('common.success'), message: t('friends.removeSuccess'), hideCancel: true, confirmText: t('common.ok') });
+    } catch (error) {
+      console.error('[Eroare] Eliminare prieten:', error);
+      showAlert({ title: t('common.error'), message: t('friends.errorRemove'), hideCancel: true, confirmText: t('common.ok') });
+    } finally {
+      setIsFriendActionLoading(false);
+    }
+  };
+
   const currentXp = profile?.xp || 0;
   const currentLevel = profile?.level || 1;
   const xpInCurrentLevel = currentXp % 50;
@@ -312,12 +367,14 @@ export default function ProfileScreen() {
               {item.created_at ? new Date(item.created_at).toLocaleDateString() : t('home.justNow')}
             </Text>
           </View>
-          <TouchableOpacity
-            style={[styles.deleteBtn, { backgroundColor: colors.errorBg }]}
-            onPress={() => handleDeleteQuote(item.id)}
-          >
-            <Ionicons name="trash-outline" size={16} color={colors.error} />
-          </TouchableOpacity>
+          {isOwnProfile && (
+            <TouchableOpacity
+              style={[styles.deleteBtn, { backgroundColor: colors.errorBg }]}
+              onPress={() => handleDeleteQuote(item.id)}
+            >
+              <Ionicons name="trash-outline" size={16} color={colors.error} />
+            </TouchableOpacity>
+          )}
         </View>
 
         <Text style={[styles.postText, { color: colors.textPrimary }]}>
@@ -334,7 +391,7 @@ export default function ProfileScreen() {
       <View style={styles.friendCard}>
         <TouchableOpacity
           style={styles.friendInfo}
-          onPress={() => navigation.navigate('ProfileScreen', { userId: item.id })}
+          onPress={() => navigation.push('ProfileScreen', { userId: item.id })}
         >
           {item.profile_picture_url ? (
             <Image source={{ uri: item.profile_picture_url }} style={styles.friendAvatar} />
@@ -356,21 +413,23 @@ export default function ProfileScreen() {
           </View>
         </TouchableOpacity>
 
-        <View style={styles.friendActionButtons}>
-          <TouchableOpacity
-            style={[styles.unfriendBtn, { backgroundColor: colors.background, borderColor: colors.border }]}
-            onPress={() => handleUnfriend(item.friendship_id, displayName)}
-          >
-            <Text style={[styles.unfriendBtnText, { color: colors.textDark }]}>{t('friends.remove')}</Text>
-          </TouchableOpacity>
+        {isOwnProfile && (
+          <View style={styles.friendActionButtons}>
+            <TouchableOpacity
+              style={[styles.unfriendBtn, { backgroundColor: colors.background, borderColor: colors.border }]}
+              onPress={() => handleUnfriend(item.friendship_id, displayName)}
+            >
+              <Text style={[styles.unfriendBtnText, { color: colors.textDark }]}>{t('friends.remove')}</Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[styles.blockBtn, { backgroundColor: colors.error }]}
-            onPress={() => handleBlock(item.id, displayName)}
-          >
-            <Ionicons name="ban" size={18} color={colors.white} />
-          </TouchableOpacity>
-        </View>
+            <TouchableOpacity
+              style={[styles.blockBtn, { backgroundColor: colors.error }]}
+              onPress={() => handleBlock(item.id, displayName)}
+            >
+              <Ionicons name="ban" size={18} color={colors.white} />
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     );
   };
@@ -436,6 +495,15 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         )}
         <View style={[styles.topBar, { paddingTop: insets.top + 10 }]}>
+          {!isOwnProfile && (
+            <TouchableOpacity
+              style={[styles.topBarBackBtn, { backgroundColor: 'rgba(255,255,255,0.2)' }]}
+              onPress={() => navigation.goBack()}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="arrow-back" size={22} color="#fff" />
+            </TouchableOpacity>
+          )}
           <LinearGradient
             colors={colors.primaryGradient as [string, string]}
             start={{ x: 0, y: 0 }}
@@ -446,13 +514,15 @@ export default function ProfileScreen() {
             <Text style={{ color: '#fff', fontSize: 16, fontWeight: '800' }}>{t('home.title')}</Text>
           </LinearGradient>
           <View style={styles.statusIcons}>
-            <TouchableOpacity
-              style={[styles.topBarIconBtn, { backgroundColor: 'rgba(255,255,255,0.2)' }]}
-              onPress={() => navigation.navigate('SettingsScreen')}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="settings" size={20} color="#fff" />
-            </TouchableOpacity>
+            {isOwnProfile && (
+              <TouchableOpacity
+                style={[styles.topBarIconBtn, { backgroundColor: 'rgba(255,255,255,0.2)' }]}
+                onPress={() => navigation.navigate('SettingsScreen')}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="settings" size={20} color="#fff" />
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       </View>
@@ -483,7 +553,7 @@ export default function ProfileScreen() {
               </View>
             )}
           </TouchableOpacity>
-          {!isEditing && (
+          {isOwnProfile && !isEditing && (
             <TouchableOpacity
               style={[styles.editBadge, { backgroundColor: colors.primary }]}
               onPress={() => setIsEditing(true)}
@@ -544,6 +614,59 @@ export default function ProfileScreen() {
                   <Text style={[styles.statLabel, { color: colors.textLight }]}>{t('profile.badges')}</Text>
                 </View>
               </View>
+
+              {/* Friend action buttons for other users' profiles */}
+              {!isOwnProfile && (
+                <View style={styles.friendActionRow}>
+                  {friendshipStatus === 'accepted' || friendshipStatus === 'FRIENDS' ? (
+                    <TouchableOpacity
+                      style={[styles.friendActionBtn, { backgroundColor: colors.error }]}
+                      onPress={handleRemoveFriend}
+                      disabled={isFriendActionLoading}
+                    >
+                      {isFriendActionLoading ? (
+                        <ActivityIndicator size="small" color="#fff" />
+                      ) : (
+                        <>
+                          <Ionicons name="person-remove" size={18} color="#fff" />
+                          <Text style={styles.friendActionBtnText}>{t('friends.removeFriend')}</Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  ) : friendshipStatus === 'pending' ? (
+                    <View style={[styles.friendActionBtn, { backgroundColor: colors.secondary }]}>
+                      <Ionicons name="time" size={18} color="#fff" />
+                      <Text style={styles.friendActionBtnText}>{t('search.pending')}</Text>
+                    </View>
+                  ) : (
+                    <TouchableOpacity
+                      style={[styles.friendActionBtn, { backgroundColor: colors.primary }]}
+                      onPress={handleAddFriend}
+                      disabled={isFriendActionLoading}
+                    >
+                      {isFriendActionLoading ? (
+                        <ActivityIndicator size="small" color="#fff" />
+                      ) : (
+                        <>
+                          <Ionicons name="person-add" size={18} color="#fff" />
+                          <Text style={styles.friendActionBtnText}>{t('search.addFriend')}</Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  )}
+                  <TouchableOpacity
+                    style={[styles.friendActionBtn, { backgroundColor: colors.primary }]}
+                    onPress={() => navigation.navigate('ChatScreen', {
+                      userId: viewedUserId,
+                      username: profile?.username,
+                      avatar: profile?.profile_picture_url,
+                    })}
+                  >
+                    <Ionicons name="chatbubble" size={18} color="#fff" />
+                    <Text style={styles.friendActionBtnText}>{t('profile.sendMessage')}</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
            </>
         ) : (
            <View style={styles.editContainer}>
@@ -729,6 +852,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingHorizontal: 20,
     zIndex: 10,
   },
+  topBarBackBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   topBarLogo: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -893,6 +1023,25 @@ const getStyles = (colors: any) => StyleSheet.create({
     fontWeight: '500',
     marginTop: 2,
   },
+  friendActionRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 12,
+    marginBottom: 20,
+  },
+  friendActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    gap: 6,
+  },
+  friendActionBtnText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
   tabsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
@@ -999,66 +1148,90 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  friendInfo: { flexDirection: 'row', alignItems: 'center', flex: 1, paddingRight: 10 },
-  friendAvatar: { width: 42, height: 42, borderRadius: 21, marginRight: 12 },
-  friendAvatarPlaceholder: {
+  friendInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    paddingRight: 10,
+  },
+  friendAvatar: {
     width: 42,
     height: 42,
     borderRadius: 21,
-    justifyContent: 'center',
-    alignItems: 'center',
     marginRight: 12,
   },
-  friendTextContainer: { flex: 1, justifyContent: 'center' },
-  friendNameRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 2 },
-  friendNameText: { fontSize: 15, fontWeight: 'bold', flexShrink: 1 },
+  friendTextContainer: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  friendNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 2,
+  },
+  friendNameText: {
+    fontSize: 15,
+    fontWeight: '700',
+    flexShrink: 1,
+  },
   streakBadge: {
+    marginLeft: 6,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 8,
-    marginLeft: 6,
   },
-  streakText: { fontSize: 11, fontWeight: 'bold' },
-  friendUsernameText: { fontSize: 12 },
-  friendActionButtons: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  streakText: {
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+  friendUsernameText: {
+    fontSize: 13,
+  },
+  friendActionButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   unfriendBtn: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderRadius: 8,
     borderWidth: 1,
   },
-  unfriendBtnText: { fontSize: 12, fontWeight: 'bold' },
+  unfriendBtnText: {
+    fontSize: 13,
+    fontWeight: 'bold',
+  },
   blockBtn: {
-    paddingHorizontal: 8,
-    paddingVertical: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  // All Badges
+  // Badges
   allBadgesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    gap: 12,
   },
   allBadgeItem: {
-    width: '47%',
+    width: '48%',
     alignItems: 'center',
-    padding: 16,
-    borderRadius: 16,
+    marginBottom: 20,
+    padding: 10,
+    borderRadius: 12,
+    backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: colors.card,
-    marginBottom: 12,
   },
   allBadgeIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   allBadgeName: {
     fontSize: 13,
@@ -1072,14 +1245,14 @@ const getStyles = (colors: any) => StyleSheet.create({
     lineHeight: 15,
   },
   allBadgeDate: {
-    fontSize: 10,
-    marginTop: 6,
+    fontSize: 11,
     fontWeight: '600',
+    marginTop: 4,
   },
   emptySection: {
     alignItems: 'center',
     marginTop: 30,
-    paddingHorizontal: 20,
+    marginBottom: 20,
   },
   emptySectionText: {
     fontSize: 16,
@@ -1087,9 +1260,9 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginTop: 10,
   },
   emptySectionSubtext: {
-    fontSize: 13,
+    fontSize: 14,
     textAlign: 'center',
     marginTop: 6,
-    lineHeight: 18,
+    lineHeight: 20,
   },
 });

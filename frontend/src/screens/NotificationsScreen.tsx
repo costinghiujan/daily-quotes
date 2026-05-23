@@ -140,7 +140,9 @@ export default function NotificationsScreen() {
     return (
       <View style={[styles.card, isUnread ? styles.cardUnread : styles.cardRead]}>
         <View style={styles.cardInner}>
-          <Image source={item.profile_picture_url ? { uri: item.profile_picture_url } : require('../../assets/user-default.jpg')} style={styles.avatar} />
+          <TouchableOpacity onPress={() => navigation.navigate('ProfileScreen', { userId: item.sender_id })}>
+            <Image source={item.profile_picture_url ? { uri: item.profile_picture_url } : require('../../assets/user-default.jpg')} style={styles.avatar} />
+          </TouchableOpacity>
           
           <View style={styles.contentContainer}>
             <Text style={[styles.messageText, !isUnread && styles.messageTextRead]}>
