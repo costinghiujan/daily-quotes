@@ -21,17 +21,32 @@ import { AuthContext } from '../context/AuthContext';
 import { ThemeContext } from '../context/ThemeContext';
 import { AlertContext } from '../context/AlertContext';
 import { useTranslation } from 'react-i18next';
+import { FeedQuote, REACTIONS_CONFIG, ReactionConfig } from '../types/FeedQuote';
+import { ThemeColors } from '../theme/colors';
 
-const REACTIONS_CONFIG = [
-  { key: 'BLUE_HEART', emoji: '\u{1F499}', prop: 'blue_heart_count' },
-  { key: 'APPLAUSE', emoji: '\u{1F44F}', prop: 'applause_count' },
-  { key: 'SAD', emoji: '\u{1F622}', prop: 'sad_count' },
-  { key: 'TOUCHING', emoji: '\u{1F97A}', prop: 'touching_count' },
-  { key: 'HUG', emoji: '\u{1FAC2}', prop: 'hug_count' },
-  { key: 'MIND_BLOWN', emoji: '\u{1F92F}', prop: 'mind_blown_count' },
+interface AnimatedReactionButtonProps {
+  reaction: ReactionConfig;
+  count: number;
+  isSelected: boolean;
+  onPress: () => void;
+  colors: ThemeColors;
+  btnStyles: ReturnType<typeof getStyles>;
+}
+
+interface Particle {
+  angle: number;
+  color: string;
+}
+
+const PARTICLES: Particle[] = [
+  { angle: 0, color: '#FFD700' },
+  { angle: 72, color: '#FF6B6B' },
+  { angle: 144, color: '#4ECDC4' },
+  { angle: 216, color: '#FF9F1C' },
+  { angle: 288, color: '#C7F464' },
 ];
 
-const AnimatedReactionButton = ({ reaction, count, isSelected, onPress, colors, btnStyles }: any) => {
+const AnimatedReactionButton = ({ reaction, count, isSelected, onPress, colors, btnStyles }: AnimatedReactionButtonProps) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const burstAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -56,7 +71,6 @@ const AnimatedReactionButton = ({ reaction, count, isSelected, onPress, colors, 
 
   const handlePress = () => {
     if (!isSelected) {
-      // Burst animation
       burstAnim.setValue(0);
       Animated.timing(burstAnim, {
         toValue: 1,
@@ -64,7 +78,6 @@ const AnimatedReactionButton = ({ reaction, count, isSelected, onPress, colors, 
         useNativeDriver: true,
       }).start();
 
-      // Pulse animation
       Animated.sequence([
         Animated.timing(pulseAnim, { toValue: 1.3, duration: 150, useNativeDriver: true }),
         Animated.timing(pulseAnim, { toValue: 1, duration: 150, useNativeDriver: true }),
@@ -73,17 +86,9 @@ const AnimatedReactionButton = ({ reaction, count, isSelected, onPress, colors, 
     onPress();
   };
 
-  const particles = [
-    { angle: 0, color: '#FFD700' },
-    { angle: 72, color: '#FF6B6B' },
-    { angle: 144, color: '#4ECDC4' },
-    { angle: 216, color: '#FF9F1C' },
-    { angle: 288, color: '#C7F464' },
-  ];
-
   return (
     <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-      {particles.map((p, i) => {
+      {PARTICLES.map((p, i) => {
         const rad = (p.angle * Math.PI) / 180;
         const translateX = burstAnim.interpolate({
           inputRange: [0, 1],
@@ -153,11 +158,16 @@ const AnimatedReactionButton = ({ reaction, count, isSelected, onPress, colors, 
   );
 };
 
-export default function HomeScreen({ navigation }: any) {
+interface HomeScreenNavigationProp {
+  navigate: (screen: string, params?: Record<string, unknown>) => void;
+  setOptions: (options: Record<string, unknown>) => void;
+}
+
+export default function HomeScreen({ navigation }: { navigation: HomeScreenNavigationProp }) {
   const { user } = useContext(AuthContext);
   const insets = useSafeAreaInsets();
 
-  const [feedQuotes, setFeedQuotes] = useState<any[]>([]);
+  const [feedQuotes, setFeedQuotes] = useState<FeedQuote[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -226,37 +236,35 @@ export default function HomeScreen({ navigation }: any) {
     }
   };
 
-  const getMockAvatar = (id: number) => `https://picsum.photos/seed/avatar${id}/100/100`;
+  const handleToggleReaction = useCallback(async (quoteId: number, reactionKey: string) => {
+    setFeedQuotes((prevQuotes) =>
+      prevQuotes.map((quote) => {
+        if (quote.id !== quoteId) return quote;
+        const updatedQuote = { ...quote };
+        const currentReactions = Array.isArray(updatedQuote.user_reactions) ? updatedQuote.user_reactions : [];
+        const targetProp = (reactionKey.toLowerCase() + '_count') as keyof FeedQuote;
+        const hasReacted = currentReactions.includes(reactionKey);
 
-  const renderFeedItem = ({ item, index }: { item: any, index: number }) => {
-    const handleToggleReaction = async (quoteId: number, reactionKey: string) => {
-      setFeedQuotes((prevQuotes) =>
-        prevQuotes.map((quote) => {
-          if (quote.id !== quoteId) return quote;
-          const updatedQuote = { ...quote };
-          const currentReactions = Array.isArray(updatedQuote.user_reactions) ? updatedQuote.user_reactions : [];
-          const targetProp = reactionKey.toLowerCase() + '_count';
-          const hasReacted = currentReactions.includes(reactionKey);
+        if (hasReacted) {
+          updatedQuote[targetProp] = Math.max(0, (updatedQuote[targetProp] as number || 0) - 1) as never;
+          updatedQuote.user_reactions = currentReactions.filter((key: string) => key !== reactionKey);
+        } else {
+          updatedQuote[targetProp] = ((updatedQuote[targetProp] as number || 0) + 1) as never;
+          updatedQuote.user_reactions = [...currentReactions, reactionKey];
+        }
+        return updatedQuote;
+      }),
+    );
+    try {
+      await quoteService.toggleReaction(quoteId, reactionKey);
+    } catch (error) {
+      console.error('A aparut o eroare de retea la salvarea reactiei.', error);
+    }
+  }, []);
 
-          if (hasReacted) {
-            updatedQuote[targetProp] = Math.max(0, parseInt(updatedQuote[targetProp] || 0) - 1);
-            updatedQuote.user_reactions = currentReactions.filter((key: string) => key !== reactionKey);
-          } else {
-            updatedQuote[targetProp] = parseInt(updatedQuote[targetProp] || 0) + 1;
-            updatedQuote.user_reactions = [...currentReactions, reactionKey];
-          }
-          return updatedQuote;
-        }),
-      );
-      try {
-        await quoteService.toggleReaction(quoteId, reactionKey);
-      } catch (error) {
-        console.error('A aparut o eroare de retea la salvarea reactiei.', error);
-      }
-    };
-
-    const hasAnyReaction = REACTIONS_CONFIG.some(r => parseInt(item[r.prop] || 0) > 0);
-    const totalReactions = REACTIONS_CONFIG.reduce((acc, r) => acc + parseInt(item[r.prop] || 0), 0);
+  const renderFeedItem = useCallback(({ item }: { item: FeedQuote }) => {
+    const hasAnyReaction = REACTIONS_CONFIG.some(r => (item[r.prop] || 0) > 0);
+    const totalReactions = REACTIONS_CONFIG.reduce((acc, r) => acc + (item[r.prop] || 0), 0);
 
     return (
       <View style={[styles.feedItem, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
@@ -299,7 +307,7 @@ export default function HomeScreen({ navigation }: any) {
         <View style={[styles.likesRow, { borderTopColor: colors.separatorColor }]}>
           <View style={styles.reactionsStack}>
             {hasAnyReaction ? REACTIONS_CONFIG.map((r, i) => {
-              if (parseInt(item[r.prop] || 0) > 0 && i < 3) {
+              if ((item[r.prop] || 0) > 0 && i < 3) {
                  return (
                    <View key={r.key} style={[styles.reactionCircle, { backgroundColor: colors.reactionEmojiBg, borderColor: colors.reactionEmojiBorder, zIndex: 3 - i, marginLeft: i > 0 ? -6 : 0 }]}>
                      <Text style={{ fontSize: 10 }}>{r.emoji}</Text>
@@ -322,7 +330,7 @@ export default function HomeScreen({ navigation }: any) {
         <View style={[styles.reactionsBar, { borderTopColor: colors.separatorColor }]}>
           <View style={{ flex: 1, flexDirection: 'row', flexWrap: 'wrap' }}>
             {REACTIONS_CONFIG.map((reaction) => {
-               const count = parseInt(item[reaction.prop] || 0);
+               const count = item[reaction.prop] || 0;
                const isSelected = Array.isArray(item.user_reactions) && item.user_reactions.includes(reaction.key);
                return (
                  <AnimatedReactionButton
@@ -346,9 +354,9 @@ export default function HomeScreen({ navigation }: any) {
         </View>
       </View>
     );
-  };
+  }, [colors, styles, navigation, handleToggleReaction, t]);
 
-  const renderHeader = () => (
+  const renderHeader = useCallback(() => (
     <View style={styles.headerContainer}>
       {/* Top Bar */}
       <View style={[styles.topBar, { borderBottomColor: colors.separatorColor }]}>
@@ -427,7 +435,7 @@ export default function HomeScreen({ navigation }: any) {
 
       <Text style={[styles.recentTitle, { color: colors.textDark }]}>{t('home.recent')}</Text>
     </View>
-  );
+  ), [colors, styles, user, newText, newAuthor, isSubmitting, handleAddQuote, t]);
 
   if (isLoading && feedQuotes.length === 0) {
     return (
@@ -467,7 +475,7 @@ export default function HomeScreen({ navigation }: any) {
   );
 }
 
-const getStyles = (colors: any) => StyleSheet.create({
+const getStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
   },

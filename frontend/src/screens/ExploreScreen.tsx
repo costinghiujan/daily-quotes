@@ -17,16 +17,35 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 import { quoteService } from '../api/quoteService';
 import { ThemeContext } from '../context/ThemeContext';
+import { FeedQuote } from '../types/FeedQuote';
+import { ThemeColors } from '../theme/colors';
+
+interface ExploreNavigationProp {
+  navigate: (screen: string, params?: Record<string, unknown>) => void;
+  setOptions: (options: Record<string, unknown>) => void;
+}
+
+interface QuoteOfTheDay {
+  id: number;
+  text: string;
+  author: string;
+  username: string;
+  user_id: number;
+  profile_picture_url: string | null;
+  full_name: string | null;
+  total_reactions: number;
+  blue_heart_count: number;
+}
 
 export default function ExploreScreen() {
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation<ExploreNavigationProp>();
   const { colors } = useContext(ThemeContext);
   const styles = useMemo(() => getStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
 
-  const [exploreQuotes, setExploreQuotes] = useState<any[]>([]);
-  const [quoteOfTheDay, setQuoteOfTheDay] = useState<any | null>(null);
+  const [exploreQuotes, setExploreQuotes] = useState<FeedQuote[]>([]);
+  const [quoteOfTheDay, setQuoteOfTheDay] = useState<QuoteOfTheDay | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -88,7 +107,7 @@ export default function ExploreScreen() {
     });
   };
 
-  const renderQuoteItem = ({ item }: { item: any }) => (
+  const renderQuoteItem = ({ item }: { item: FeedQuote }) => (
     <View style={[styles.quoteCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
       <View style={styles.quoteHeader}>
         <TouchableOpacity onPress={() => navigation.navigate('ProfileScreen', { userId: item.user_id })}>
@@ -215,7 +234,7 @@ export default function ExploreScreen() {
   );
 }
 
-const getStyles = (colors: any) =>
+const getStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     container: { flex: 1 },
     centered: {

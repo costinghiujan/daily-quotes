@@ -27,6 +27,16 @@ export interface UserProfile {
   badges?: Badge[];
 }
 
+export interface MyProfileResponse {
+  profile: UserProfile;
+  quotes: import('../types/FeedQuote').FeedQuote[];
+}
+
+export interface UserProfileResponse {
+  profile: UserProfile;
+  quotes: import('../types/FeedQuote').FeedQuote[];
+}
+
 export const userService = {
   searchUsers: async (query: string): Promise<UserProfile[]> => {
     try {
@@ -38,7 +48,7 @@ export const userService = {
     }
   },
 
-  getMyProfile: async (): Promise<any> => {
+  getMyProfile: async (): Promise<MyProfileResponse> => {
     try {
       const response = await apiClient.get('/users/me');
       return response.data.data;
@@ -48,7 +58,7 @@ export const userService = {
     }
   },
 
-  getUserProfile: async (userId: number): Promise<any> => {
+  getUserProfile: async (userId: number): Promise<UserProfileResponse> => {
     try {
       const response = await apiClient.get(`/users/${userId}`);
       return response.data.data;
@@ -70,7 +80,7 @@ export const userService = {
         uri: imageUri,
         name: filename,
         type: type,
-      } as any);
+      } as unknown as Blob);
 
       const response = await apiClient.post('/users/avatar', formData);
 
@@ -113,7 +123,7 @@ export const userService = {
         uri: imageUri,
         name: filename,
         type: type,
-      } as any);
+      } as unknown as Blob);
 
       const response = await apiClient.post('/users/cover-photo', formData);
 

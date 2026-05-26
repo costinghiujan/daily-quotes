@@ -19,9 +19,21 @@ import { friendshipService } from '../api/friendshipService';
 import { ThemeContext } from '../context/ThemeContext';
 import { AlertContext } from '../context/AlertContext';
 import { useTranslation } from 'react-i18next';
+import { ThemeColors } from '../theme/colors';
+
+interface NotificationsNavigationProp {
+  navigate: (screen: string, params?: Record<string, unknown>) => void;
+  setOptions: (options: Record<string, unknown>) => void;
+}
+
+interface NotificationSection {
+  title: string;
+  data: AppNotification[];
+  showMarkAll: boolean;
+}
 
 export default function NotificationsScreen() {
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation<NotificationsNavigationProp>();
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const { showAlert } = useContext(AlertContext);
@@ -86,7 +98,7 @@ export default function NotificationsScreen() {
 
   const handleAccept = async (notificationId: number, friendshipId: number, username: string) => {
     setNotifications((prev) =>
-      prev.map((n) => (n.id === notificationId ? { ...n, type: 'FRIEND_REQUEST_ACCEPTED' } : n)),
+      prev.map((n) => (n.id === notificationId ? { ...n, type: 'FRIEND_REQUEST_ACCEPTED' as const } : n)),
     );
     try {
       await friendshipService.acceptRequest(friendshipId);
@@ -109,9 +121,7 @@ export default function NotificationsScreen() {
     }
   };
 
-  const getMockAvatar = (id: number) => `https://picsum.photos/seed/notif${id}/100/100`;
-
-  const renderNotificationItem = ({ item }: { item: any }) => {
+  const renderNotificationItem = ({ item }: { item: AppNotification }) => {
     const isUnread = item.is_read === false;
     const isFriendRequest = item.type === 'FRIEND_REQUEST';
     const displayName = item.full_name || item.username || 'User';
@@ -193,7 +203,7 @@ export default function NotificationsScreen() {
   const unreadNotifications = notifications.filter(n => n.is_read === false);
   const readNotifications = notifications.filter(n => n.is_read === true);
 
-  const sections = [];
+  const sections: NotificationSection[] = [];
   if (unreadNotifications.length > 0) {
     sections.push({
       title: t('notifications.new'),
@@ -228,7 +238,7 @@ export default function NotificationsScreen() {
 
       <SectionList
         sections={sections}
-        keyExtractor={(item: any, index: number) => item.id ? item.id.toString() : index.toString()}
+        keyExtractor={(item: AppNotification, index: number) => item.id ? item.id.toString() : index.toString()}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
         refreshControl={
@@ -268,7 +278,7 @@ export default function NotificationsScreen() {
   );
 }
 
-const getStyles = (colors: any) => StyleSheet.create({
+const getStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,

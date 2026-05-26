@@ -23,6 +23,7 @@ import { ThemeContext } from '../context/ThemeContext';
 import { AuthContext } from '../context/AuthContext';
 import { AlertContext } from '../context/AlertContext';
 import { ThemeColors } from '../theme/colors';
+import { FeedQuote } from '../types/FeedQuote';
 
 
 interface SearchResultUser extends UserProfile {
@@ -30,9 +31,19 @@ interface SearchResultUser extends UserProfile {
   requester_id?: number;
 }
 
+interface SearchRouteParams {
+  initialQuery?: string;
+}
+
+interface SearchNavigationProp {
+  navigate: (screen: string, params?: Record<string, unknown>) => void;
+  setOptions: (options: Record<string, unknown>) => void;
+  setParams: (params: Record<string, unknown>) => void;
+}
+
 export default function SearchScreen() {
-  const route = useRoute<any>();
-  const navigation = useNavigation<any>();
+  const route = useRoute<{ key: string; name: string; params?: SearchRouteParams }>();
+  const navigation = useNavigation<SearchNavigationProp>();
   const initialQuery = route?.params?.initialQuery || '';
   const { t } = useTranslation();
 
@@ -46,7 +57,7 @@ export default function SearchScreen() {
   const [activeTab, setActiveTab] = useState<'users' | 'quotes'>('users');
 
   const [userResults, setUserResults] = useState<SearchResultUser[]>([]);
-  const [quoteResults, setQuoteResults] = useState<any[]>([]);
+  const [quoteResults, setQuoteResults] = useState<FeedQuote[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   useLayoutEffect(() => {
@@ -104,11 +115,12 @@ export default function SearchScreen() {
     );
     try {
       await friendshipService.sendRequest(userId);
-    } catch (error: any) {
+    } catch (error: unknown) {
       setUserResults((prev) =>
         prev.map((u) => (u.id === userId ? { ...u, friendship_status: null } : u)),
       );
-      showAlert({ title: t('common.error'), message: error.response?.data?.message || t('search.errorRequest'), hideCancel: true, confirmText: t('common.ok') });
+      const err = error as { response?: { data?: { message?: string } } };
+      showAlert({ title: t('common.error'), message: err.response?.data?.message || t('search.errorRequest'), hideCancel: true, confirmText: t('common.ok') });
     }
   };
 
@@ -175,7 +187,7 @@ export default function SearchScreen() {
     );
   };
 
-  const renderQuoteItem = ({ item }: { item: any }) => (
+  const renderQuoteItem = ({ item }: { item: FeedQuote }) => (
     <View style={styles.quoteCard}>
       <View style={styles.quoteHeader}>
         <TouchableOpacity onPress={() => navigation.navigate('ProfileScreen', { userId: item.user_id })}>
@@ -257,19 +269,35 @@ export default function SearchScreen() {
 
       {isLoading && <ActivityIndicator size="large" color={colors.primary} style={styles.loader} />}
 
-      <FlatList
-        data={activeTab === 'users' ? userResults : quoteResults}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={activeTab === 'users' ? renderUserItem : renderQuoteItem}
-        contentContainerStyle={styles.listContent}
-        ListEmptyComponent={
-          !isLoading && searchQuery.trim() !== '' ? (
-            <Text style={styles.emptyText}>
-              {t('search.noResults', { query: searchQuery })}
-            </Text>
-          ) : null
-        }
-      />
+      {activeTab === 'users' ? (
+        <FlatList
+          data={userResults}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={renderUserItem}
+          contentContainerStyle={styles.listContent}
+          ListEmptyComponent={
+            !isLoading && searchQuery.trim() !== '' ? (
+              <Text style={styles.emptyText}>
+                {t('search.noResults', { query: searchQuery })}
+              </Text>
+            ) : null
+          }
+        />
+      ) : (
+        <FlatList
+          data={quoteResults}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={renderQuoteItem}
+          contentContainerStyle={styles.listContent}
+          ListEmptyComponent={
+            !isLoading && searchQuery.trim() !== '' ? (
+              <Text style={styles.emptyText}>
+                {t('search.noResults', { query: searchQuery })}
+              </Text>
+            ) : null
+          }
+        />
+      )}
     </View>
   );
 }
