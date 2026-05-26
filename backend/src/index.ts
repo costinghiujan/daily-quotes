@@ -147,7 +147,7 @@ io.on('connection', (socket) => {
 
   // ========== CALL SIGNALING EVENTS ==========
 
-  socket.on('call_offer', (data: { to: number; offer: any; callerName: string; callerAvatar: string | null; isVideo: boolean }) => {
+  socket.on('call_offer', (data: { to: number; offer: Record<string, unknown>; callerName: string; callerAvatar: string | null; isVideo: boolean }) => {
     const { to, offer, callerName, callerAvatar, isVideo } = data;
     console.log(`[Calls] Apel de la ${socket.id} către utilizatorul ${to}`);
 
@@ -188,13 +188,13 @@ io.on('connection', (socket) => {
     });
   });
 
-  socket.on('call_answer', (data: { to: number; answer: any }) => {
+  socket.on('call_answer', (data: { to: number; answer: Record<string, unknown> }) => {
     const { to, answer } = data;
     console.log(`[Calls] Răspuns la apel către utilizatorul ${to}`);
     io.to(`room_${to}`).emit('call_answer', { answer });
   });
 
-  socket.on('call_ice_candidate', (data: { to: number; candidate: any }) => {
+  socket.on('call_ice_candidate', (data: { to: number; candidate: Record<string, unknown> }) => {
     const { to, candidate } = data;
     io.to(`room_${to}`).emit('call_ice_candidate', { candidate });
   });
