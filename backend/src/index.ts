@@ -17,12 +17,16 @@ import { testConnection, initDB, pool } from './config/db';
 import { sendMessagePushNotification } from './utils/notificationHelper';
 import { initCronJobs } from './services/cronService';
 import { validateEnvironment } from './utils/envValidator';
+import { applySecurityMiddleware } from './middleware/securityMiddleware';
 
 const app = express();
 const PORT = parseInt(process.env.PORT || '3000', 10);
 
+// Security middleware
+applySecurityMiddleware(app);
+
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 app.get('/', (req: Request, res: Response) => {

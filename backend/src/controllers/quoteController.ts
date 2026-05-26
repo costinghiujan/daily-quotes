@@ -567,6 +567,87 @@ export const getExploreFeed = async (req: AuthRequest, res: Response): Promise<v
   }
 };
 
+export const moodSearch = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { mood } = req.body;
+    const currentUserId = req.user?.id;
+
+    if (!currentUserId) {
+      res.status(401).json({ status: 'error', message: 'Neautorizat.' });
+      return;
+    }
+
+    if (!mood || typeof mood !== 'string' || mood.trim() === '') {
+      res.status(400).json({ status: 'error', message: 'Mood is required.' });
+      return;
+    }
+
+    // Vectorize the mood text using existing AI service
+    const embeddingArray = await aiService.getEmbedding(mood);
+
+    if (!embeddingArray) {
+      // Fallback: return random quotes if embedding fails
+      const fallbackSQL = `
+        SELECT 
+          q.id, q.text, q.author, q.created_at,
+          u.id AS post_user_id, u.username, u.full_name, u.profile_picture_url,
+          COUNT(CASE WHEN qr.reaction_type = 'BLUE_HEART' THEN 1 END) AS blue_heart_count,
+          COUNT(CASE WHEN qr.reaction_type = 'APPLAUSE' THEN 1 END) AS applause_count,
+          COUNT(CASE WHEN qr.reaction_type = 'SAD' THEN 1 END) AS sad_count,
+          COUNT(CASE WHEN qr.reaction_type = 'TOUCHING' THEN 1 END) AS touching_count,
+          COUNT(CASE WHEN qr.reaction_type = 'HUG' THEN 1 END) AS hug_count,
+          COUNT(CASE WHEN qr.reaction_type = 'MIND_BLOWN' THEN 1 END) AS mind_blown_count,
+          ARRAY_REMOVE(ARRAY_AGG(CASE WHEN qr.user_id = $1 THEN qr.reaction_type END), NULL) AS user_reactions
+        FROM quotes q
+        JOIN users u ON q.user_id = u.id
+        LEFT JOIN quote_reactions qr ON q.id = qr.quote_id
+        LEFT JOIN blocks b1 ON b1.blocker_id = $1 AND b1.blocked_id = u.id
+        LEFT JOIN blocks b2 ON b2.blocker_id = u.id AND b2.blocked_id = $1
+        WHERE b1.blocker_id IS NULL AND b2.blocker_id IS NULL
+        GROUP BY q.id, u.id
+        ORDER BY RANDOM()
+        LIMIT 20;
+      `;
+      const fallbackResult = await query(fallbackSQL, [currentUserId]);
+      res.status(200).json({ status: 'success', data: fallbackResult.rows });
+      return;
+    }
+
+    const embeddingParam = `[${embeddingArray.join(',')}]`;
+
+    const moodSQL = `
+      SELECT 
+        q.id, q.text, q.author, q.created_at,
+        u.id AS post_user_id, u.username, u.full_name, u.profile_picture_url,
+        COUNT(CASE WHEN qr.reaction_type = 'BLUE_HEART' THEN 1 END) AS blue_heart_count,
+        COUNT(CASE WHEN qr.reaction_type = 'APPLAUSE' THEN 1 END) AS applause_count,
+        COUNT(CASE WHEN qr.reaction_type = 'SAD' THEN 1 END) AS sad_count,
+        COUNT(CASE WHEN qr.reaction_type = 'TOUCHING' THEN 1 END) AS touching_count,
+        COUNT(CASE WHEN qr.reaction_type = 'HUG' THEN 1 END) AS hug_count,
+        COUNT(CASE WHEN qr.reaction_type = 'MIND_BLOWN' THEN 1 END) AS mind_blown_count,
+        ARRAY_REMOVE(ARRAY_AGG(CASE WHEN qr.user_id = $1 THEN qr.reaction_type END), NULL) AS user_reactions,
+        (1 - (q.embedding <=> $2::vector)) AS recommendation_score
+      FROM quotes q
+      JOIN users u ON q.user_id = u.id
+      LEFT JOIN quote_reactions qr ON q.id = qr.quote_id
+      LEFT JOIN blocks b1 ON b1.blocker_id = $1 AND b1.blocked_id = u.id
+      LEFT JOIN blocks b2 ON b2.blocker_id = u.id AND b2.blocked_id = $1
+      WHERE q.embedding IS NOT NULL
+        AND b1.blocker_id IS NULL AND b2.blocker_id IS NULL
+      GROUP BY q.id, u.id
+      ORDER BY recommendation_score DESC
+      LIMIT 20;
+    `;
+
+    const result = await query(moodSQL, [currentUserId, embeddingParam]);
+
+    res.status(200).json({ status: 'success', data: result.rows });
+  } catch (error) {
+    console.error('[Eroare Controller] Mood search failed:', error);
+    res.status(500).json({ status: 'error', message: 'Eroare internă.' });
+  }
+};
+
 export const getQuoteOfTheDay = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const currentUserId = req.user?.id;

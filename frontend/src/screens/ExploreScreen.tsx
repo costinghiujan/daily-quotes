@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
   Image,
 } from 'react-native';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, NavigationProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -19,6 +19,7 @@ import { quoteService } from '../api/quoteService';
 import { ThemeContext } from '../context/ThemeContext';
 import { FeedQuote } from '../types/FeedQuote';
 import { ThemeColors } from '../theme/colors';
+import { ExploreFeedSkeleton } from '../components/SkeletonLoader';
 
 interface ExploreNavigationProp {
   navigate: (screen: string, params?: Record<string, unknown>) => void;
@@ -184,11 +185,20 @@ export default function ExploreScreen() {
                 <Text style={styles.hofPostedBy}>
                   {t('explore.postedBy')} <Text style={{ fontWeight: 'bold' }}>@{quoteOfTheDay.username}</Text>
                 </Text>
-                <View style={styles.hofReactionBadge}>
-                  <Ionicons name="star" size={12} color="#FFD700" />
-                  <Text style={styles.hofReactionText}>
-                    {quoteOfTheDay.total_reactions} {t('explore.reactions')}
-                  </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <TouchableOpacity
+                    style={styles.zenModeBtn}
+                    onPress={() => navigation.navigate('ZenQuote', { quoteId: quoteOfTheDay.id })}
+                  >
+                    <Ionicons name="leaf" size={14} color="#fff" />
+                    <Text style={styles.zenModeBtnText}>{t('explore.zenMode')}</Text>
+                  </TouchableOpacity>
+                  <View style={styles.hofReactionBadge}>
+                    <Ionicons name="star" size={12} color="#FFD700" />
+                    <Text style={styles.hofReactionText}>
+                      {quoteOfTheDay.total_reactions} {t('explore.reactions')}
+                    </Text>
+                  </View>
                 </View>
               </View>
             </LinearGradient>
@@ -200,8 +210,8 @@ export default function ExploreScreen() {
 
   if (isLoading && exploreQuotes.length === 0) {
     return (
-      <View style={[styles.centered, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
+      <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
+        <ExploreFeedSkeleton colors={{ skeleton: colors.skeleton, shimmer: colors.shimmer }} count={3} />
       </View>
     );
   }
@@ -330,6 +340,16 @@ const getStyles = (colors: ThemeColors) =>
       gap: 4,
     },
     hofReactionText: { fontSize: 12, fontWeight: 'bold', color: '#FFD700' },
+    zenModeBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: 'rgba(255,255,255,0.2)',
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 12,
+      gap: 4,
+    },
+    zenModeBtnText: { fontSize: 12, fontWeight: 'bold', color: '#fff' },
     listContent: { paddingBottom: 30 },
     quoteCard: {
       borderRadius: 12,

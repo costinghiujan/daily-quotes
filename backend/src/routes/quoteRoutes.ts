@@ -12,6 +12,7 @@ import {
   searchQuotes,
   getExploreFeed,
   getQuoteOfTheDay,
+  moodSearch,
 } from '../controllers/quoteController';
 import { protect } from '../middleware/authMiddleware';
 
@@ -21,6 +22,7 @@ router.get('/feed', protect, getFeedQuotes);
 router.get('/explore', protect, getExploreFeed);
 router.get('/search', protect, searchQuotes);
 router.get('/hall-of-fame', protect, getQuoteOfTheDay);
+router.post('/mood-search', protect, moodSearch);
 
 router.post('/', protect, createQuote);
 router.get('/', protect, getAllQuotes);

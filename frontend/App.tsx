@@ -34,6 +34,7 @@ import SettingsScreen from './src/screens/SettingsScreen';
 import FriendsScreen from './src/screens/FriendsScreen';
 import BlockedUsersScreen from './src/screens/BlockedUsersScreen';
 import ExploreScreen from './src/screens/ExploreScreen';
+import ZenQuoteScreen from './src/screens/ZenQuoteScreen';
 import ScheduledNotificationsScreen from './src/screens/ScheduledNotificationsScreen';
 
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -297,6 +298,14 @@ const RootNavigator = () => {
               component={ProfileScreen} 
               options={{ 
                 headerShown: false,
+              }} 
+            />
+            <Stack.Screen 
+              name="ZenQuote" 
+              component={ZenQuoteScreen} 
+              options={{ 
+                headerShown: false,
+                animation: 'fade',
               }} 
             />
           </>

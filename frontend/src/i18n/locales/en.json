@@ -301,7 +301,8 @@
     "quoteOfTheDay": "Quote of the Day",
     "postedBy": "Posted by",
     "reactions": "reactions",
-    "pullToRefresh": "Pull down to refresh"
+    "pullToRefresh": "Pull down to refresh",
+    "zenMode": "Zen"
   },
   "comments": {
     "title": "Comments",

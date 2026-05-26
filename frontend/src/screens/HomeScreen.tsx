@@ -23,6 +23,8 @@ import { AlertContext } from '../context/AlertContext';
 import { useTranslation } from 'react-i18next';
 import { FeedQuote, REACTIONS_CONFIG, ReactionConfig } from '../types/FeedQuote';
 import { ThemeColors } from '../theme/colors';
+import { HomeFeedSkeleton } from '../components/SkeletonLoader';
+import MoodSelector from '../components/MoodSelector';
 
 interface AnimatedReactionButtonProps {
   reaction: ReactionConfig;
@@ -174,6 +176,7 @@ export default function HomeScreen({ navigation }: { navigation: HomeScreenNavig
   const [newText, setNewText] = useState('');
   const [newAuthor, setNewAuthor] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedMood, setSelectedMood] = useState<string | null>(null);
 
   const { colors } = useContext(ThemeContext);
   const { showAlert } = useContext(AlertContext);
@@ -433,14 +436,22 @@ export default function HomeScreen({ navigation }: { navigation: HomeScreenNavig
         )}
       </LinearGradient>
 
+      <MoodSelector
+        selectedMood={selectedMood}
+        onMoodSelect={(mood) => {
+          setSelectedMood(mood.query);
+          navigation.navigate('ZenQuote', { mood: mood.query });
+        }}
+      />
+
       <Text style={[styles.recentTitle, { color: colors.textDark }]}>{t('home.recent')}</Text>
     </View>
-  ), [colors, styles, user, newText, newAuthor, isSubmitting, handleAddQuote, t]);
+  ), [colors, styles, user, newText, newAuthor, isSubmitting, handleAddQuote, t, selectedMood, navigation]);
 
   if (isLoading && feedQuotes.length === 0) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
-        <ActivityIndicator size="large" color={colors.primary} />
+      <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
+        <HomeFeedSkeleton colors={{ skeleton: colors.skeleton, shimmer: colors.shimmer }} count={3} />
       </View>
     );
   }

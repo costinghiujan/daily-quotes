@@ -300,7 +300,8 @@
     "quoteOfTheDay": "Citarea Zilei",
     "postedBy": "Postat de",
     "reactions": "reacții",
-    "pullToRefresh": "Trage în jos pentru a reîmprospăta"
+    "pullToRefresh": "Trage în jos pentru a reîmprospăta",
+    "zenMode": "Zen"
   },
   "comments": {
     "title": "Comentarii",

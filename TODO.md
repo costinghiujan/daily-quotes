@@ -1,243 +1,86 @@
-# Daily Quotes - Project Review & Improvement Plan
+# Daily Quotes - TODO
 
-## Project Rating: 7.5 / 10
+## ✅ Completed Features
 
-### What's Good (Strengths)
-- **Full-stack architecture** with proper separation (Express backend + React Native frontend)
-- **PostgreSQL with pgvector** for semantic search - excellent foundation
-- **AI-powered features** (embeddings, semantic search, personalized recommendations)
-- **Gamification system** (XP, levels, badges)
-- **Multi-language support** (i18n with English and Romanian)
-- **Dark/Light theme** support via ThemeContext
-- **Push notifications** via Expo Push Notifications
-- **Friend system** with real-time chat
-- **Dockerized** for easy deployment
-- **Comprehensive API** with proper error handling patterns
-- **ESLint + Prettier** configured for code quality
-- **TypeScript strict mode** already enabled (`strict: true` in tsconfig.json)
+### Feature 1: Zen Mode
+- [x] ZenQuoteCard component with animated gradient background
+- [x] ZenQuoteScreen with full-screen immersive experience
+- [x] Navigation integration (stack navigator)
+- [x] ExploreScreen button to access Zen Mode
+- [x] i18n translations (en.json + ro.json)
 
-### What Needs Improvement (Weaknesses)
+### Feature 2: Mood Check-in
+- [x] MoodSelector component with mood emojis
+- [x] moodService API integration
+- [x] Backend mood-search endpoint (`POST /api/quotes/mood`)
+- [x] HomeScreen integration with mood-based quote recommendations
 
-#### Code Quality Issues
-1. ~~Excessive use of `any` types~~ ✅ FIXED
-2. ~~Missing TypeScript strict mode~~ ✅ ALREADY ENABLED
-3. **No unit tests** (Jest/Vitest) for either frontend or backend
-4. **No E2E tests** (Detox/Playwright)
-5. **No CI/CD pipeline** configured
-6. ~~No error boundary component~~ ✅ FIXED
-7. **No loading skeletons** - just ActivityIndicator spinners
-8. **No proper logging service** (just console.log/console.error)
-9. **No API response caching** strategy
-10. **No offline support** (no AsyncStorage caching of quotes)
-11. **No proper form validation library** (manual validation)
-12. **No Storybook** for component development
-13. **No performance monitoring** (no Sentry/DataDog)
-14. **No analytics** (no tracking of user behavior)
-15. **No proper error tracking** (no Sentry integration)
-16. **No environment-specific config** (hardcoded values)
-17. **No proper state management** (just React Context - fine for now, but no Zustand/Redux)
-18. **No proper navigation types** (navigation params are typed loosely)
-19. **No proper API error handling** (catch blocks just log errors)
+### Feature 3: Ambient Audio
+- [x] AudioService for background audio playback
+- [x] MuteButton component for toggling audio
+- [x] Zen Mode integration with ambient sounds
+- [x] expo-av dependency installed
 
-#### Missing Features (The 3 Big Ones)
-1. **Zen Mode** - No dedicated full-screen reading experience
-2. **Mood-based Semantic Search** - No mood check-in feature
-3. **Ambient Audio** - No background audio service
+### Feature 4: Input Validation & Security
+- [x] Auth validation schemas (registerSchema, loginSchema)
+- [x] Quote validation schemas (createQuoteSchema, moodSearchSchema, quoteIdSchema)
+- [x] Validation middleware with detailed error responses
+- [x] Security middleware (helmet + rate limiting)
+- [x] Rate limiter middleware
+- [x] Security middleware applied to backend index.ts
+- [x] JSON body size limit (10mb)
 
----
+### Feature 5: Testing Infrastructure
+- [x] Backend Jest configuration (jest.config.js)
+- [x] Frontend Jest configuration (jest.config.js)
+- [x] Frontend test setup with mocks (jest.setup.js)
+- [x] Backend health endpoint test
+- [x] Backend validation schema tests (auth + quotes)
+- [x] Frontend useDebounce hook test
+- [x] Test scripts in both package.json files
 
-## Quick Wins (Small Changes for Big Impact)
+### Feature 6: Custom React Hooks
+- [x] useFeed - quote feed with pagination, refresh, loading states
+- [x] useProfile - user profile fetching with loading/error states
+- [x] useDebounce - generic debounce hook for search inputs
 
-### 1. Fix `any` Types in Frontend ✅ DONE
-- [x] HomeScreen.tsx - Replaced `any` with proper types (`FeedQuote`, `ReactionConfig`, `ThemeColors`)
-- [x] ExploreScreen.tsx - Replaced `any` with proper types (`FeedQuote`, `ThemeColors`, `QuoteOfTheDay`)
-- [x] SearchScreen.tsx - Replaced `any` with proper types (`SearchResultUser`, `FeedQuote`, `ThemeColors`)
-- [x] NotificationsScreen.tsx - Replaced `any` with proper types (`AppNotification`, `ThemeColors`, `NotificationSection`)
-- [x] userService.ts - Replaced `any` with proper interfaces (`UserProfile`, `Badge`, `AllBadge`, `MyProfileResponse`, `UserProfileResponse`)
+### Feature 7: API Documentation
+- [x] OpenAPI/Swagger documentation covering all endpoints
+- [x] Auth endpoints (register, login)
+- [x] Quote endpoints (CRUD, mood search)
+- [x] User endpoints (profile, search)
+- [x] Friendship endpoints (list, requests, accept, reject)
+- [x] Message endpoints (conversations, messages)
+- [x] Notification endpoints (list, read-all)
+- [x] Session endpoints (list, revoke)
+- [x] Scheduled notification endpoints (CRUD)
+- [x] Health check endpoint
 
-### 2. Enable TypeScript Strict Mode ✅ ALREADY DONE
-- [x] `"strict": true` already set in `frontend/tsconfig.json`
-- [x] `"noImplicitAny": true` automatically enabled by `strict: true`
-- [x] `"strictNullChecks": true` automatically enabled by `strict: true`
-- [x] `npx tsc --noEmit` passes with zero errors
+### Feature 8: TypeScript & Code Quality
+- [x] Zero TypeScript compilation errors on both frontend and backend
+- [x] Proper type definitions for all new components
+- [x] ESLint compliance (fixed any types in validation middleware)
+- [x] Test files excluded from main tsconfig
 
-### 3. Add Error Boundary Component ✅ DONE
-- [x] Created `frontend/src/components/ErrorBoundary.tsx` with:
-  - Full-screen fallback UI with gradient icon, error message, and "Try Again" button
-  - Dev-only error details (name, message, component stack) in a scrollable red container
-  - `onError` callback prop for Sentry/analytics integration
-  - Custom `fallback` prop support for screen-specific error UIs
-  - Proper TypeScript types for all props and state
-- [x] Wrapped entire App.tsx with `<ErrorBoundary>` at the root level (outside SafeAreaProvider)
+## 📝 Pending / Future Improvements
 
-### 4. Add Loading Skeletons
-- [ ] Create `frontend/src/components/SkeletonLoader.tsx`
-- [ ] Replace ActivityIndicator in HomeScreen with skeleton
-- [ ] Replace ActivityIndicator in ExploreScreen with skeleton
-- [ ] Replace ActivityIndicator in ProfileScreen with skeleton
+### High Priority
+- [ ] Refresh token rotation mechanism
+- [ ] Email verification flow
+- [ ] Password reset functionality
+- [ ] Push notification token management UI
 
-### 5. Add Proper Logging Service
-- [ ] Create `frontend/src/utils/logger.ts` with log levels (debug, info, warn, error)
-- [ ] Create `backend/src/utils/logger.ts` with structured logging
-- [ ] Replace all `console.log`/`console.error` with logger service
+### Medium Priority
+- [ ] Image compression before upload
+- [ ] Offline support with local caching
+- [ ] Pagination for messages in ChatScreen
+- [ ] Typing indicators in conversations
+- [ ] Message search functionality
 
-### 6. Add API Response Caching
-- [ ] Create `frontend/src/utils/cache.ts` using AsyncStorage
-- [ ] Add TTL-based caching for quote feed
-- [ ] Add cache invalidation on pull-to-refresh
-
-### 7. Add Offline Support
-- [ ] Create `frontend/src/utils/offline.ts` for network status detection
-- [ ] Cache last 50 quotes locally
-- [ ] Show offline indicator when no connection
-
-### 8. Add Proper Navigation Types
-- [ ] Create `frontend/src/types/navigation.ts` with typed route params
-- [ ] Replace all `Record<string, unknown>` with proper param types
-
-### 9. Add Form Validation Library
-- [ ] Install `zod` or `yup` for schema validation
-- [ ] Create validation schemas for quote creation
-- [ ] Create validation schemas for registration/login
-
-### 10. Add Sentry for Error Tracking
-- [ ] Install `@sentry/react-native`
-- [ ] Configure DSN in environment variables
-- [ ] Add performance monitoring
-
-### 11. Add Unit Tests
-- [ ] Configure Jest for frontend
-- [ ] Configure Jest for backend
-- [ ] Write tests for aiService.ts
-- [ ] Write tests for gamificationService.ts
-- [ ] Write tests for quoteService API
-- [ ] Write tests for HomeScreen components
-
-### 12. Add CI/CD Pipeline
-- [ ] Create `.github/workflows/ci.yml` for GitHub Actions
-- [ ] Add lint step
-- [ ] Add type-check step
-- [ ] Add test step
-- [ ] Add build step
-
-### 13. Add Environment-Specific Config
-- [ ] Create `frontend/src/config/env.ts` with typed config
-- [ ] Use `.env` files for different environments
-- [ ] Add validation for required env vars
-
-### 14. Add Performance Monitoring
-- [ ] Add React.memo to heavy components
-- [ ] Add useMemo/useCallback where missing
-- [ ] Profile FlatList rendering performance
-- [ ] Add FlashList from Shopify for better list performance
-
----
-
-## Feature Implementation: Zen Mode (ZenQuoteCard)
-
-### Description
-A dedicated full-screen component for deep reading of the Quote of the Day, completely isolated from the rest of the UI.
-
-### Implementation Steps
-- [ ] Create `frontend/src/components/ZenQuoteCard.tsx`
-  - Full-screen component with animated gradient background (expo-linear-gradient)
-  - FadeIn animation for text appearance
-  - Hides bottom tab navigation
-  - Single purpose: deep reading (SRP)
-- [ ] Add navigation route for Zen Mode in App.tsx
-- [ ] Add "Zen Mode" button on ExploreScreen (Quote of the Day card)
-- [ ] Add "Zen Mode" button on HomeScreen (in top bar)
-- [ ] Add i18n translations for "Zen Mode" in en.json and ro.json
-- [ ] Add exit button (X) to return to previous screen
-- [ ] Add tap-to-pause animation (optional)
-
-### Files to Create/Modify
-- `frontend/src/components/ZenQuoteCard.tsx` (NEW)
-- `frontend/App.tsx` (add route)
-- `frontend/src/screens/ExploreScreen.tsx` (add button)
-- `frontend/src/screens/HomeScreen.tsx` (add button)
-- `frontend/src/i18n/locales/en.json` (add translations)
-- `frontend/src/i18n/locales/ro.json` (add translations)
-
----
-
-## Feature Implementation: Mood-Based Semantic Search
-
-### Description
-Add a mood check-in section at the top of HomeScreen that uses the existing semantic search (pgvector) to return mood-relevant quotes.
-
-### Implementation Steps
-- [ ] Create mood configuration with 5 moods: 😔 Sad, 🤯 Stressed, 🎯 Motivated, 😊 Happy, 🧘 Peaceful
-- [ ] Add mood section UI to HomeScreen header
-- [ ] Create backend endpoint `POST /api/quotes/mood-search`
-  - Takes mood keyword, vectorizes it using aiService.getEmbedding()
-  - Returns top 10 semantically similar quotes using pgvector
-  - Reuses existing AI logic (DRY principle)
-- [ ] Create frontend API method `quoteService.searchByMood(mood: string)`
-- [ ] Display mood search results in a horizontal scrollable list or modal
-- [ ] Add i18n translations for mood labels
-
-### Files to Create/Modify
-- `backend/src/controllers/quoteController.ts` (add moodSearch handler)
-- `backend/src/routes/quoteRoutes.ts` (add route)
-- `frontend/src/api/quoteService.ts` (add searchByMood method)
-- `frontend/src/screens/HomeScreen.tsx` (add mood section)
-- `frontend/src/i18n/locales/en.json` (add translations)
-- `frontend/src/i18n/locales/ro.json` (add translations)
-
----
-
-## Feature Implementation: Ambient Audio Module
-
-### Description
-A Singleton AudioService that plays subtle ambient sounds (rain, lo-fi) when user enters Zen Mode or Explore screen.
-
-### Implementation Steps
-- [ ] Install `expo-av` if not already installed
-- [ ] Create `frontend/src/services/AudioService.ts`
-  - Singleton pattern
-  - Methods: play(soundType), pause(), stop(), isPlaying()
-  - Sound types: 'rain', 'lofi', 'silence'
-  - Error handling: stop on app background (AppState listener)
-  - Memory leak prevention: cleanup on unmount
-- [ ] Create `frontend/src/components/AudioControl.tsx`
-  - Discreet mute/unmute button
-  - Sound selection dropdown (rain, lofi)
-- [ ] Integrate AudioService with ZenQuoteCard
-- [ ] Integrate AudioService with ExploreScreen
-- [ ] Add i18n translations for audio controls
-
-### Files to Create/Modify
-- `frontend/src/services/AudioService.ts` (NEW)
-- `frontend/src/components/AudioControl.tsx` (NEW)
-- `frontend/src/components/ZenQuoteCard.tsx` (integrate audio)
-- `frontend/src/screens/ExploreScreen.tsx` (integrate audio)
-- `frontend/src/i18n/locales/en.json` (add translations)
-- `frontend/src/i18n/locales/ro.json` (add translations)
-- `frontend/package.json` (add expo-av dependency)
-
----
-
-## Summary
-
-| Category | Current | Target |
-|----------|---------|--------|
-| Code Quality | 7.5/10 | 9/10 |
-| Testing | 0/10 | 7/10 |
-| Features | 7/10 | 9/10 |
-| Performance | 6/10 | 8/10 |
-| UX/UI | 7/10 | 9/10 |
-| **Overall** | **7.5/10** | **10/10** |
-
-### Priority Order
-1. ✅ Fix `any` types (Quick win, already done)
-2. ✅ TypeScript strict mode (Already enabled)
-3. ✅ Error Boundary Component (Done)
-4. Implement Zen Mode (Feature #1)
-5. Implement Mood-Based Search (Feature #2)
-6. Implement Ambient Audio (Feature #3)
-7. Add Loading Skeletons
-8. Add proper logging + Sentry
-9. Add unit tests
-10. Add CI/CD pipeline
-11. Add offline support + caching
+### Low Priority
+- [ ] Dark mode improvements
+- [ ] Accessibility enhancements
+- [ ] Performance optimization (memoization)
+- [ ] E2E testing with Detox or Maestro
+- [ ] CI/CD pipeline improvements
+- [ ] Docker optimization
