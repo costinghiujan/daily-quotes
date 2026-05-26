@@ -41,6 +41,8 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import './src/i18n';
 
+import ErrorBoundary from './src/components/ErrorBoundary';
+
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowBanner: true,
@@ -306,15 +308,17 @@ const RootNavigator = () => {
 
 export default function App() {
   return (
-    <SafeAreaProvider>
-      <ThemeProvider>
-        <AlertProvider>
-          <AuthProvider>
-            <RootNavigator />
-          </AuthProvider>
-        </AlertProvider>
-      </ThemeProvider>
-    </SafeAreaProvider>
+    <ErrorBoundary>
+      <SafeAreaProvider>
+        <ThemeProvider>
+          <AlertProvider>
+            <AuthProvider>
+              <RootNavigator />
+            </AuthProvider>
+          </AlertProvider>
+        </ThemeProvider>
+      </SafeAreaProvider>
+    </ErrorBoundary>
   );
 }
 
