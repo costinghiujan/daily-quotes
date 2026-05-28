@@ -133,4 +133,46 @@ export const userService = {
       throw error;
     }
   },
+
+  // Feature D: Daily Login Streak
+  trackDailyLogin: async (): Promise<{ daily_streak: number; streak_bonus: number; xp_awarded: number }> => {
+    try {
+      const response = await apiClient.post('/users/track-login');
+      return response.data.data;
+    } catch (error) {
+      console.error('[Eroare Frontend] Track login:', error);
+      throw error;
+    }
+  },
+
+  getStreakInfo: async (): Promise<{ daily_streak: number; last_active_date: string; xp: number; level: number }> => {
+    try {
+      const response = await apiClient.get('/users/streak');
+      return response.data.data;
+    } catch (error) {
+      console.error('[Eroare Frontend] Get streak:', error);
+      throw error;
+    }
+  },
+
+  // Feature A: Quote Reflections
+  recordReflection: async (quoteId: number, emotion: string): Promise<any> => {
+    try {
+      const response = await apiClient.post('/users/reflections', { quoteId, emotion });
+      return response.data.data;
+    } catch (error) {
+      console.error('[Eroare Frontend] Record reflection:', error);
+      throw error;
+    }
+  },
+
+  getReflectionHistory: async (): Promise<any[]> => {
+    try {
+      const response = await apiClient.get('/users/reflections');
+      return response.data.data;
+    } catch (error) {
+      console.error('[Eroare Frontend] Get reflections:', error);
+      throw error;
+    }
+  },
 };

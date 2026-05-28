@@ -130,4 +130,26 @@ export const quoteService = {
       return null;
     }
   },
+
+  // Feature G: Semantic Search
+  semanticSearchQuotes: async (query: string): Promise<any[]> => {
+    try {
+      const response = await apiClient.get(`/quotes/search?q=${encodeURIComponent(query)}&semantic=true`);
+      return response.data.data;
+    } catch (error) {
+      console.error('[Eroare Frontend] Căutare semantică:', error);
+      throw error;
+    }
+  },
+
+  // Feature H: Similar Quotes
+  getSimilarQuotes: async (quoteId: number): Promise<{ source: any; data: any[] }> => {
+    try {
+      const response = await apiClient.get(`/quotes/${quoteId}/similar`);
+      return response.data;
+    } catch (error) {
+      console.error('[Eroare Frontend] Preluare citate similare:', error);
+      throw error;
+    }
+  },
 };

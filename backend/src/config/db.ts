@@ -183,6 +183,8 @@ export const initDB = async () => {
       await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS level INTEGER DEFAULT 1;`);
       await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_daily_prompt_date DATE;`);
       await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS cover_photo_url TEXT;`);
+      await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_active_date DATE;`);
+      await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS daily_streak INTEGER DEFAULT 0;`);
 
       await pool.query(
         `ALTER TABLE friendships ADD COLUMN IF NOT EXISTS streak_count INTEGER DEFAULT 0;`,
@@ -232,6 +234,28 @@ export const initDB = async () => {
         ('Trendsetter', 'Un citat de-al tău a primit 50 de aprecieri.', 'star', 'QUOTE_LIKES', 50),
         ('Influencer', 'Un citat de-al tău a primit 100 de aprecieri.', 'heart', 'QUOTE_LIKES', 100),
         ('Reacții în Lanț', 'Ai dat 100 de reacții.', 'hand-thumbs-up', 'REACTIONS_GIVEN', 100)
+      ON CONFLICT (name) DO NOTHING;
+    `);
+
+    // Quote reflections table (Feature A)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS quote_reflections (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        quote_id INTEGER NOT NULL REFERENCES quotes(id) ON DELETE CASCADE,
+        emotion VARCHAR(50) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Insert streak milestone badges (Feature K)
+    await pool.query(`
+      INSERT INTO badges (name, description, icon_name, requirement_type, requirement_value)
+      VALUES 
+        ('Debut în Serie', 'Prima ta zi consecutivă pe platformă.', 'flame', 'STREAK_MILESTONE', 1),
+        ('Săptămâna 1', '7 zile consecutive pe platformă.', 'flame', 'STREAK_MILESTONE', 7),
+        ('Luna 1', '30 de zile consecutive pe platformă.', 'flame', 'STREAK_MILESTONE', 30),
+        ('Luna 3', '90 de zile consecutive pe platformă.', 'flame', 'STREAK_MILESTONE', 90)
       ON CONFLICT (name) DO NOTHING;
     `);
 

@@ -13,13 +13,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
-import { friendshipService, Friend } from '../api/friendshipService';
+import { friendshipService, Friend, LeaderboardEntry } from '../api/friendshipService';
 import { ThemeContext } from '../context/ThemeContext';
 import { AlertContext } from '../context/AlertContext';
 import { ThemeColors } from '../theme/colors';
 
-export default function FriendsScreen() {
+type TabType = 'friends' | 'leaderboard';
 
+export default function FriendsScreen() {
   const { colors } = useContext(ThemeContext);
   const { showAlert } = useContext(AlertContext);
   const styles = useMemo(() => getStyles(colors), [colors]);
@@ -33,7 +34,9 @@ export default function FriendsScreen() {
     });
   }, [navigation]);
 
+  const [activeTab, setActiveTab] = useState<TabType>('friends');
   const [friends, setFriends] = useState<Friend[]>([]);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchFriends = async () => {
@@ -49,10 +52,26 @@ export default function FriendsScreen() {
     }
   };
 
+  const fetchLeaderboard = async () => {
+    setIsLoading(true);
+    try {
+      const data = await friendshipService.getLeaderboard();
+      setLeaderboard(data);
+    } catch (error) {
+      console.error('[Eroare UI] Nu am putut încărca leaderboard:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useFocusEffect(
     useCallback(() => {
-      fetchFriends();
-    }, []),
+      if (activeTab === 'friends') {
+        fetchFriends();
+      } else {
+        fetchLeaderboard();
+      }
+    }, [activeTab]),
   );
 
   const handleUnfriend = (friendshipId: number, friendName: string) => {
@@ -93,6 +112,13 @@ export default function FriendsScreen() {
         }
       },
     });
+  };
+
+  const getRankEmoji = (rank: number) => {
+    if (rank === 1) return '🥇';
+    if (rank === 2) return '🥈';
+    if (rank === 3) return '🥉';
+    return `#${rank}`;
   };
 
   const renderFriendItem = ({ item }: { item: Friend }) => {
@@ -173,7 +199,52 @@ export default function FriendsScreen() {
     );
   };
 
-  if (isLoading && friends.length === 0) {
+  const renderLeaderboardItem = ({ item, index }: { item: LeaderboardEntry; index: number }) => {
+    const displayName = item.full_name || item.username;
+    const rank = index + 1;
+
+    return (
+      <TouchableOpacity
+        style={[styles.leaderboardCard, rank <= 3 && styles.leaderboardTopCard]}
+        onPress={() => navigation.navigate('ProfileScreen', { userId: item.id })}
+      >
+        <View style={styles.rankContainer}>
+          <Text style={[styles.rankText, rank <= 3 && styles.rankTextTop]}>
+            {getRankEmoji(rank)}
+          </Text>
+        </View>
+        {item.profile_picture_url ? (
+          <Image source={{ uri: item.profile_picture_url }} style={styles.avatar} />
+        ) : (
+          <Image source={require('../../assets/user-default.jpg')} style={styles.avatar} />
+        )}
+        <View style={styles.leaderboardInfo}>
+          <Text style={styles.leaderboardName} numberOfLines={1}>
+            {displayName}
+          </Text>
+          <Text style={styles.leaderboardUsername}>@{item.username}</Text>
+        </View>
+        <View style={styles.statsContainer}>
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>{item.level}</Text>
+            <Text style={styles.statLabel}>Lvl</Text>
+          </View>
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>{item.xp}</Text>
+            <Text style={styles.statLabel}>XP</Text>
+          </View>
+          {item.daily_streak > 0 && (
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>🔥{item.daily_streak}</Text>
+              <Text style={styles.statLabel}>Streak</Text>
+            </View>
+          )}
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  if (isLoading && friends.length === 0 && leaderboard.length === 0) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -191,25 +262,90 @@ export default function FriendsScreen() {
           >
             <Ionicons name="arrow-back" size={20} color={colors.iconColor} />
           </TouchableOpacity>
-          <Text style={[styles.logoText, { color: colors.textDark }]}>{t('friends.title')}</Text>
+          <Text style={[styles.logoText, { color: colors.textDark }]}>
+            {activeTab === 'friends' ? t('friends.title') : t('friends.leaderboard')}
+          </Text>
         </View>
       </View>
 
-      <FlatList
-        data={friends}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={renderFriendItem}
-        contentContainerStyle={styles.listContent}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Ionicons name="people-outline" size={64} color={colors.textLight} />
-            <Text style={styles.emptyText}>{t('friends.emptyTitle')}</Text>
-            <Text style={styles.emptySubText}>
-              {t('friends.emptySub')}
-            </Text>
-          </View>
-        }
-      />
+      {/* Tab Switcher */}
+      <View style={[styles.tabBar, { borderBottomColor: colors.separatorColor }]}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'friends' && styles.activeTab]}
+          onPress={() => setActiveTab('friends')}
+        >
+          <Ionicons
+            name="people"
+            size={18}
+            color={activeTab === 'friends' ? colors.primary : colors.textLight}
+          />
+          <Text
+            style={[
+              styles.tabText,
+              { color: activeTab === 'friends' ? colors.primary : colors.textLight },
+            ]}
+          >
+            {t('friends.title')}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'leaderboard' && styles.activeTab]}
+          onPress={() => setActiveTab('leaderboard')}
+        >
+          <Ionicons
+            name="trophy"
+            size={18}
+            color={activeTab === 'leaderboard' ? colors.primary : colors.textLight}
+          />
+          <Text
+            style={[
+              styles.tabText,
+              { color: activeTab === 'leaderboard' ? colors.primary : colors.textLight },
+            ]}
+          >
+            {t('friends.leaderboard')}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {activeTab === 'friends' ? (
+        <FlatList
+          data={friends}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={renderFriendItem}
+          contentContainerStyle={styles.listContent}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Ionicons name="people-outline" size={64} color={colors.textLight} />
+              <Text style={styles.emptyText}>{t('friends.emptyTitle')}</Text>
+              <Text style={styles.emptySubText}>
+                {t('friends.emptySub')}
+              </Text>
+            </View>
+          }
+        />
+      ) : (
+        <FlatList
+          data={leaderboard}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={renderLeaderboardItem}
+          contentContainerStyle={styles.listContent}
+          ListHeaderComponent={
+            <View style={styles.leaderboardHeader}>
+              <Ionicons name="trophy" size={24} color="#FFD700" />
+              <Text style={styles.leaderboardHeaderText}>
+                {t('friends.leaderboardDesc')}
+              </Text>
+            </View>
+          }
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Ionicons name="trophy-outline" size={64} color={colors.textLight} />
+              <Text style={styles.emptyText}>{t('friends.noLeaderboard')}</Text>
+            </View>
+          }
+        />
+      )}
     </View>
   );
 }
@@ -244,8 +380,31 @@ const getStyles = (colors: ThemeColors) =>
       alignItems: 'center',
       marginRight: 10,
     },
+    tabBar: {
+      flexDirection: 'row',
+      marginHorizontal: 15,
+      marginBottom: 10,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.separatorColor,
+      overflow: 'hidden',
+    },
+    tab: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 10,
+      gap: 6,
+    },
+    activeTab: {
+      backgroundColor: colors.primary + '15',
+    },
+    tabText: {
+      fontSize: 14,
+      fontWeight: '600',
+    },
     listContent: { padding: 15, paddingBottom: 30 },
-
 
     friendCard: {
       flexDirection: 'row',
@@ -310,6 +469,79 @@ const getStyles = (colors: ThemeColors) =>
       backgroundColor: colors.error,
       justifyContent: 'center',
       alignItems: 'center',
+    },
+
+    // Leaderboard styles
+    leaderboardHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      paddingVertical: 12,
+      marginBottom: 10,
+    },
+    leaderboardHeaderText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.textLight,
+    },
+    leaderboardCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.card,
+      padding: 14,
+      marginBottom: 8,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    leaderboardTopCard: {
+      borderColor: '#FFD700',
+      borderWidth: 1.5,
+    },
+    rankContainer: {
+      width: 40,
+      alignItems: 'center',
+      marginRight: 8,
+    },
+    rankText: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: colors.textLight,
+    },
+    rankTextTop: {
+      fontSize: 22,
+    },
+    leaderboardInfo: {
+      flex: 1,
+      marginRight: 8,
+    },
+    leaderboardName: {
+      fontSize: 15,
+      fontWeight: 'bold',
+      color: colors.textDark,
+    },
+    leaderboardUsername: {
+      fontSize: 12,
+      color: colors.textLight,
+      marginTop: 2,
+    },
+    statsContainer: {
+      flexDirection: 'row',
+      gap: 12,
+    },
+    statItem: {
+      alignItems: 'center',
+    },
+    statValue: {
+      fontSize: 14,
+      fontWeight: 'bold',
+      color: colors.primary,
+    },
+    statLabel: {
+      fontSize: 10,
+      color: colors.textLight,
+      textTransform: 'uppercase',
     },
 
     emptyContainer: { alignItems: 'center', marginTop: 80, paddingHorizontal: 20 },

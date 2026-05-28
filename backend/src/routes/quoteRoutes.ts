@@ -13,6 +13,7 @@ import {
   getExploreFeed,
   getQuoteOfTheDay,
   moodSearch,
+  getSimilarQuotes,
 } from '../controllers/quoteController';
 import { protect } from '../middleware/authMiddleware';
 
@@ -27,6 +28,7 @@ router.post('/mood-search', protect, moodSearch);
 router.post('/', protect, createQuote);
 router.get('/', protect, getAllQuotes);
 router.get('/:id', protect, getQuoteById);
+router.get('/:id/similar', protect, getSimilarQuotes);
 router.put('/:id', protect, updateQuote);
 router.delete('/:id', protect, deleteQuote);
 router.post('/:id/react', protect, toggleReaction);

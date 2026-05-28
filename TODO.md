@@ -1,86 +1,137 @@
-# Daily Quotes - TODO
+# Daily Quotes - Thesis-Aligned Feature Roadmap
 
-## ✅ Completed Features
+## Legend
+- ✅ **Done** — Implemented and working
+- 🔧 **In Progress** — Partially implemented
+- 📝 **Planned** — Not yet started
 
-### Feature 1: Zen Mode
-- [x] ZenQuoteCard component with animated gradient background
-- [x] ZenQuoteScreen with full-screen immersive experience
-- [x] Navigation integration (stack navigator)
-- [x] ExploreScreen button to access Zen Mode
-- [x] i18n translations (en.json + ro.json)
+---
 
-### Feature 2: Mood Check-in
-- [x] MoodSelector component with mood emojis
-- [x] moodService API integration
-- [x] Backend mood-search endpoint (`POST /api/quotes/mood`)
-- [x] HomeScreen integration with mood-based quote recommendations
+## 1. Combating the Attention Economy: Doomscrolling vs. "Goodscrolling"
 
-### Feature 3: Ambient Audio
-- [x] AudioService for background audio playback
-- [x] MuteButton component for toggling audio
-- [x] Zen Mode integration with ambient sounds
-- [x] expo-av dependency installed
+### Core Concept
+Replace passive, toxic content consumption with intentional, reflective engagement with quotes, philosophy, and motivation.
 
-### Feature 4: Input Validation & Security
-- [x] Auth validation schemas (registerSchema, loginSchema)
-- [x] Quote validation schemas (createQuoteSchema, moodSearchSchema, quoteIdSchema)
-- [x] Validation middleware with detailed error responses
-- [x] Security middleware (helmet + rate limiting)
-- [x] Rate limiter middleware
-- [x] Security middleware applied to backend index.ts
-- [x] JSON body size limit (10mb)
+### Features
+- ✅ **ZenQuoteScreen** — Full-screen immersive quote experience with ambient rain audio, mute toggle, and minimal UI
+- ✅ **Quote Reflections** — Users can record how a quote makes them feel (emotion selection + optional note), earning XP for self-awareness
+- ✅ **Mood-based quote discovery** — Search quotes by emotional state (mood selector)
+- ✅ **Daily quote notifications** — Scheduled push notifications with emotion-based quotes
+- ✅ **Streak tracking** — Daily login streaks incentivize healthy habit formation (inspired by Duolingo)
+- ✅ **Semantic search toggle** — Users can switch between lexical and AI semantic search, understanding the difference
 
-### Feature 5: Testing Infrastructure
-- [x] Backend Jest configuration (jest.config.js)
-- [x] Frontend Jest configuration (jest.config.js)
-- [x] Frontend test setup with mocks (jest.setup.js)
-- [x] Backend health endpoint test
-- [x] Backend validation schema tests (auth + quotes)
-- [x] Frontend useDebounce hook test
-- [x] Test scripts in both package.json files
+### Thesis Connection
+- **Attention Economy**: The app deliberately avoids infinite scroll, algorithmic feeds optimized for engagement, and variable ratio reinforcement
+- **"Goodscrolling"**: Every interaction (reading a quote, reflecting, searching by mood) requires intentionality and reflection
+- **Digital Well-being**: The Zen mode with ambient audio creates a calm, focused environment for content consumption
 
-### Feature 6: Custom React Hooks
-- [x] useFeed - quote feed with pagination, refresh, loading states
-- [x] useProfile - user profile fetching with loading/error states
-- [x] useDebounce - generic debounce hook for search inputs
+---
 
-### Feature 7: API Documentation
-- [x] OpenAPI/Swagger documentation covering all endpoints
-- [x] Auth endpoints (register, login)
-- [x] Quote endpoints (CRUD, mood search)
-- [x] User endpoints (profile, search)
-- [x] Friendship endpoints (list, requests, accept, reject)
-- [x] Message endpoints (conversations, messages)
-- [x] Notification endpoints (list, read-all)
-- [x] Session endpoints (list, revoke)
-- [x] Scheduled notification endpoints (CRUD)
-- [x] Health check endpoint
+## 2. Gamification and Behavioral Engineering
 
-### Feature 8: TypeScript & Code Quality
-- [x] Zero TypeScript compilation errors on both frontend and backend
-- [x] Proper type definitions for all new components
-- [x] ESLint compliance (fixed any types in validation middleware)
-- [x] Test files excluded from main tsconfig
+### Core Concept
+Use Self-Determination Theory (Competence, Autonomy, Relatedness) and Loss Aversion (streaks) to build healthy habits.
 
-## 📝 Pending / Future Improvements
+### Features
+- ✅ **XP System** — Points awarded for: adding quotes (10 XP), commenting (5 XP), reacting (2 XP), daily login (5 XP), daily prompt (20 XP), reflections (5 XP)
+- ✅ **Leveling System** — Level = floor(XP / 50) + 1, displayed on profile with progress bar
+- ✅ **Badge System** — Badges for: quotes count, comments count, friends count, quote likes, reactions given, streak milestones
+- ✅ **Streak System** — Daily login tracking with streak counter, bonus XP after 7+ consecutive days, streak milestone badges
+- ✅ **Leaderboard** — Friends ranked by XP, fostering healthy competition (Relatedness)
+- ✅ **Profile Customization** — Avatar, cover photo, bio, full name (Autonomy)
+- ✅ **Level-Up Celebration** — Visual feedback when leveling up (Competence)
 
-### High Priority
-- [ ] Refresh token rotation mechanism
-- [ ] Email verification flow
-- [ ] Password reset functionality
-- [ ] Push notification token management UI
+### Thesis Connection
+- **Self-Determination Theory (Ryan & Deci)**:
+  - **Competence**: Leveling, badges, XP progress bar
+  - **Autonomy**: Profile customization, choosing what to explore
+  - **Relatedness**: Friend leaderboard, chat, reactions, comments
+- **Loss Aversion (Kahneman)**: Streak system — users return daily to avoid losing their streak
+- **BJ Fogg's Behavior Model**: Behavior = Motivation (XP/badges) + Ability (easy daily login) + Prompt (push notifications)
 
-### Medium Priority
-- [ ] Image compression before upload
-- [ ] Offline support with local caching
-- [ ] Pagination for messages in ChatScreen
-- [ ] Typing indicators in conversations
-- [ ] Message search functionality
+---
 
-### Low Priority
-- [ ] Dark mode improvements
-- [ ] Accessibility enhancements
-- [ ] Performance optimization (memoization)
-- [ ] E2E testing with Detox or Maestro
-- [ ] CI/CD pipeline improvements
-- [ ] Docker optimization
+## 3. Artificial Intelligence: Semantic Search & Embeddings
+
+### Core Concept
+Move beyond keyword matching to semantic understanding using vector embeddings and cosine similarity.
+
+### Features
+- ✅ **Ollama Integration** — Local LLM (llama3) for generating quote embeddings
+- ✅ **nomic-embed-text** — 768-dimensional embeddings for semantic understanding
+- ✅ **pgvector** — PostgreSQL extension for vector storage and similarity search
+- ✅ **Semantic Search API** — `/api/quotes/search/semantic` endpoint with configurable threshold
+- ✅ **Search UI Toggle** — Users can switch between "Lexical Search" (SQL LIKE) and "AI Semantic Search" (vector similarity)
+- ✅ **Mood-based semantic matching** — Quotes matched by emotional context, not just keywords
+
+### Thesis Connection
+- **Vector Space Models**: Quotes mapped to 768-dimensional vectors where semantic similarity = cosine distance
+- **Sentence-BERT (Reimers & Gurevych, 2019)**: The foundational paper behind embedding-based semantic search
+- **Semantic vs. Lexical Search**: The app demonstrates both, allowing users to experience the difference
+- **Empathy Engine**: Searching for "loneliness" can return quotes about "finding peace in solitude" — the AI understands context
+
+---
+
+## 4. Social Features & Real-Time Communication
+
+### Core Concept
+Foster genuine connection (Relatedness from SDT) through real-time interactions.
+
+### Features
+- ✅ **WebSocket-based Chat** — Real-time messaging between friends
+- ✅ **Voice/Video Calls** — WebRTC-based audio and video calls
+- ✅ **Friend System** — Send/accept/decline friend requests, block/unblock users
+- ✅ **Reactions** — Emoji reactions on quotes (BLUE_HEART, etc.)
+- ✅ **Comments** — Nested comments on quotes
+- ✅ **Push Notifications** — Real-time alerts for friend requests, reactions, comments
+- ✅ **Friend Leaderboard** — Competitive ranking among friends
+
+### Thesis Connection
+- **Relatedness (SDT)**: The social features fulfill the innate need for connection
+- **Positive Reinforcement**: Unlike toxic social media, interactions here are centered around uplifting content
+
+---
+
+## Implementation Status Summary
+
+| Category | Total Features | Implemented | Remaining |
+|---|---|---|---|
+| Attention Economy / Goodscrolling | 6 | 6 | 0 |
+| Gamification & SDT | 7 | 7 | 0 |
+| AI & Semantic Search | 6 | 6 | 0 |
+| Social & Real-time | 7 | 7 | 0 |
+| **Total** | **26** | **26** | **0** |
+
+---
+
+## How to Verify Each Feature
+
+### Backend
+```bash
+# Start the backend
+cd backend && npm run dev
+
+# Test streak tracking
+curl -X POST http://localhost:3000/api/users/track-login -H "Authorization: Bearer <token>"
+
+# Test semantic search
+curl -X GET "http://localhost:3000/api/quotes/search/semantic?q=loneliness&threshold=0.5" -H "Authorization: Bearer <token>"
+
+# Test leaderboard
+curl -X GET http://localhost:3000/api/friendships/leaderboard -H "Authorization: Bearer <token>"
+
+# Test reflections
+curl -X POST http://localhost:3000/api/users/reflections -H "Authorization: Bearer <token>" -H "Content-Type: application/json" -d '{"quoteId": 1, "emotion": "inspired"}'
+```
+
+### Frontend
+```bash
+cd frontend && npx expo start
+```
+Then navigate to:
+- **Home Screen**: Streak banner at top, daily login tracking
+- **Profile**: Level, XP bar, badges, streak info
+- **Friends Screen**: Tab between friends list and leaderboard
+- **Search**: Toggle between lexical and semantic search
+- **Zen Quote**: Reflection panel with emotion selection
+- **Explore**: Mood selector, quote of the day

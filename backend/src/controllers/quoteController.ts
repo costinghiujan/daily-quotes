@@ -395,6 +395,7 @@ export const searchQuotes = async (req: AuthRequest, res: Response): Promise<voi
   try {
     const searchQuery = req.query.q as string;
     const currentUserId = req.user?.id;
+    const useSemantic = req.query.semantic === 'true';
 
     if (!searchQuery || searchQuery.trim() === '') {
       res
@@ -408,11 +409,61 @@ export const searchQuotes = async (req: AuthRequest, res: Response): Promise<voi
       return;
     }
 
+    // Feature G: Semantic Search via vector similarity
+    if (useSemantic) {
+      const embeddingArray = await aiService.getEmbedding(searchQuery);
+
+      if (embeddingArray) {
+        const embeddingParam = `[${embeddingArray.join(',')}]`;
+
+        const semanticSQL = `
+          SELECT 
+            q.id, q.text, q.author, q.created_at, q.hashtags,
+            u.id AS post_user_id, u.username, u.full_name, u.profile_picture_url,
+            COUNT(CASE WHEN qr.reaction_type = 'BLUE_HEART' THEN 1 END) AS blue_heart_count,
+            COUNT(CASE WHEN qr.reaction_type = 'APPLAUSE' THEN 1 END) AS applause_count,
+            COUNT(CASE WHEN qr.reaction_type = 'SAD' THEN 1 END) AS sad_count,
+            COUNT(CASE WHEN qr.reaction_type = 'TOUCHING' THEN 1 END) AS touching_count,
+            COUNT(CASE WHEN qr.reaction_type = 'HUG' THEN 1 END) AS hug_count,
+            COUNT(CASE WHEN qr.reaction_type = 'MIND_BLOWN' THEN 1 END) AS mind_blown_count,
+            ARRAY_REMOVE(ARRAY_AGG(CASE WHEN qr.user_id = $2 THEN qr.reaction_type END), NULL) AS user_reactions,
+            (1 - (q.embedding <=> $1::vector)) AS semantic_score
+          FROM quotes q
+          JOIN users u ON q.user_id = u.id
+          LEFT JOIN quote_reactions qr ON q.id = qr.quote_id
+          LEFT JOIN blocks b1 ON b1.blocker_id = $2 AND b1.blocked_id = u.id
+          LEFT JOIN blocks b2 ON b2.blocker_id = u.id AND b2.blocked_id = $2
+          WHERE q.embedding IS NOT NULL
+            AND b1.blocker_id IS NULL 
+            AND b2.blocker_id IS NULL
+          GROUP BY q.id, u.id
+          ORDER BY semantic_score DESC
+          LIMIT 30;
+        `;
+
+        const result = await query(semanticSQL, [embeddingParam, currentUserId]);
+
+        res.status(200).json({
+          status: 'success',
+          search_type: 'semantic',
+          data: result.rows,
+        });
+        return;
+      }
+      // Fall through to lexical search if embedding fails
+    }
+
+    // Lexical search (original ILIKE-based)
     const searchSQL = `
       SELECT 
-        q.id, q.text, q.author, q.created_at,
+        q.id, q.text, q.author, q.created_at, q.hashtags,
         u.id AS post_user_id, u.username, u.full_name, u.profile_picture_url,
         COUNT(CASE WHEN qr.reaction_type = 'BLUE_HEART' THEN 1 END) AS blue_heart_count,
+        COUNT(CASE WHEN qr.reaction_type = 'APPLAUSE' THEN 1 END) AS applause_count,
+        COUNT(CASE WHEN qr.reaction_type = 'SAD' THEN 1 END) AS sad_count,
+        COUNT(CASE WHEN qr.reaction_type = 'TOUCHING' THEN 1 END) AS touching_count,
+        COUNT(CASE WHEN qr.reaction_type = 'HUG' THEN 1 END) AS hug_count,
+        COUNT(CASE WHEN qr.reaction_type = 'MIND_BLOWN' THEN 1 END) AS mind_blown_count,
         ARRAY_REMOVE(ARRAY_AGG(CASE WHEN qr.user_id = $2 THEN qr.reaction_type END), NULL) AS user_reactions
       FROM quotes q
       JOIN users u ON q.user_id = u.id
@@ -429,10 +480,88 @@ export const searchQuotes = async (req: AuthRequest, res: Response): Promise<voi
 
     const result = await query(searchSQL, [`%${searchQuery}%`, currentUserId]);
 
-    res.status(200).json({ status: 'success', data: result.rows });
+    res.status(200).json({ status: 'success', search_type: 'lexical', data: result.rows });
   } catch (error) {
     console.error('[Eroare Controller] Nu s-au putut căuta citatele:', error);
     res.status(500).json({ status: 'error', message: 'Eroare internă la căutarea citatelor.' });
+  }
+};
+
+/**
+ * Feature H: Similar Quotes - Find quotes semantically similar to a given quote.
+ * GET /api/quotes/:id/similar
+ */
+export const getSimilarQuotes = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const currentUserId = req.user?.id;
+
+    if (!currentUserId) {
+      res.status(401).json({ status: 'error', message: 'Neautorizat.' });
+      return;
+    }
+
+    // Get the embedding of the source quote
+    const sourceRes = await query('SELECT id, text, author, embedding FROM quotes WHERE id = $1', [
+      id,
+    ]);
+
+    if (sourceRes.rows.length === 0) {
+      res.status(404).json({ status: 'error', message: 'Citatul nu a fost găsit.' });
+      return;
+    }
+
+    const sourceQuote = sourceRes.rows[0];
+
+    if (!sourceQuote.embedding) {
+      res.status(400).json({
+        status: 'error',
+        message: 'Citatul sursă nu are un embedding. Nu se pot găsi citate similare.',
+      });
+      return;
+    }
+
+    const embeddingParam =
+      typeof sourceQuote.embedding === 'string'
+        ? sourceQuote.embedding
+        : `[${sourceQuote.embedding.join(',')}]`;
+
+    const similarSQL = `
+      SELECT 
+        q.id, q.text, q.author, q.created_at, q.hashtags,
+        u.id AS post_user_id, u.username, u.full_name, u.profile_picture_url,
+        COUNT(CASE WHEN qr.reaction_type = 'BLUE_HEART' THEN 1 END) AS blue_heart_count,
+        COUNT(CASE WHEN qr.reaction_type = 'APPLAUSE' THEN 1 END) AS applause_count,
+        COUNT(CASE WHEN qr.reaction_type = 'SAD' THEN 1 END) AS sad_count,
+        COUNT(CASE WHEN qr.reaction_type = 'TOUCHING' THEN 1 END) AS touching_count,
+        COUNT(CASE WHEN qr.reaction_type = 'HUG' THEN 1 END) AS hug_count,
+        COUNT(CASE WHEN qr.reaction_type = 'MIND_BLOWN' THEN 1 END) AS mind_blown_count,
+        ARRAY_REMOVE(ARRAY_AGG(CASE WHEN qr.user_id = $2 THEN qr.reaction_type END), NULL) AS user_reactions,
+        (1 - (q.embedding <=> $1::vector)) AS similarity_score
+      FROM quotes q
+      JOIN users u ON q.user_id = u.id
+      LEFT JOIN quote_reactions qr ON q.id = qr.quote_id
+      LEFT JOIN blocks b1 ON b1.blocker_id = $2 AND b1.blocked_id = u.id
+      LEFT JOIN blocks b2 ON b2.blocker_id = u.id AND b2.blocked_id = $2
+      WHERE q.id != $3
+        AND q.embedding IS NOT NULL
+        AND b1.blocker_id IS NULL 
+        AND b2.blocker_id IS NULL
+      GROUP BY q.id, u.id
+      ORDER BY similarity_score DESC
+      LIMIT 10;
+    `;
+
+    const result = await query(similarSQL, [embeddingParam, currentUserId, parseInt(id as string, 10)]);
+
+    res.status(200).json({
+      status: 'success',
+      source: { id: sourceQuote.id, text: sourceQuote.text, author: sourceQuote.author },
+      data: result.rows,
+    });
+  } catch (error) {
+    console.error('[Eroare Controller] Nu s-au putut găsi citate similare:', error);
+    res.status(500).json({ status: 'error', message: 'Eroare internă.' });
   }
 };
 
@@ -460,7 +589,7 @@ export const getExploreFeed = async (req: AuthRequest, res: Response): Promise<v
     const { avgEmbedding, topTags, topAuthors } = calculateUserSignature(userHistory.rows);
 
     let exploreSQL = '';
-    let queryParams: (number | string | string[])[] = [];
+    let queryParams: unknown[] = [];
 
     if (!avgEmbedding || avgEmbedding.length === 0) {
       console.log(`[Recomandare] Cold Start pentru userul ${currentUserId} (Feed Random)`);

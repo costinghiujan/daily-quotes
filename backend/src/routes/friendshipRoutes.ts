@@ -9,6 +9,7 @@ import {
   getBlockedUsers,
   blockUser,
   unblockUser,
+  getLeaderboard,
   checkRelationshipStatus,
 } from '../controllers/friendshipController';
 
@@ -20,6 +21,7 @@ router.use(protect);
 router.get('/friends', getFriends);
 router.get('/requests', getPendingRequests);
 router.get('/blocks', getBlockedUsers);
+router.get('/leaderboard', getLeaderboard);
 
 router.post('/request', sendFriendRequest);
 

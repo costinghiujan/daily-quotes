@@ -333,6 +333,31 @@ export const getBlockedUsers = async (req: AuthRequest, res: Response): Promise<
   }
 };
 
+export const getLeaderboard = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const currentUserId = req.user?.id;
+
+    const result = await query(
+      `
+      SELECT u.id, u.username, u.full_name, u.profile_picture_url, u.xp, u.level, u.daily_streak
+      FROM users u
+      JOIN friendships f ON 
+        (f.requester_id = u.id AND f.receiver_id = $1) OR
+        (f.receiver_id = u.id AND f.requester_id = $1)
+      WHERE f.status = 'accepted'
+      ORDER BY u.xp DESC
+      LIMIT 50
+    `,
+      [currentUserId],
+    );
+
+    res.status(200).json({ status: 'success', data: result.rows });
+  } catch (error) {
+    console.error('[Eroare Controller] Preluare leaderboard:', error);
+    res.status(500).json({ status: 'error', message: 'Eroare internă.' });
+  }
+};
+
 export const checkRelationshipStatus = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const myId = req.user?.id;

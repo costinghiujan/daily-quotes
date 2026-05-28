@@ -59,6 +59,8 @@ export default function SearchScreen() {
   const [userResults, setUserResults] = useState<SearchResultUser[]>([]);
   const [quoteResults, setQuoteResults] = useState<FeedQuote[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  // Feature G: Semantic search toggle
+  const [useSemanticSearch, setUseSemanticSearch] = useState(false);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -95,8 +97,14 @@ export default function SearchScreen() {
           const users = await userService.searchUsers(cleanQuery);
           setUserResults(users);
         } else {
-          const quotes = await quoteService.searchQuotes(cleanQuery);
-          setQuoteResults(quotes);
+          // Feature G: Use semantic search when toggle is on
+          if (useSemanticSearch) {
+            const quotes = await quoteService.semanticSearchQuotes(cleanQuery);
+            setQuoteResults(quotes);
+          } else {
+            const quotes = await quoteService.searchQuotes(cleanQuery);
+            setQuoteResults(quotes);
+          }
         }
       } catch (error) {
         console.log(error);
@@ -107,7 +115,7 @@ export default function SearchScreen() {
     }, 500);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [searchQuery, activeTab]);
+  }, [searchQuery, activeTab, useSemanticSearch]);
 
   const handleAddFriend = async (userId: number) => {
     setUserResults((prev) =>
@@ -266,6 +274,28 @@ export default function SearchScreen() {
           </Text>
         </TouchableOpacity>
       </View>
+
+      {/* Feature G: Semantic search toggle - only show on quotes tab */}
+      {activeTab === 'quotes' && (
+        <TouchableOpacity
+          style={styles.semanticToggle}
+          onPress={() => setUseSemanticSearch(!useSemanticSearch)}
+        >
+          <Ionicons
+            name={useSemanticSearch ? "sparkles" : "search"}
+            size={16}
+            color={useSemanticSearch ? colors.primary : colors.textLight}
+          />
+          <Text
+            style={[
+              styles.semanticToggleText,
+              { color: useSemanticSearch ? colors.primary : colors.textLight },
+            ]}
+          >
+            {useSemanticSearch ? t('search.semanticActive') : t('search.semanticOff')}
+          </Text>
+        </TouchableOpacity>
+      )}
 
       {isLoading && <ActivityIndicator size="large" color={colors.primary} style={styles.loader} />}
 
@@ -457,6 +487,22 @@ const getStyles = (colors: ThemeColors) =>
       paddingTop: 10,
     },
     reactionCount: { fontSize: 14, color: colors.textLight, marginLeft: 6, fontWeight: 'bold' },
+
+    semanticToggle: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      alignSelf: 'flex-end',
+      marginRight: 15,
+      marginBottom: 10,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 20,
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.border,
+      gap: 6,
+    },
+    semanticToggleText: { fontSize: 13, fontWeight: '600' },
 
     emptyText: { textAlign: 'center', marginTop: 40, color: colors.textLight, fontSize: 16 },
   });

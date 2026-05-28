@@ -5,6 +5,7 @@ export const XP_VALUES = {
   ADD_COMMENT: 5,
   ADD_REACTION: 2,
   DAILY_PROMPT: 20,
+  DAILY_LOGIN: 5,
 };
 
 export const GamificationService = {
@@ -44,6 +45,114 @@ export const GamificationService = {
     } catch (error) {
       console.error('[Eroare GamificationService] Nu s-a putut adăuga XP:', error);
       throw error;
+    }
+  },
+
+  /**
+   * Track daily login streak for a user.
+   * Awards DAILY_LOGIN XP and checks streak milestone badges.
+   * Returns streak info for the frontend.
+   */
+  async trackDailyLogin(
+    userId: number,
+  ): Promise<{ daily_streak: number; streak_bonus: number; xp_awarded: number }> {
+    try {
+      const userRes = await query(
+        'SELECT last_active_date, daily_streak FROM users WHERE id = $1',
+        [userId],
+      );
+
+      if (userRes.rows.length === 0) {
+        throw new Error('Utilizatorul nu a fost găsit.');
+      }
+
+      const lastActiveDate = userRes.rows[0].last_active_date
+        ? new Date(userRes.rows[0].last_active_date)
+        : null;
+      const currentStreak = userRes.rows[0].daily_streak || 0;
+
+      const today = new Date();
+      const todayStr = today.toISOString().split('T')[0];
+
+      // If already active today, no XP awarded but return current streak
+      if (lastActiveDate && lastActiveDate.toISOString().split('T')[0] === todayStr) {
+        return { daily_streak: currentStreak, streak_bonus: 0, xp_awarded: 0 };
+      }
+
+      let newStreak = 1;
+      let xpAwarded = XP_VALUES.DAILY_LOGIN;
+
+      if (lastActiveDate) {
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toISOString().split('T')[0];
+        const lastActiveStr = lastActiveDate.toISOString().split('T')[0];
+
+        if (lastActiveStr === yesterdayStr) {
+          // Consecutive day — increment streak
+          newStreak = currentStreak + 1;
+        }
+        // Otherwise streak resets to 1 (already set above)
+      }
+
+      // Calculate streak bonus multiplier (2x XP after 7 days)
+      let streakBonus = 0;
+      if (newStreak >= 7) {
+        streakBonus = Math.floor(newStreak / 7) * XP_VALUES.DAILY_LOGIN;
+        xpAwarded += streakBonus;
+      }
+
+      // Update user's last_active_date and daily_streak
+      await query(
+        'UPDATE users SET last_active_date = $1::date, daily_streak = $2 WHERE id = $3',
+        [todayStr, newStreak, userId],
+      );
+
+      // Award XP
+      await this.addXp(userId, xpAwarded);
+
+      // Check streak milestone badges
+      await this.evaluateStreakBadges(userId, newStreak);
+
+      console.log(
+        `[Gamification] User ${userId} streak: ${newStreak} days, awarded ${xpAwarded} XP`,
+      );
+
+      return { daily_streak: newStreak, streak_bonus: streakBonus, xp_awarded: xpAwarded };
+    } catch (error) {
+      console.error('[Eroare GamificationService] Nu s-a putut actualiza streak-ul:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Evaluate streak milestone badges for a user.
+   */
+  async evaluateStreakBadges(userId: number, currentStreak: number): Promise<void> {
+    try {
+      const availableBadgesRes = await query(
+        `
+        SELECT b.id, b.name, b.requirement_value 
+        FROM badges b
+        LEFT JOIN user_badges ub ON b.id = ub.badge_id AND ub.user_id = $1
+        WHERE b.requirement_type = 'STREAK_MILESTONE' AND ub.badge_id IS NULL
+      `,
+        [userId],
+      );
+
+      for (const badge of availableBadgesRes.rows) {
+        if (currentStreak >= badge.requirement_value) {
+          await query('INSERT INTO user_badges (user_id, badge_id) VALUES ($1, $2)', [
+            userId,
+            badge.id,
+          ]);
+          console.log(
+            `[Gamification] Utilizatorul ${userId} a deblocat insigna: "${badge.name}"! 🏅`,
+          );
+        }
+      }
+    } catch (error) {
+      console.error('[Eroare GamificationService] Evaluare insigne streak eșuată:', error);
     }
   },
 

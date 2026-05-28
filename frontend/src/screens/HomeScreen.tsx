@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { quoteService } from '../api/quoteService';
+import { userService } from '../api/userService';
 import { AuthContext } from '../context/AuthContext';
 import { ThemeContext } from '../context/ThemeContext';
 import { AlertContext } from '../context/AlertContext';
@@ -178,6 +179,10 @@ export default function HomeScreen({ navigation }: { navigation: HomeScreenNavig
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
 
+  // Feature D: Daily Login Streak state
+  const [dailyStreak, setDailyStreak] = useState<number>(0);
+  const [streakLoaded, setStreakLoaded] = useState(false);
+
   const { colors } = useContext(ThemeContext);
   const { showAlert } = useContext(AlertContext);
   const { t } = useTranslation();
@@ -203,6 +208,27 @@ export default function HomeScreen({ navigation }: { navigation: HomeScreenNavig
 
   useEffect(() => {
     fetchFeed();
+  }, []);
+
+  // Feature D: Track daily login on mount and fetch streak info
+  useEffect(() => {
+    const trackLogin = async () => {
+      try {
+        const streakData = await userService.trackDailyLogin();
+        setDailyStreak(streakData.daily_streak);
+      } catch {
+        // If tracking fails (e.g. already tracked today), just fetch current streak
+        try {
+          const streakInfo = await userService.getStreakInfo();
+          setDailyStreak(streakInfo.daily_streak);
+        } catch {
+          // Silently fail
+        }
+      } finally {
+        setStreakLoaded(true);
+      }
+    };
+    trackLogin();
   }, []);
 
   const onRefresh = useCallback(async () => {
@@ -376,6 +402,24 @@ export default function HomeScreen({ navigation }: { navigation: HomeScreenNavig
         </View>
       </View>
 
+      {/* Feature D: Daily Login Streak Banner */}
+      {streakLoaded && (
+        <LinearGradient
+          colors={['#FF6B35', '#F7C59F']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.streakBanner}
+        >
+          <Ionicons name="flame" size={22} color="#fff" />
+          <Text style={styles.streakText}>
+            {dailyStreak > 0
+              ? `${dailyStreak} ${t('home.dayStreak')}`
+              : t('home.startStreak')}
+          </Text>
+          <Ionicons name="trending-up" size={18} color="#fff" style={{ opacity: 0.8 }} />
+        </LinearGradient>
+      )}
+
       {/* Create Post Card */}
       <LinearGradient
         colors={colors.primaryGradientSubtle}
@@ -529,6 +573,21 @@ const getStyles = (colors: ThemeColors) => StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
+  },
+  streakBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    marginBottom: 20,
+    gap: 8,
+  },
+  streakText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
   },
   createPostCard: {
     marginBottom: 25,

@@ -93,7 +93,9 @@
     "loadMore": "Încarcă mai multe",
     "trending": "Trending",
     "recent": "Recent",
-    "popular": "Popular"
+    "popular": "Popular",
+    "dayStreak": "zile consecutiv!",
+    "startStreak": "Începe-ți seria azi!"
   },
   "profile": {
     "posts": "Postări",
@@ -274,6 +276,9 @@
     "blockConfirm": "Ești sigur că vrei să blochezi pe {{name}}?",
     "block": "Blochează",
     "errorBlock": "Blocarea utilizatorului a eșuat",
+    "leaderboard": "Leaderboard",
+    "leaderboardDesc": "Prieteni clasați după XP",
+    "noLeaderboard": "Niciun prieten în clasament. Adaugă prieteni pentru a concura!",
     "emptyTitle": "Niciun prieten încă",
     "emptySub": "Caută utilizatori pentru a adăuga ca prieteni!"
   },
@@ -289,7 +294,9 @@
     "searchUsers": "Caută utilizatori...",
     "searchQuotes": "Caută citate...",
     "usersTab": "Utilizatori",
-    "quotesTab": "Citate"
+    "quotesTab": "Citate",
+    "semanticActive": "✨ Căutare AI Semantică",
+    "semanticOff": "🔍 Căutare Lexicală"
   },
   "explore": {
     "title": "Explorează",
@@ -301,7 +308,11 @@
     "postedBy": "Postat de",
     "reactions": "reacții",
     "pullToRefresh": "Trage în jos pentru a reîmprospăta",
-    "zenMode": "Zen"
+    "zenMode": "Zen",
+    "similarQuotes": "Citate Similare",
+    "sourceQuote": "Citare Sursă",
+    "noSimilarQuotes": "Nicio citare similară găsită",
+    "similarityScore": "Potrivire"
   },
   "comments": {
     "title": "Comentarii",

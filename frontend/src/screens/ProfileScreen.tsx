@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useContext, useEffect, useLayoutEffect, useMemo } from 'react';
+import React, { useState, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,8 @@ import {
   ActivityIndicator,
   Image,
   ScrollView,
+  Modal,
+  Animated,
 } from 'react-native';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';

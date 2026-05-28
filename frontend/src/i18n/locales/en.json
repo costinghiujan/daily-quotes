@@ -93,7 +93,9 @@
     "loadMore": "Load more",
     "trending": "Trending",
     "recent": "Recent",
-    "popular": "Popular"
+    "popular": "Popular",
+    "dayStreak": "day streak!",
+    "startStreak": "Start your streak today!"
   },
   "profile": {
     "posts": "Posts",
@@ -275,6 +277,9 @@
     "blockConfirm": "Are you sure you want to block {{name}}?",
     "block": "Block",
     "errorBlock": "Failed to block user",
+    "leaderboard": "Leaderboard",
+    "leaderboardDesc": "Friends ranked by XP",
+    "noLeaderboard": "No friends on the leaderboard yet. Add friends to compete!",
     "emptyTitle": "No friends yet",
     "emptySub": "Search for users to add as friends!"
   },
@@ -290,7 +295,9 @@
     "searchUsers": "Search users...",
     "searchQuotes": "Search quotes...",
     "usersTab": "Users",
-    "quotesTab": "Quotes"
+    "quotesTab": "Quotes",
+    "semanticActive": "✨ AI Semantic Search",
+    "semanticOff": "🔍 Lexical Search"
   },
   "explore": {
     "title": "Explore",
@@ -302,7 +309,11 @@
     "postedBy": "Posted by",
     "reactions": "reactions",
     "pullToRefresh": "Pull down to refresh",
-    "zenMode": "Zen"
+    "zenMode": "Zen",
+    "similarQuotes": "Similar Quotes",
+    "sourceQuote": "Source Quote",
+    "noSimilarQuotes": "No similar quotes found",
+    "similarityScore": "Match"
   },
   "comments": {
     "title": "Comments",

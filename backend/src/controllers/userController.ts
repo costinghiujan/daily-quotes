@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { query } from '../config/db';
 import { AuthRequest } from '../middleware/authMiddleware';
+import { GamificationService } from '../services/gamificationService';
 
 export const searchUsers = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -280,5 +281,124 @@ export const uploadAvatar = async (req: AuthRequest, res: Response): Promise<voi
   } catch (error) {
     console.error('[Eroare Controller] Încărcare avatar:', error);
     res.status(500).json({ status: 'error', message: 'Eroare internă la salvarea pozei.' });
+  }
+};
+
+/**
+ * Track daily login streak for the current user.
+ * Awards DAILY_LOGIN XP and returns streak info.
+ * Feature D: Daily Login Streak (Loss Aversion / Habit Formation)
+ */
+export const trackDailyLogin = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      res.status(401).json({ status: 'error', message: 'Neautorizat.' });
+      return;
+    }
+
+    const streakInfo = await GamificationService.trackDailyLogin(userId);
+
+    res.status(200).json({
+      status: 'success',
+      data: streakInfo,
+    });
+  } catch (error) {
+    console.error('[Eroare Controller] Nu s-a putut înregistra activitatea zilnică:', error);
+    res.status(500).json({ status: 'error', message: 'Eroare internă.' });
+  }
+};
+
+/**
+ * Get current streak info for the user (without awarding XP).
+ */
+export const getStreakInfo = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      res.status(401).json({ status: 'error', message: 'Neautorizat.' });
+      return;
+    }
+
+    const userRes = await query(
+      'SELECT daily_streak, last_active_date, xp, level FROM users WHERE id = $1',
+      [userId],
+    );
+
+    if (userRes.rows.length === 0) {
+      res.status(404).json({ status: 'error', message: 'Utilizatorul nu a fost găsit.' });
+      return;
+    }
+
+    res.status(200).json({
+      status: 'success',
+      data: userRes.rows[0],
+    });
+  } catch (error) {
+    console.error('[Eroare Controller] Nu s-a putut obține informațiile despre streak:', error);
+    res.status(500).json({ status: 'error', message: 'Eroare internă.' });
+  }
+};
+
+/**
+ * Record a quote reflection (Feature A: Reflection Prompt After Reading).
+ */
+export const recordReflection = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    const { quoteId, emotion } = req.body;
+
+    if (!userId) {
+      res.status(401).json({ status: 'error', message: 'Neautorizat.' });
+      return;
+    }
+
+    if (!quoteId || !emotion) {
+      res.status(400).json({ status: 'error', message: 'quoteId și emotion sunt obligatorii.' });
+      return;
+    }
+
+    const result = await query(
+      `INSERT INTO quote_reflections (user_id, quote_id, emotion) VALUES ($1, $2, $3) RETURNING *;`,
+      [userId, quoteId, emotion],
+    );
+
+    res.status(201).json({ status: 'success', data: result.rows[0] });
+  } catch (error) {
+    console.error('[Eroare Controller] Nu s-a putut înregistra reflecția:', error);
+    res.status(500).json({ status: 'error', message: 'Eroare internă.' });
+  }
+};
+
+/**
+ * Get reflection history for the current user.
+ */
+export const getReflectionHistory = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      res.status(401).json({ status: 'error', message: 'Neautorizat.' });
+      return;
+    }
+
+    const result = await query(
+      `
+      SELECT qr.id, qr.emotion, qr.created_at, q.text, q.author
+      FROM quote_reflections qr
+      JOIN quotes q ON qr.quote_id = q.id
+      WHERE qr.user_id = $1
+      ORDER BY qr.created_at DESC
+      LIMIT 50;
+      `,
+      [userId],
+    );
+
+    res.status(200).json({ status: 'success', data: result.rows });
+  } catch (error) {
+    console.error('[Eroare Controller] Nu s-a putut obține istoricul reflecțiilor:', error);
+    res.status(500).json({ status: 'error', message: 'Eroare internă.' });
   }
 };
