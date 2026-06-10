@@ -2,11 +2,12 @@ import rateLimit from 'express-rate-limit';
 
 /**
  * General API rate limiter
- * Limits requests to 100 per 15 minutes per IP
+ * Limits requests to 500 per 15 minutes per IP
+ * Increased from 100 to accommodate mobile app's parallel requests on startup
  */
 export const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100,
+  max: 500,
   standardHeaders: true,
   legacyHeaders: false,
   message: {

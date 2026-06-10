@@ -263,16 +263,8 @@ export const getFeedQuotes = async (req: AuthRequest, res: Response): Promise<vo
         LEFT JOIN quote_reactions qr ON q.id = qr.quote_id
         LEFT JOIN blocks b1 ON b1.blocker_id = $1 AND b1.blocked_id = u.id
         LEFT JOIN blocks b2 ON b2.blocker_id = u.id AND b2.blocked_id = $1
-        WHERE (
-            q.user_id = $1 
-            OR q.user_id IN (
-                SELECT CASE WHEN f.requester_id = $1 THEN f.receiver_id ELSE f.requester_id END
-                FROM friendships f
-                WHERE (f.requester_id = $1 OR f.receiver_id = $1) AND f.status = 'accepted'
-            )
-        )
-        AND b1.blocker_id IS NULL 
-        AND b2.blocker_id IS NULL
+        WHERE b1.blocker_id IS NULL 
+          AND b2.blocker_id IS NULL
         GROUP BY q.id, u.id
         ORDER BY q.created_at DESC
         LIMIT 50;
@@ -813,7 +805,12 @@ export const getQuoteOfTheDay = async (req: AuthRequest, res: Response): Promise
       return;
     }
 
-    res.status(200).json({ status: 'success', data: result.rows[0] });
+    const row = result.rows[0];
+    // Ensure bigint values are converted to numbers (PostgreSQL returns bigint as string)
+    row.total_reactions = parseInt(row.total_reactions, 10) || 0;
+    row.blue_heart_count = parseInt(row.blue_heart_count, 10) || 0;
+
+    res.status(200).json({ status: 'success', data: row });
   } catch (error) {
     console.error('[Eroare Controller] Nu s-a putut obține Citatul Zilei:', error);
     res.status(500).json({ status: 'error', message: 'Eroare internă.' });

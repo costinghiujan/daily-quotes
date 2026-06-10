@@ -228,7 +228,7 @@ export default function ExploreScreen() {
                   <View style={styles.hofReactionBadge}>
                     <Ionicons name="star" size={12} color="#FFD700" />
                     <Text style={styles.hofReactionText}>
-                      {quoteOfTheDay.total_reactions} {t('explore.reactions')}
+                      {Number(quoteOfTheDay.total_reactions) || 0} {t('explore.reactions')}
                     </Text>
                   </View>
                 </View>

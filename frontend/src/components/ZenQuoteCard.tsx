@@ -78,9 +78,9 @@ export default function ZenQuoteCard({
     return () => clearInterval(interval);
   }, [gradientAnim]);
 
-  const interpolatedGradient = gradientAnim.interpolate({
-    inputRange: GRADIENT_COLORS.map((_, i) => i),
-    outputRange: GRADIENT_COLORS.map((colors) => JSON.stringify(colors)),
+  const interpolatedColors = gradientAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 1],
   });
 
   const currentGradient = GRADIENT_COLORS[0];

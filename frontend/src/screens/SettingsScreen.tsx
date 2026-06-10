@@ -154,11 +154,11 @@ export default function SettingsScreen() {
         <View style={[styles.iconContainer, isDestructive && { backgroundColor: colors.errorBg }]}>
           <Ionicons name={icon} size={20} color={isDestructive ? colors.error : colors.primary} />
         </View>
-        <View>
+        <View style={{ flex: 1, flexShrink: 1 }}>
           <Text style={[styles.settingItemTitle, isDestructive && { color: colors.error }]}>
             {title}
           </Text>
-          {subtitle && <Text style={styles.settingItemSubtitle}>{subtitle}</Text>}
+          {subtitle && <Text style={styles.settingItemSubtitle} numberOfLines={2} ellipsizeMode="tail">{subtitle}</Text>}
         </View>
       </View>
       <Ionicons name="chevron-forward" size={20} color={colors.textLight} />
@@ -169,6 +169,9 @@ export default function SettingsScreen() {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={[styles.topBar, { borderBottomColor: colors.separatorColor }]}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color={colors.textDark} />
+          </TouchableOpacity>
           <LinearGradient
             colors={colors.primaryGradient as [string, string]}
             start={{ x: 0, y: 0 }}
@@ -540,7 +543,7 @@ const getStyles = (colors: ThemeColors) =>
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
     },
-    settingItemLeft: { flexDirection: 'row', alignItems: 'center' },
+    settingItemLeft: { flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 10 },
     iconContainer: {
       width: 36,
       height: 36,
@@ -551,7 +554,11 @@ const getStyles = (colors: ThemeColors) =>
       marginRight: 15,
     },
     settingItemTitle: { fontSize: 16, color: colors.textDark, fontWeight: '500' },
-    settingItemSubtitle: { fontSize: 13, color: colors.textLight, marginTop: 2 },
+    settingItemSubtitle: { fontSize: 13, color: colors.textLight, marginTop: 2, flexShrink: 1 },
+    backButton: {
+      padding: 5,
+      marginRight: 10,
+    },
 
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
     modalContent: {

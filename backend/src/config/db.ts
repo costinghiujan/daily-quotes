@@ -1,7 +1,10 @@
-import { Pool } from 'pg';
+import { Pool, types } from 'pg';
 import dotenv from 'dotenv';
 
 dotenv.config();
+
+// Parse PostgreSQL bigint (int8, OID 20) as JavaScript number
+types.setTypeParser(20, (val: string) => parseInt(val, 10));
 
 export const pool = new Pool({
   user: process.env.DB_USER,
