@@ -1,0 +1,217 @@
+@startuml
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam defaultFontName Arial
+skinparam defaultFontSize 11
+
+title "Diagramă de Secvență - Autentificare (Login)"
+caption "Fluxul complet de autentificare: Client → Server → Verificare DB → Generare JWT → Return"
+
+' ============================================================
+' ACTORS / PARTICIPANTS
+' ============================================================
+actor "Utilizator" as User
+participant "LoginScreen\n(React Native)" as LoginScreen
+participant "authService\n(Axios Client)" as AuthService
+participant "Express\nAPI Gateway" as Express
+participant "Rate Limiter\n& Middleware" as Middleware
+participant "authController\n(loginUser)" as AuthController
+database "PostgreSQL\n(pool.query)" as Database
+participant "bcrypt" as Bcrypt
+participant "jwt\n(jsonwebtoken)" as JWT
+participant "AuthContext\n(React)" as AuthContext
+participant "AsyncStorage" as AsyncStorage
+
+' ============================================================
+' SEQUENCE
+' ============================================================
+
+== 1. INITIERE LOGIN ==
+
+User -> LoginScreen : "Completează formular\n(email/username + parolă)"
+activate LoginScreen
+
+LoginScreen -> LoginScreen : "Validare client-side\n(câmpuri obligatorii)"
+
+alt Câmpuri invalide
+    LoginScreen -> User : "Afișează erori\n(highlight câmpuri goale)"
+else Câmpuri valide
+    LoginScreen -> LoginScreen : "setIsSubmitting(true)\n→ ActivityIndicator"
+end
+
+== 2. TRIMITERE CERERE HTTP ==
+
+LoginScreen -> AuthService : "authService.login({identifier, password})"
+activate AuthService
+
+AuthService -> AuthService : "apiClient.post('/auth/login',\ncredentials)"
+note right
+  Axios interceptor adaugă
+  automat BASE_URL
+  (ex: http://IP:3000/api)
+end note
+
+AuthService -> Express : "POST /api/auth/login\n(identifier, password)"
+activate Express
+
+== 3. MIDDLEWARE CHAIN ==
+
+Express -> Middleware : "1. helmet (headere securitate)"
+activate Middleware
+Middleware --> Express : "✅ Headere securizate"
+deactivate Middleware
+
+Express -> Middleware : "2. generalLimiter (rate-limit)"
+activate Middleware
+note right
+  Verifică contorul IP-ului
+  Max: 500 req / 15 min
+end note
+
+alt Rate limit depășit
+    Middleware --> Express : "❌ 429 Too Many Requests"
+    Express --> AuthService : "Response: 429"
+    AuthService --> LoginScreen : "Aruncă eroare"
+    LoginScreen --> User : "Afișează alertă"
+    deactivate LoginScreen
+else Rate limit OK
+    Middleware --> Express : "✅ Continuă"
+    deactivate Middleware
+end
+
+Express -> Middleware : "3. express-validator\n(validare date)"
+activate Middleware
+
+alt Date invalide
+    Middleware --> Express : "❌ 400 Bad Request"
+    Express --> AuthService : "Response: 400"
+    AuthService --> LoginScreen : "Aruncă eroare"
+    LoginScreen --> User : "Afișează alertă"
+    deactivate LoginScreen
+else Date valide
+    Middleware --> Express : "✅ Continuă"
+    deactivate Middleware
+end
+
+== 4. PROCESARE CONTROLLER ==
+
+Express -> AuthController : "loginUser(req, res)"
+activate AuthController
+
+AuthController -> AuthController : "Extrage identifier,\npassword din req.body"
+
+AuthController -> Database : "SELECT id, username, email,\npassword_hash, profile_picture_url\nFROM users\nWHERE email = $1 OR username = $1"
+activate Database
+
+Database --> AuthController : "✅ row user (sau undefined)"
+deactivate Database
+
+alt Utilizator negăsit
+    AuthController --> Express : "❌ 401 Credențiale invalide"
+    Express --> AuthService : "Response: 401"
+    AuthService --> LoginScreen : "Aruncă eroare"
+    LoginScreen --> User : "Afișează alertă"
+    deactivate LoginScreen
+end
+
+== 5. VERIFICARE PAROLĂ (bcrypt) ==
+
+AuthController -> Bcrypt : "bcrypt.compare(password,\nuser.password_hash)"
+activate Bcrypt
+
+Bcrypt --> AuthController : "✅ true / ❌ false"
+deactivate Bcrypt
+
+alt Parolă incorectă
+    AuthController --> Express : "❌ 401 Credențiale invalide"
+    Express --> AuthService : "Response: 401"
+    AuthService --> LoginScreen : "Aruncă eroare"
+    LoginScreen --> User : "Afișează alertă"
+    deactivate LoginScreen
+end
+
+== 6. CREARE SESIUNE ==
+
+AuthController -> AuthController : "Extrage user-agent\ndin req.headers"
+
+AuthController -> Database : "INSERT INTO sessions\n(user_id, device_name)\nVALUES ($1, $2)\nRETURNING id"
+activate Database
+
+Database --> AuthController : "✅ sessionId"
+deactivate Database
+
+== 7. GENERARE JWT ==
+
+AuthController -> JWT : "jwt.sign(\n{ id: user.id,\nsessionId: sessionId },\nJWT_SECRET,\n{ expiresIn: '30d' })"
+activate JWT
+
+note right
+  Payload JWT:
+  {
+    id: 42,
+    sessionId: 7,
+    iat: 1718284800,
+    exp: 1720876800
+  }
+end note
+
+JWT --> AuthController : "✅ token (string JWT)"
+deactivate JWT
+
+== 8. PREGĂTIRE RĂSPUNS ==
+
+AuthController -> AuthController : "Șterge password_hash\ndin obiectul user"
+
+AuthController --> Express : "✅ 200 OK\n{\n  status: 'success',\n  message: 'Autentificare reușită!',\n  data: {\n    user: { id, username, email,\n           profile_picture_url },\n    token: 'eyJhbGci...'\n  }\n}"
+deactivate AuthController
+
+Express --> AuthService : "✅ Response 200\n(cu token + user)"
+deactivate Express
+
+== 9. SALVARE TOKEN LOCAL ==
+
+AuthService -> AuthService : "Extrage token din\nresponse.data.data.token"
+
+AuthService -> AsyncStorage : "storage.setToken(token)"
+activate AsyncStorage
+note right
+  Token salvat în
+  AsyncStorage pentru
+  reîncărcări ulterioare
+end note
+AsyncStorage --> AuthService : "✅ Token salvat"
+deactivate AsyncStorage
+
+AuthService --> LoginScreen : "✅ response.data"
+deactivate AuthService
+
+== 10. ACTUALIZARE STARE GLOBALĂ ==
+
+LoginScreen -> AuthContext : "loginState(token, userData)"
+activate AuthContext
+
+AuthContext -> AuthContext : "setUserToken(token)\nsetUser(userData)"
+
+AuthContext -> AsyncStorage : "AsyncStorage.setItem(\n'userData', JSON.stringify(user))"
+activate AsyncStorage
+AsyncStorage --> AuthContext : "✅ Date salvate"
+deactivate AsyncStorage
+
+AuthContext --> LoginScreen : "✅ Stare actualizată"
+deactivate AuthContext
+
+LoginScreen -> LoginScreen : "setIsSubmitting(false)"
+
+== 11. REDIRECȚIONARE ==
+
+LoginScreen -> User : "Navigare automată către\nHomeScreen (tab-uri)"
+deactivate LoginScreen
+
+note over User
+  Utilizatorul este acum
+  autentificat și poate
+  accesa toate feature-urile
+  protejate ale aplicației
+end note
+
+@enduml

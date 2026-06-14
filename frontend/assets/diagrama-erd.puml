@@ -1,0 +1,277 @@
+@startuml
+!theme plain
+skinparam packageStyle rectangle
+skinparam backgroundColor #FEFEFE
+skinparam defaultFontName Arial
+skinparam defaultFontSize 11
+
+title "Diagrama Entitate-Relatie (ERD) - Daily Quotes"
+caption "Structura bazei de date PostgreSQL cu extensia pgvector"
+
+' ============================================================
+' ENTITIES
+' ============================================================
+
+entity "users" as users {
+  * id : SERIAL <<PK>>
+  --
+  * username : VARCHAR(50) <<UNIQUE>>
+  * email : VARCHAR(255) <<UNIQUE>>
+  * password_hash : VARCHAR(255)
+  * full_name : VARCHAR(100) <<nullable>>
+  * bio : TEXT <<nullable>>
+  * profile_picture_url : TEXT <<nullable>>
+  * cover_photo_url : TEXT <<nullable>>
+  * expo_push_token : VARCHAR(255) <<nullable>>
+  * xp : INTEGER <<default 0>>
+  * level : INTEGER <<default 1>>
+  * daily_streak : INTEGER <<default 0>>
+  * last_daily_prompt_date : DATE <<nullable>>
+  * last_active_date : DATE <<nullable>>
+  * created_at : TIMESTAMP <<default NOW()>>
+}
+
+entity "quotes" as quotes {
+  * id : SERIAL <<PK>>
+  --
+  * text : TEXT
+  * author : VARCHAR(255)
+  * category : VARCHAR(100) <<nullable>>
+  * user_id : INTEGER <<FK → users.id>>
+  * hashtags : TEXT[] <<default '{}'>>
+  * embedding : VECTOR(768) <<nullable>>
+  * created_at : TIMESTAMP <<default NOW()>>
+}
+
+entity "quote_reactions" as quote_reactions {
+  * id : SERIAL <<PK>>
+  --
+  * user_id : INTEGER <<FK → users.id>>
+  * quote_id : INTEGER <<FK → quotes.id>>
+  * reaction_type : VARCHAR(50)
+  * created_at : TIMESTAMP <<default NOW()>>
+  --
+  <<UNIQUE (user_id, quote_id, reaction_type)>>
+}
+
+entity "comments" as comments {
+  * id : SERIAL <<PK>>
+  --
+  * text : TEXT
+  * user_id : INTEGER <<FK → users.id>>
+  * quote_id : INTEGER <<FK → quotes.id>>
+  * created_at : TIMESTAMP <<default NOW()>>
+}
+
+entity "quote_reflections" as quote_reflections {
+  * id : SERIAL <<PK>>
+  --
+  * user_id : INTEGER <<FK → users.id>>
+  * quote_id : INTEGER <<FK → quotes.id>>
+  * emotion : VARCHAR(50)
+  * created_at : TIMESTAMP <<default NOW()>>
+}
+
+entity "friendships" as friendships {
+  * id : SERIAL <<PK>>
+  --
+  * requester_id : INTEGER <<FK → users.id>>
+  * receiver_id : INTEGER <<FK → users.id>>
+  * status : VARCHAR(20) <<default 'pending'>>
+  * streak_count : INTEGER <<default 0>>
+  * last_interaction_date : TIMESTAMP <<nullable>>
+  * created_at : TIMESTAMP <<default NOW()>>
+  --
+  <<UNIQUE (requester_id, receiver_id)>>
+}
+
+entity "messages" as messages {
+  * id : SERIAL <<PK>>
+  --
+  * sender_id : INTEGER <<FK → users.id>>
+  * receiver_id : INTEGER <<FK → users.id>>
+  * text : TEXT <<nullable>>
+  * message_type : VARCHAR(20) <<default 'TEXT'>>
+  * media_url : TEXT <<nullable>>
+  * file_name : VARCHAR(255) <<nullable>>
+  * is_read : BOOLEAN <<default FALSE>>
+  * created_at : TIMESTAMP <<default NOW()>>
+}
+
+entity "notifications" as notifications {
+  * id : SERIAL <<PK>>
+  --
+  * recipient_id : INTEGER <<FK → users.id>>
+  * sender_id : INTEGER <<FK → users.id, nullable>>
+  * type : VARCHAR(50)
+  * reference_id : INTEGER <<nullable>>
+  * is_read : BOOLEAN <<default FALSE>>
+  * created_at : TIMESTAMP <<default NOW()>>
+}
+
+entity "notification_settings" as notification_settings {
+  * user_id : INTEGER <<PK, FK → users.id>>
+  --
+  * notify_reactions : BOOLEAN <<default TRUE>>
+  * notify_comments : BOOLEAN <<default TRUE>>
+  * notify_friend_requests : BOOLEAN <<default TRUE>>
+  * notify_friend_accepted : BOOLEAN <<default TRUE>>
+  * updated_at : TIMESTAMP <<default NOW()>>
+}
+
+entity "scheduled_notifications" as scheduled_notifications {
+  * id : SERIAL <<PK>>
+  --
+  * user_id : INTEGER <<FK → users.id>>
+  * hour : INTEGER <<CHECK 0-23>>
+  * minute : INTEGER <<CHECK 0-59>>
+  * emotion : VARCHAR(50)
+  * is_active : BOOLEAN <<default TRUE>>
+  * created_at : TIMESTAMP <<default NOW()>>
+}
+
+entity "sessions" as sessions {
+  * id : SERIAL <<PK>>
+  --
+  * user_id : INTEGER <<FK → users.id>>
+  * device_name : VARCHAR(255)
+  * created_at : TIMESTAMP <<default NOW()>>
+}
+
+entity "blocks" as blocks {
+  * blocker_id : INTEGER <<PK, FK → users.id>>
+  * blocked_id : INTEGER <<PK, FK → users.id>>
+  --
+  * created_at : TIMESTAMPTZ <<default NOW()>>
+}
+
+entity "badges" as badges {
+  * id : SERIAL <<PK>>
+  --
+  * name : VARCHAR(100) <<UNIQUE>>
+  * description : TEXT
+  * icon_name : VARCHAR(50)
+  * requirement_type : VARCHAR(50)
+  * requirement_value : INTEGER
+}
+
+entity "user_badges" as user_badges {
+  * user_id : INTEGER <<PK, FK → users.id>>
+  * badge_id : INTEGER <<PK, FK → badges.id>>
+  --
+  * earned_at : TIMESTAMP <<default NOW()>>
+}
+
+' ============================================================
+' RELATIONSHIPS
+' ============================================================
+
+' users → quotes (1:N)
+users ||--o{ quotes : "postează"
+
+' users → quote_reactions (1:N)
+users ||--o{ quote_reactions : "reacționează"
+
+' quotes → quote_reactions (1:N)
+quotes ||--o{ quote_reactions : "primește reacții"
+
+' users → comments (1:N)
+users ||--o{ comments : "comentează"
+
+' quotes → comments (1:N)
+quotes ||--o{ comments : "are comentarii"
+
+' users → quote_reflections (1:N)
+users ||--o{ quote_reflections : "reflectă"
+
+' quotes → quote_reflections (1:N)
+quotes ||--o{ quote_reflections : "are reflecții"
+
+' users → friendships (1:N as requester)
+users ||--o{ friendships : "trimite cereri"
+
+' users → friendships (1:N as receiver)
+users ||--o{ friendships : "primește cereri"
+
+' users → messages (1:N as sender)
+users ||--o{ messages : "trimite mesaje"
+
+' users → messages (1:N as receiver)
+users ||--o{ messages : "primește mesaje"
+
+' users → notifications (1:N as recipient)
+users ||--o{ notifications : "primește notificări"
+
+' users → notifications (1:N as sender)
+users ||--o{ notifications : "trimite notificări"
+
+' users → notification_settings (1:1)
+users ||--|| notification_settings : "are setări"
+
+' users → scheduled_notifications (1:N)
+users ||--o{ scheduled_notifications : "programează"
+
+' users → sessions (1:N)
+users ||--o{ sessions : "are sesiuni"
+
+' users → blocks (1:N as blocker)
+users ||--o{ blocks : "blochează"
+
+' users → blocks (1:N as blocked)
+users ||--o{ blocks : "este blocat"
+
+' users → user_badges (1:N)
+users ||--o{ user_badges : "deblochează"
+
+' badges → user_badges (1:N)
+badges ||--o{ user_badges : "este deblocat"
+
+' ============================================================
+' INDEXES (documentation only)
+' ============================================================
+note right of quote_reactions
+  INDEX idx_reactions_quote_id
+  ON quote_reactions(quote_id)
+end note
+
+note right of comments
+  INDEX idx_comments_quote_id
+  ON comments(quote_id)
+end note
+
+note right of notifications
+  INDEX idx_notifications_recipient
+  ON notifications(recipient_id)
+end note
+
+note right of messages
+  INDEX idx_messages_participants
+  ON messages(sender_id, receiver_id)
+  
+  INDEX idx_messages_created_at
+  ON messages(created_at DESC)
+end note
+
+note right of quotes
+  INDEX idx_quotes_embedding
+  ON quotes USING ivfflat (embedding vector_cosine_ops)
+  
+  (căutare semantică prin pgvector)
+end note
+
+' ============================================================
+' STYLING
+' ============================================================
+skinparam entity {
+  BorderColor #2E86C1
+  BackgroundColor #D6EAF8
+  FontSize 10
+}
+
+skinparam note {
+  BorderColor #888888
+  BackgroundColor #FFFACD
+  FontSize 9
+}
+
+@enduml

@@ -1,0 +1,233 @@
+@startuml
+!theme plain
+skinparam packageStyle rectangle
+skinparam componentStyle rectangle
+skinparam backgroundColor #FEFEFE
+skinparam defaultFontName Arial
+skinparam defaultFontSize 11
+
+title "Diagramă Arhitecturală - Daily Quotes System"
+caption "Arhitectura pe straturi a aplicației Daily Quotes"
+
+' ============================================================
+' LAYER 1: CLIENT (Frontend)
+' ============================================================
+package "Client (Frontend)" as Frontend #LightBlue {
+  component "Expo / React Native\n(Android, iOS, Web)" as ExpoApp
+  component "Axios HTTP Client" as AxiosClient
+  component "Socket.IO Client" as SocketClient
+  component "Expo Push Token" as ExpoPush
+  component "Audio Service\n(Lofi / Rain)" as AudioService
+  component "AsyncStorage\n(Token, Preferences)" as AsyncStorage
+
+  note right of ExpoApp
+    Screens: Home, Explore, ZenQuote,
+    Profile, Settings, Chat, Call,
+    Friends, Search, Notifications,
+    Comments, BlockedUsers,
+    ScheduledNotifications
+  end note
+}
+
+' ============================================================
+' LAYER 2: API GATEWAY & MIDDLEWARE
+' ============================================================
+package "API Gateway & Middleware" as Gateway #LightYellow {
+  component "Express.js\n(API Gateway)" as Express
+  component "Helmet\n(Securitate Headere)" as Helmet
+  component "Rate Limiter\n(express-rate-limit)" as RateLimiter
+  component "JWT Auth\n(jsonwebtoken)" as JWTAuth
+  component "express-validator\n(Validare Date)" as Validator
+  component "Multer\n(Upload Fișiere)" as Multer
+  component "CORS" as CORS
+}
+
+' ============================================================
+' LAYER 3: WEB SOCKET SERVER
+' ============================================================
+package "WebSocket Server" as WSServer #LightGreen {
+  component "Socket.IO Server" as SocketIO
+  component "Call Signaling\n(WebRTC)" as CallSignaling
+  component "Chat (Mesaje\nîn Timp Real)" as RealtimeChat
+  component "Active Calls Map\n(Map<callerId, calleeId>)" as ActiveCalls
+}
+
+' ============================================================
+' LAYER 4: ROUTES / CONTROLLERS
+' ============================================================
+package "Routes & Controllers" as Routes #LightCoral {
+  component "Auth Routes\n(Register / Login / Logout)" as AuthRoutes
+  component "User Routes\n(Profil, Căutare, Badge-uri)" as UserRoutes
+  component "Quote Routes\n(CRUD, Feed, Mood, Similar)" as QuoteRoutes
+  component "Friendship Routes\n(Cereri, Acceptare, Refuz)" as FriendRoutes
+  component "Message Routes\n(Conversații, Mesaje)" as MessageRoutes
+  component "Notification Routes\n(Notificări, Citite)" as NotifRoutes
+  component "Session Routes\n(Dispozitive Active)" as SessionRoutes
+  component "ScheduledNotif Routes\n(Programare Oră+Emoție)" as SchedNotifRoutes
+}
+
+' ============================================================
+' LAYER 5: SERVICES (Business Logic)
+' ============================================================
+package "Services (Business Logic)" as Services #LightSalmon {
+  component "Gamification Service\n(XP, Level, Badge-uri)" as Gamification
+  component "AI Service\n(Ollama Embeddings + Tags)" as AIService
+  component "Cron Service\n(Notificări Programate,\nMentenanță Noapte)" as CronService
+  component "Expo Push Service\n(Notificări Push)" as PushService
+  component "Notification Helper\n(Mesaje Push)" as NotifHelper
+}
+
+' ============================================================
+' LAYER 6: EXTERNAL SERVICES / AI
+' ============================================================
+package "External Services & AI" as External #LightGrey {
+  component "Ollama\n(nomic-embed-text)" as OllamaEmbed
+  component "Ollama\n(llama3)" as OllamaGen
+  component "Expo Push API" as ExpoPushAPI
+}
+
+' ============================================================
+' LAYER 7: DATA LAYER
+' ============================================================
+package "Data Layer" as Data #LightCyan {
+  database "PostgreSQL 15\n(pgvector/pgvector:pg15)" as PostgreSQL {
+    frame "Tabele Principale" as MainTables {
+      component "users" as T_Users
+      component "quotes" as T_Quotes
+      component "friendships" as T_Friends
+      component "messages" as T_Messages
+      component "notifications" as T_Notifs
+      component "sessions" as T_Sessions
+      component "quote_reactions" as T_Reactions
+      component "comments" as T_Comments
+      component "blocks" as T_Blocks
+      component "scheduled_notifications" as T_SchedNotifs
+    }
+    frame "Gamificare" as GamificationTables {
+      component "badges" as T_Badges
+      component "user_badges" as T_UserBadges
+    }
+    frame "Reflecții" as ReflectionTables {
+      component "quote_reflections" as T_Reflections
+    }
+    frame "Setări" as SettingsTables {
+      component "notification_settings" as T_NotifSettings
+    }
+  }
+  component "pgvector Extension\n(Embeddings 768d)" as PgVector
+  component "Uploads Directory\n(Imagini / Documente)" as Uploads
+}
+
+' ============================================================
+' LAYER 8: DEVOPS / INFRASTRUCTURE
+' ============================================================
+package "DevOps & Infrastructură" as DevOps #LightYellow {
+  component "Docker Compose\n(Containerizare)" as Docker
+  component "GitHub Actions\n(CI / CD)" as GitHubActions
+  component "Swagger / OpenAPI\n(Documentație API)" as Swagger
+}
+
+' ============================================================
+' CONNECTIONS - Frontend to Gateway
+' ============================================================
+ExpoApp --> AxiosClient : "cereri HTTP"
+ExpoApp --> SocketClient : "WebSocket (Socket.IO)"
+ExpoApp --> ExpoPush : "înregistrare token"
+ExpoApp --> AudioService : "redare audio"
+ExpoApp --> AsyncStorage : "stocare locală"
+
+' ============================================================
+' CONNECTIONS - Gateway to Routes
+' ============================================================
+AxiosClient --> Express : "HTTP REST API"
+SocketClient --> SocketIO : "WebSocket"
+
+Express --> Helmet : "headere securitate"
+Express --> RateLimiter : "limitare rate"
+Express --> JWTAuth : "verificare token"
+Express --> Validator : "validare date"
+Express --> Multer : "upload fișiere"
+Express --> CORS : "cross-origin"
+
+' ============================================================
+' CONNECTIONS - Routes to Services
+' ============================================================
+AuthRoutes --> JWTAuth : "generare token"
+AuthRoutes --> Express : "rute /api/auth/*"
+UserRoutes --> Express : "rute /api/users/*"
+QuoteRoutes --> Express : "rute /api/quotes/*"
+FriendRoutes --> Express : "rute /api/friendships/*"
+MessageRoutes --> Express : "rute /api/messages/*"
+NotifRoutes --> Express : "rute /api/notifications/*"
+SessionRoutes --> Express : "rute /api/sessions/*"
+SchedNotifRoutes --> Express : "rute /api/scheduled-notifications/*"
+
+' ============================================================
+' CONNECTIONS - Services to External / Data
+' ============================================================
+AIService --> OllamaEmbed : "POST /api/embeddings\n(model: nomic-embed-text)"
+AIService --> OllamaGen : "POST /api/generate\n(model: llama3)"
+PushService --> ExpoPushAPI : "Expo Server SDK"
+CronService --> PushService : "trimite notificări"
+CronService --> PostgreSQL : "interogări DB"
+NotifHelper --> PushService : "helper mesaje push"
+
+' ============================================================
+' CONNECTIONS - Routes to Data Layer
+' ============================================================
+AuthRoutes --> PostgreSQL : "INSERT / SELECT users"
+UserRoutes --> PostgreSQL : "CRUD users, badges"
+QuoteRoutes --> PostgreSQL : "CRUD quotes, reactions,\ncomments, embeddings"
+FriendRoutes --> PostgreSQL : "CRUD friendships"
+MessageRoutes --> PostgreSQL : "CRUD messages"
+NotifRoutes --> PostgreSQL : "CRUD notifications"
+SessionRoutes --> PostgreSQL : "CRUD sessions"
+SchedNotifRoutes --> PostgreSQL : "CRUD scheduled_notifications"
+
+' ============================================================
+' CONNECTIONS - WebSocket
+' ============================================================
+SocketIO --> RealtimeChat : "send_message,\nreceive_message,\nmessages_read"
+SocketIO --> CallSignaling : "call_offer, call_answer,\ncall_ice_candidate,\ncall_end, call_decline"
+CallSignaling --> ActiveCalls : "gestionează apeluri active"
+SocketIO --> PostgreSQL : "salvare mesaje,\nverificare blocări"
+
+' ============================================================
+' CONNECTIONS - Gamification
+' ============================================================
+Gamification --> PostgreSQL : "XP, Level, Badge-uri"
+QuoteRoutes --> Gamification : "adăugare XP"
+UserRoutes --> Gamification : "verificare badge-uri"
+
+' ============================================================
+' CONNECTIONS - DevOps
+' ============================================================
+Docker --> PostgreSQL : "container pgvector:pg15"
+GitHubActions --> Express : "testare + deploy"
+Express --> Swagger : "documentație OpenAPI"
+
+' ============================================================
+' CONNECTIONS - PostgreSQL Internal
+' ============================================================
+PostgreSQL --> PgVector : "extensie vector(768)"
+T_Quotes --> PgVector : "coloană embedding"
+
+' ============================================================
+' STYLING
+' ============================================================
+skinparam package {
+  BorderColor #333333
+  FontColor #333333
+}
+
+skinparam component {
+  BorderColor #555555
+  FontSize 10
+}
+
+skinparam database {
+  BorderColor #2E86C1
+  BackgroundColor #D6EAF8
+}
+
+@enduml

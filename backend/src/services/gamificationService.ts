@@ -22,11 +22,10 @@ export const GamificationService = {
 
       const currentXp = userRes.rows[0].xp || 0;
       const currentLevel = userRes.rows[0].level || 1;
-
       const newXp = currentXp + xpAmount;
 
-      const calculatedLevel = Math.floor(newXp / 50) + 1;
-
+      // Formula pătratică: Level = floor(sqrt(XP / 100)) + 1
+      const calculatedLevel = Math.floor(Math.sqrt(newXp / 100)) + 1;
       const leveledUp = calculatedLevel > currentLevel;
 
       await query('UPDATE users SET xp = $1, level = $2 WHERE id = $3', [
