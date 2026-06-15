@@ -5,7 +5,6 @@ import {
   StyleSheet,
   Animated,
   TouchableOpacity,
-  Dimensions,
   StatusBar,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -14,14 +13,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemeContext } from '../context/ThemeContext';
 import { ThemeColors } from '../theme/colors';
 
-const { width, height } = Dimensions.get('window');
-
 interface ZenQuoteCardProps {
   text: string;
   author: string;
   onClose: () => void;
   isMuted: boolean;
   onToggleMute: () => void;
+  contentTranslateY?: Animated.Value;
 }
 
 const GRADIENT_COLORS: [string, string][] = [
@@ -41,14 +39,13 @@ export default function ZenQuoteCard({
   onClose,
   isMuted,
   onToggleMute,
+  contentTranslateY,
 }: ZenQuoteCardProps) {
   const { colors, theme } = useContext(ThemeContext);
   const styles = useMemo(() => getStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const gradientIndex = useRef(0);
-  const gradientAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     StatusBar.setHidden(true, 'fade');
@@ -65,24 +62,6 @@ export default function ZenQuoteCard({
     }).start();
   }, [fadeAnim]);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      gradientIndex.current = (gradientIndex.current + 1) % GRADIENT_COLORS.length;
-      Animated.timing(gradientAnim, {
-        toValue: gradientIndex.current,
-        duration: 4000,
-        useNativeDriver: false,
-      }).start();
-    }, 6000);
-
-    return () => clearInterval(interval);
-  }, [gradientAnim]);
-
-  const interpolatedColors = gradientAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 1],
-  });
-
   const currentGradient = GRADIENT_COLORS[0];
 
   return (
@@ -93,7 +72,7 @@ export default function ZenQuoteCard({
         end={{ x: 1, y: 1 }}
         style={styles.gradient}
       >
-        {/* Top bar with controls */}
+        {/* Top bar with controls - stays fixed */}
         <View style={[styles.topBar, { paddingTop: insets.top + 10 }]}>
           <TouchableOpacity
             style={styles.controlBtn}
@@ -116,11 +95,14 @@ export default function ZenQuoteCard({
           </TouchableOpacity>
         </View>
 
-        {/* Quote content */}
+        {/* Quote content - moves up when reflection is shown */}
         <Animated.View
           style={[
             styles.contentContainer,
-            { opacity: fadeAnim },
+            {
+              opacity: fadeAnim,
+              transform: contentTranslateY ? [{ translateY: contentTranslateY }] : [],
+            },
           ]}
         >
           <Text style={styles.quoteMark}>{'\u201C'}</Text>
@@ -128,11 +110,6 @@ export default function ZenQuoteCard({
           <Text style={styles.authorText}>— {author}</Text>
         </Animated.View>
 
-        {/* Bottom hint */}
-        <View style={[styles.bottomHint, { paddingBottom: insets.bottom + 20 }]}>
-          <Ionicons name="chevron-down" size={24} color="rgba(255,255,255,0.4)" />
-          <Text style={styles.hintText}>Swipe down or tap X to exit</Text>
-        </View>
       </LinearGradient>
     </View>
   );
@@ -190,14 +167,5 @@ const getStyles = (colors: ThemeColors) =>
       marginTop: 24,
       fontWeight: '600',
       alignSelf: 'flex-end',
-    },
-    bottomHint: {
-      alignItems: 'center',
-      paddingBottom: 20,
-    },
-    hintText: {
-      fontSize: 13,
-      color: 'rgba(255,255,255,0.4)',
-      marginTop: 4,
     },
   });

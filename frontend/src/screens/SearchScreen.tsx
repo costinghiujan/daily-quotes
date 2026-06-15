@@ -491,8 +491,7 @@ const getStyles = (colors: ThemeColors) =>
     semanticToggle: {
       flexDirection: 'row',
       alignItems: 'center',
-      alignSelf: 'flex-end',
-      marginRight: 15,
+      alignSelf: 'center',
       marginBottom: 10,
       paddingHorizontal: 12,
       paddingVertical: 6,

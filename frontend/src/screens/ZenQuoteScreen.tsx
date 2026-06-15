@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useContext, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useContext, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  Animated,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -42,6 +43,8 @@ const EMOTION_OPTIONS = [
   { label: 'Motivated', icon: 'rocket', value: 'motivated' },
 ];
 
+const REFLECTION_HEIGHT = 250;
+
 export default function ZenQuoteScreen() {
   const navigation = useNavigation();
   const route = useRoute<RouteProp<ZenQuoteParams, 'ZenQuote'>>();
@@ -52,11 +55,16 @@ export default function ZenQuoteScreen() {
   const [quote, setQuote] = useState<{ id?: number; text: string; author: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
+  
   const [showReflection, setShowReflection] = useState(false);
   const [selectedEmotion, setSelectedEmotion] = useState<string | null>(null);
   const [reflectionNote, setReflectionNote] = useState('');
   const [isSavingReflection, setIsSavingReflection] = useState(false);
   const [reflectionSaved, setReflectionSaved] = useState(false);
+
+  // Readucem la viață ambele animații
+  const quoteTranslateY = useRef(new Animated.Value(0)).current;
+  const reflectionOpacity = useRef(new Animated.Value(0)).current;
 
   const audioService = AudioService.getInstance();
 
@@ -129,6 +137,40 @@ export default function ZenQuoteScreen() {
     });
   }, [audioService]);
 
+  const handleToggleReflection = useCallback(() => {
+    if (showReflection) {
+      // Ascunde reflexia si coboara textul la loc
+      Animated.parallel([
+        Animated.timing(quoteTranslateY, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(reflectionOpacity, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start(() => setShowReflection(false)); 
+      // Setam false DOAR dupa ce se termina animatia pentru un fade out curat
+    } else {
+      // Afiseaza reflexia si ridica textul in sus
+      setShowReflection(true);
+      Animated.parallel([
+        Animated.timing(quoteTranslateY, {
+          toValue: -REFLECTION_HEIGHT,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(reflectionOpacity, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [showReflection, quoteTranslateY, reflectionOpacity]);
+
   const handleSaveReflection = async () => {
     if (!quote?.id || !selectedEmotion) return;
     setIsSavingReflection(true);
@@ -142,15 +184,7 @@ export default function ZenQuoteScreen() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <View style={[styles.loadingContainer, { paddingTop: insets.top }]}>
-        <ActivityIndicator size="large" color="#fff" />
-      </View>
-    );
-  }
-
-  if (!quote) {
+  if (isLoading || !quote) {
     return (
       <View style={[styles.loadingContainer, { paddingTop: insets.top }]}>
         <ActivityIndicator size="large" color="#fff" />
@@ -163,105 +197,111 @@ export default function ZenQuoteScreen() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ZenQuoteCard
-        text={quote.text}
-        author={quote.author}
-        onClose={handleClose}
-        isMuted={isMuted}
-        onToggleMute={handleToggleMute}
-      />
+      <View style={styles.mainContent}>
+        {/* Am reintrodus prop-ul contentTranslateY */}
+        <ZenQuoteCard
+          text={quote.text}
+          author={quote.author}
+          onClose={handleClose}
+          isMuted={isMuted}
+          onToggleMute={handleToggleMute}
+          contentTranslateY={quoteTranslateY}
+        />
 
-      {/* Reflection Section */}
-      <View style={[styles.reflectionContainer, { paddingBottom: insets.bottom + 20 }]}>
-        {!reflectionSaved ? (
-          <>
-            <TouchableOpacity
-              style={[styles.reflectionToggle, { backgroundColor: 'rgba(255,255,255,0.1)' }]}
-              onPress={() => setShowReflection(!showReflection)}
-            >
-              <Ionicons
-                name={showReflection ? 'chevron-down' : 'chatbubble-ellipses'}
-                size={20}
-                color="#fff"
-              />
-              <Text style={styles.reflectionToggleText}>
-                {showReflection ? 'Hide Reflection' : 'Reflect on this quote'}
-              </Text>
-            </TouchableOpacity>
-
-            {showReflection && (
-              <View style={styles.reflectionContent}>
-                <Text style={styles.reflectionTitle}>
-                  How does this quote make you feel?
-                </Text>
-                <View style={styles.emotionGrid}>
-                  {EMOTION_OPTIONS.map((emotion) => (
-                    <TouchableOpacity
-                      key={emotion.value}
-                      style={[
-                        styles.emotionChip,
-                        selectedEmotion === emotion.value && styles.emotionChipSelected,
-                      ]}
-                      onPress={() => setSelectedEmotion(emotion.value)}
-                    >
-                      <Ionicons
-                        name={emotion.icon as any}
-                        size={18}
-                        color={selectedEmotion === emotion.value ? '#000' : '#fff'}
-                      />
-                      <Text
-                        style={[
-                          styles.emotionLabel,
-                          selectedEmotion === emotion.value && styles.emotionLabelSelected,
-                        ]}
-                      >
-                        {emotion.label}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-
-                <TextInput
-                  style={styles.reflectionInput}
-                  placeholder="Add a personal note (optional)..."
-                  placeholderTextColor="rgba(255,255,255,0.4)"
-                  value={reflectionNote}
-                  onChangeText={setReflectionNote}
-                  multiline
-                  numberOfLines={2}
-                />
-
+        <View
+          style={[styles.reflectionContainer, { paddingBottom: insets.bottom + 20 }]}
+          pointerEvents="box-none"
+        >
+          {!reflectionSaved ? (
+            <View pointerEvents="box-none">
+              <View style={styles.reflectionTopRow} pointerEvents="box-none">
                 <TouchableOpacity
-                  style={[
-                    styles.saveReflectionBtn,
-                    !selectedEmotion && styles.saveReflectionBtnDisabled,
-                  ]}
-                  onPress={handleSaveReflection}
-                  disabled={!selectedEmotion || isSavingReflection}
+                  style={[styles.reflectionToggle, { backgroundColor: 'rgba(255,255,255,0.1)' }]}
+                  onPress={handleToggleReflection}
                 >
-                  {isSavingReflection ? (
-                    <ActivityIndicator size="small" color="#000" />
-                  ) : (
-                    <>
-                      <Ionicons name="bookmark" size={18} color="#000" />
-                      <Text style={styles.saveReflectionText}>Save Reflection</Text>
-                    </>
-                  )}
+                  <Ionicons
+                    name={showReflection ? 'chevron-down' : 'chatbubble-ellipses'}
+                    size={20}
+                    color="#fff"
+                  />
+                  <Text style={styles.reflectionToggleText}>
+                    {showReflection ? 'Hide Reflection' : 'Reflect on this quote'}
+                  </Text>
                 </TouchableOpacity>
               </View>
-            )}
-          </>
-        ) : (
-          <View style={styles.reflectionSavedContainer}>
-            <Ionicons name="checkmark-circle" size={32} color="#4CAF50" />
-            <Text style={styles.reflectionSavedText}>
-              Reflection saved! +5 XP
-            </Text>
-            <Text style={styles.reflectionSavedSubtext}>
-              Tracking your emotional journey helps build self-awareness.
-            </Text>
-          </View>
-        )}
+
+              {showReflection && (
+                <Animated.View style={[styles.reflectionContent, { opacity: reflectionOpacity }]}>
+                  <Text style={styles.reflectionTitle}>
+                    How does this quote make you feel?
+                  </Text>
+                  <View style={styles.emotionGrid}>
+                    {EMOTION_OPTIONS.map((emotion) => (
+                      <TouchableOpacity
+                        key={emotion.value}
+                        style={[
+                          styles.emotionChip,
+                          selectedEmotion === emotion.value && styles.emotionChipSelected,
+                        ]}
+                        onPress={() => setSelectedEmotion(emotion.value)}
+                      >
+                        <Ionicons
+                          name={emotion.icon as any}
+                          size={18}
+                          color={selectedEmotion === emotion.value ? '#000' : '#fff'}
+                        />
+                        <Text
+                          style={[
+                            styles.emotionLabel,
+                            selectedEmotion === emotion.value && styles.emotionLabelSelected,
+                          ]}
+                        >
+                          {emotion.label}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+
+                  <TextInput
+                    style={styles.reflectionInput}
+                    placeholder="Add a personal note (optional)..."
+                    placeholderTextColor="rgba(255,255,255,0.4)"
+                    value={reflectionNote}
+                    onChangeText={setReflectionNote}
+                    multiline
+                    numberOfLines={2}
+                  />
+
+                  <TouchableOpacity
+                    style={[
+                      styles.saveReflectionBtn,
+                      !selectedEmotion && styles.saveReflectionBtnDisabled,
+                    ]}
+                    onPress={handleSaveReflection}
+                    disabled={!selectedEmotion || isSavingReflection}
+                  >
+                    {isSavingReflection ? (
+                      <ActivityIndicator size="small" color="#000" />
+                    ) : (
+                      <>
+                        <Ionicons name="bookmark" size={18} color="#000" />
+                        <Text style={styles.saveReflectionText}>Save Reflection</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                </Animated.View>
+              )}
+            </View>
+          ) : (
+            <View style={styles.reflectionSavedContainer}>
+              <Ionicons name="checkmark-circle" size={32} color="#4CAF50" />
+              <Text style={styles.reflectionSavedText}>Reflection saved! +5 XP</Text>
+              <Text style={styles.reflectionSavedSubtext}>
+                Tracking your emotional journey helps build self-awareness.
+              </Text>
+            </View>
+          )}
+        </View>
       </View>
     </KeyboardAvoidingView>
   );
@@ -279,6 +319,10 @@ const getStyles = (colors: ThemeColors) =>
       alignItems: 'center',
       backgroundColor: '#000',
     },
+    mainContent: {
+      flex: 1,
+      position: 'relative',
+    },
     reflectionContainer: {
       position: 'absolute',
       bottom: 0,
@@ -286,14 +330,20 @@ const getStyles = (colors: ThemeColors) =>
       right: 0,
       paddingHorizontal: 20,
     },
+    reflectionTopRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 10,
+    },
     reflectionToggle: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
       paddingVertical: 12,
+      paddingHorizontal: 16,
       borderRadius: 12,
       gap: 8,
-      marginBottom: 10,
     },
     reflectionToggleText: {
       color: '#fff',

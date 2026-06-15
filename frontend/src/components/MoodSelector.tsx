@@ -4,7 +4,6 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  ScrollView,
 } from 'react-native';
 import { ThemeContext } from '../context/ThemeContext';
 import { ThemeColors } from '../theme/colors';
@@ -38,11 +37,7 @@ export default function MoodSelector({
   return (
     <View style={styles.container}>
       <Text style={[styles.title, { color: colors.textDark }]}>How are you feeling?</Text>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
+      <View style={styles.grid}>
         {MOODS.map((mood) => {
           const isSelected = selectedMood === mood.query;
           return (
@@ -72,7 +67,7 @@ export default function MoodSelector({
             </TouchableOpacity>
           );
         })}
-      </ScrollView>
+      </View>
     </View>
   );
 }
@@ -88,25 +83,30 @@ const getStyles = (colors: ThemeColors) =>
       marginBottom: 12,
       paddingHorizontal: 16,
     },
-    scrollContent: {
+    grid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
       paddingHorizontal: 16,
-      gap: 10,
+      gap: 8,
     },
     moodItem: {
+      flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-      borderRadius: 16,
+      paddingHorizontal: 10,
+      paddingVertical: 7,
+      borderRadius: 10,
       borderWidth: 1,
-      minWidth: 80,
+      width: '31%',
+      flexGrow: 1,
     },
     moodEmoji: {
-      fontSize: 28,
-      marginBottom: 4,
+      fontSize: 16,
+      marginRight: 4,
     },
     moodLabel: {
       fontSize: 12,
       fontWeight: '600',
     },
+
   });
