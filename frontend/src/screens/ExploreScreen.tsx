@@ -532,9 +532,9 @@ export default function ExploreScreen() {
                     <Text style={[styles.similarItemAuthor, { color: colors.textLight }]}>
                       — {sq.author}
                     </Text>
-                    {sq.recommendation_score !== undefined && (
+                    {sq.similarity_score !== undefined && (
                       <Text style={styles.similarItemScore}>
-                        {t('explore.similarityScore')}: {Math.round((sq.recommendation_score || 0) * 100)}%
+                        {t('explore.similarityScore')}: {Math.round((sq.similarity_score || 0) * 100)}%
                       </Text>
                     )}
                   </TouchableOpacity>

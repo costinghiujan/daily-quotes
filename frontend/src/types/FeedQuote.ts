@@ -17,6 +17,8 @@ export interface FeedQuote {
   user_reactions: string[];
   total_reactions?: number;
   recommendation_score?: number;
+  similarity_score?: number;
+  semantic_score?: number;
 }
 
 export interface ReactionConfig {

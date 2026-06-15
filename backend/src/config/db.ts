@@ -59,6 +59,21 @@ export const initDB = async () => {
       );
     `);
 
+    // Create an IVFFlat index on the embedding column for faster similarity searches
+    // The index is created with 100 centroids (list size) - adjust based on data volume
+    try {
+      await pool.query(`
+        CREATE INDEX IF NOT EXISTS idx_quotes_embedding 
+        ON quotes 
+        USING ivfflat (embedding vector_cosine_ops)
+        WITH (lists = 100);
+      `);
+      console.log('[Bază de Date] Index IVFFlat pe embedding creat.');
+    } catch {
+      // Index creation may fail if there's no data yet, that's ok
+      console.log('[Bază de Date] Notă: Indexul IVFFlat nu a putut fi creat (posibil lipsă date).');
+    }
+
     await pool.query(`
       CREATE TABLE IF NOT EXISTS friendships (
         id SERIAL PRIMARY KEY,

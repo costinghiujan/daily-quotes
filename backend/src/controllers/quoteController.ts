@@ -410,7 +410,8 @@ export const searchQuotes = async (req: AuthRequest, res: Response): Promise<voi
     if (useSemantic) {
       const embeddingArray = await aiService.getEmbedding(searchQuery);
 
-      if (embeddingArray) {
+      // ADĂUGĂM verificarea length > 0 pentru a preveni array-urile goale []
+      if (embeddingArray && embeddingArray.length > 0) {
         const embeddingParam = `[${embeddingArray.join(',')}]`;
 
         const semanticSQL = `
@@ -447,7 +448,16 @@ export const searchQuotes = async (req: AuthRequest, res: Response): Promise<voi
         });
         return;
       }
-      // Fall through to lexical search if embedding fails
+      
+      // If semantic search fails (embedding generation error), return an error
+      // instead of silently falling through to lexical search
+      res.status(200).json({
+        status: 'success',
+        search_type: 'semantic_failed',
+        message: 'Căutarea semantică nu este disponibilă momentan. Încearcă din nou mai târziu.',
+        data: [],
+      });
+      return;
     }
 
     // Lexical search (original ILIKE-based)
@@ -571,13 +581,14 @@ export const getExploreFeed = async (req: AuthRequest, res: Response): Promise<v
       return;
     }
 
+    // Get user's history: quotes they posted OR any quote they reacted to (any reaction type)
     const userHistory = await query(
       `
-      SELECT q.embedding, q.hashtags, q.author
+      SELECT DISTINCT q.embedding, q.hashtags, q.author
       FROM quotes q
-      LEFT JOIN quote_reactions qr ON q.id = qr.quote_id AND qr.user_id = $1 AND qr.reaction_type = 'BLUE_HEART'
-      WHERE (q.user_id = $1 OR qr.user_id = $1) AND q.embedding IS NOT NULL
-      ORDER BY COALESCE(qr.created_at, q.created_at) DESC
+      LEFT JOIN quote_reactions qr ON q.id = qr.quote_id AND qr.user_id = $1
+      WHERE (q.user_id = $1 OR qr.user_id IS NOT NULL) AND q.embedding IS NOT NULL
+      ORDER BY q.created_at DESC
       LIMIT 20;
     `,
       [currentUserId],

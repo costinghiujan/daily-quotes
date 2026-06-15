@@ -216,6 +216,11 @@ export default function SearchScreen() {
       <View style={styles.quoteFooter}>
         <Ionicons name="heart" size={16} color={colors.primary} />
         <Text style={styles.reactionCount}>{item.blue_heart_count || 0}</Text>
+        {useSemanticSearch && item.semantic_score !== undefined && (
+          <Text style={[styles.semanticScore, { color: colors.primary }]}>
+            {Math.round((item.semantic_score || 0) * 100)}% match
+          </Text>
+        )}
       </View>
     </View>
   );
@@ -502,6 +507,8 @@ const getStyles = (colors: ThemeColors) =>
       gap: 6,
     },
     semanticToggleText: { fontSize: 13, fontWeight: '600' },
+
+    semanticScore: { fontSize: 12, fontWeight: '600', marginLeft: 'auto' },
 
     emptyText: { textAlign: 'center', marginTop: 40, color: colors.textLight, fontSize: 16 },
   });

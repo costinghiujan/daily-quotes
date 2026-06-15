@@ -10,6 +10,7 @@ interface OllamaGenerateResponse {
 export const aiService = {
   getEmbedding: async (text: string): Promise<number[] | null> => {
     try {
+      // Use 'input' as per Ollama API spec for /api/embeddings
       const response = await fetch('http://127.0.0.1:11434/api/embeddings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
