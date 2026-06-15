@@ -265,6 +265,11 @@ export const getFeedQuotes = async (req: AuthRequest, res: Response): Promise<vo
         LEFT JOIN blocks b2 ON b2.blocker_id = u.id AND b2.blocked_id = $1
         WHERE b1.blocker_id IS NULL 
           AND b2.blocker_id IS NULL
+          AND q.user_id IN (
+              SELECT CASE WHEN f.requester_id = $1 THEN f.receiver_id ELSE f.requester_id END
+              FROM friendships f
+              WHERE (f.requester_id = $1 OR f.receiver_id = $1) AND f.status = 'accepted'
+          )
         GROUP BY q.id, u.id
         ORDER BY q.created_at DESC
         LIMIT 50;

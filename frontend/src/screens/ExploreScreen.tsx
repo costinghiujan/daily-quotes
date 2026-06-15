@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useContext, useMemo, useLayoutEffect } from 'react';
+import React, { useState, useCallback, useContext, useMemo, useLayoutEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   Image,
   Modal,
   ScrollView,
+  Animated,
 } from 'react-native';
 import { useFocusEffect, useNavigation, NavigationProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,9 +20,141 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 import { quoteService } from '../api/quoteService';
 import { ThemeContext } from '../context/ThemeContext';
-import { FeedQuote } from '../types/FeedQuote';
+import { FeedQuote, REACTIONS_CONFIG, ReactionConfig } from '../types/FeedQuote';
 import { ThemeColors } from '../theme/colors';
 import { ExploreFeedSkeleton } from '../components/SkeletonLoader';
+
+interface Particle {
+  angle: number;
+  color: string;
+}
+
+const PARTICLES: Particle[] = [
+  { angle: 0, color: '#FFD700' },
+  { angle: 72, color: '#FF6B6B' },
+  { angle: 144, color: '#4ECDC4' },
+  { angle: 216, color: '#FF9F1C' },
+  { angle: 288, color: '#C7F464' },
+];
+
+const AnimatedReactionButton = ({ reaction, count, isSelected, onPress, colors, btnStyles }: {
+  reaction: ReactionConfig;
+  count: number;
+  isSelected: boolean;
+  onPress: () => void;
+  colors: ThemeColors;
+  btnStyles: ReturnType<typeof getStyles>;
+}) => {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const burstAnim = useRef(new Animated.Value(0)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 0.8,
+      speed: 20,
+      bounciness: 0,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      speed: 20,
+      bounciness: 12,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePress = () => {
+    if (!isSelected) {
+      burstAnim.setValue(0);
+      Animated.timing(burstAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1.3, duration: 150, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 150, useNativeDriver: true }),
+      ]).start();
+    }
+    onPress();
+  };
+
+  return (
+    <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+      {PARTICLES.map((p, i) => {
+        const rad = (p.angle * Math.PI) / 180;
+        const translateX = burstAnim.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0, Math.cos(rad) * 35],
+        });
+        const translateY = burstAnim.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0, Math.sin(rad) * 35],
+        });
+        const opacity = burstAnim.interpolate({
+          inputRange: [0, 0.7, 1],
+          outputRange: [1, 1, 0],
+        });
+        const scale = burstAnim.interpolate({
+          inputRange: [0, 0.5, 1],
+          outputRange: [0.1, 1, 0],
+        });
+
+        return (
+          <Animated.View
+            key={i}
+            pointerEvents="none"
+            style={{
+              position: 'absolute',
+              width: 6,
+              height: 6,
+              borderRadius: 3,
+              backgroundColor: p.color,
+              opacity,
+              transform: [{ translateX }, { translateY }, { scale }],
+            }}
+          />
+        );
+      })}
+      <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+        <TouchableOpacity
+          style={[
+            btnStyles.reactionBtn,
+            { backgroundColor: colors.reactionBg, borderColor: colors.reactionButtonBorder },
+            isSelected && {
+              backgroundColor: colors.reactionActiveBg,
+              borderColor: colors.primary,
+            },
+          ]}
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+          onPress={handlePress}
+          activeOpacity={0.9}
+        >
+          <Animated.Text style={[btnStyles.emojiText, isSelected && { transform: [{ scale: pulseAnim }] }]}>
+            {reaction.emoji}
+          </Animated.Text>
+          {count > 0 && (
+            <Text
+              style={[
+                btnStyles.reactionCount,
+                { color: colors.textLight },
+                isSelected && { color: colors.primary },
+              ]}
+            >
+              {count}
+            </Text>
+          )}
+        </TouchableOpacity>
+      </Animated.View>
+    </View>
+  );
+};
 
 interface ExploreNavigationProp {
   navigate: (screen: string, params?: Record<string, unknown>) => void;
@@ -131,52 +264,119 @@ export default function ExploreScreen() {
     });
   };
 
-  const renderQuoteItem = ({ item }: { item: FeedQuote }) => (
-    <View style={[styles.quoteCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
-      <View style={styles.quoteHeader}>
-        <TouchableOpacity onPress={() => navigation.navigate('ProfileScreen', { userId: item.user_id })}>
-          {item.profile_picture_url ? (
-            <Image source={{ uri: item.profile_picture_url }} style={styles.avatarSmall} />
-          ) : (
-            <Image source={require('../../assets/user-default.jpg')} style={styles.avatarSmall} />
-          )}
-        </TouchableOpacity>
-        <View>
+  const handleToggleReaction = useCallback(async (quoteId: number, reactionKey: string) => {
+    setExploreQuotes((prevQuotes) =>
+      prevQuotes.map((quote) => {
+        if (quote.id !== quoteId) return quote;
+        const updatedQuote = { ...quote };
+        const currentReactions = Array.isArray(updatedQuote.user_reactions) ? updatedQuote.user_reactions : [];
+        const targetProp = (reactionKey.toLowerCase() + '_count') as keyof FeedQuote;
+        const hasReacted = currentReactions.includes(reactionKey);
+
+        if (hasReacted) {
+          updatedQuote[targetProp] = Math.max(0, (updatedQuote[targetProp] as number || 0) - 1) as never;
+          updatedQuote.user_reactions = currentReactions.filter((key: string) => key !== reactionKey);
+        } else {
+          updatedQuote[targetProp] = ((updatedQuote[targetProp] as number || 0) + 1) as never;
+          updatedQuote.user_reactions = [...currentReactions, reactionKey];
+        }
+        return updatedQuote;
+      }),
+    );
+    try {
+      await quoteService.toggleReaction(quoteId, reactionKey);
+    } catch (error) {
+      console.error('A aparut o eroare de retea la salvarea reactiei.', error);
+    }
+  }, []);
+
+  const renderQuoteItem = useCallback(({ item }: { item: FeedQuote }) => {
+    const hasAnyReaction = REACTIONS_CONFIG.some(r => (item[r.prop] || 0) > 0);
+    const totalReactions = REACTIONS_CONFIG.reduce((acc, r) => acc + (item[r.prop] || 0), 0);
+
+    return (
+      <View style={[styles.quoteCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
+        <View style={styles.quoteHeader}>
           <TouchableOpacity onPress={() => navigation.navigate('ProfileScreen', { userId: item.user_id })}>
-            <Text style={[styles.quoteUserName, { color: colors.textDark }]}>{item.full_name || item.username}</Text>
+            {item.profile_picture_url ? (
+              <Image source={{ uri: item.profile_picture_url }} style={styles.avatarSmall} />
+            ) : (
+              <Image source={require('../../assets/user-default.jpg')} style={styles.avatarSmall} />
+            )}
           </TouchableOpacity>
-          <Text style={[styles.quoteUserHandle, { color: colors.textLight }]}>@{item.username}</Text>
+          <View>
+            <TouchableOpacity onPress={() => navigation.navigate('ProfileScreen', { userId: item.user_id })}>
+              <Text style={[styles.quoteUserName, { color: colors.textDark }]}>{item.full_name || item.username}</Text>
+            </TouchableOpacity>
+            <Text style={[styles.quoteUserHandle, { color: colors.textLight }]}>@{item.username}</Text>
+          </View>
+        </View>
+
+        <Text style={[styles.quoteTextContainer, { color: colors.textPrimary }]}>
+          {'\u201C'}{renderTextWithHashtags(item.text)}{'\u201D'}
+        </Text>
+        <Text style={[styles.quoteAuthor, { color: colors.textLight }]}>— {item.author}</Text>
+
+        {/* Reactions Summary */}
+        <View style={[styles.likesRow, { borderTopColor: colors.separatorColor }]}>
+          <View style={styles.reactionsStack}>
+            {hasAnyReaction ? REACTIONS_CONFIG.map((r, i) => {
+              if ((item[r.prop] || 0) > 0 && i < 3) {
+                 return (
+                   <View key={r.key} style={[styles.reactionCircle, { backgroundColor: colors.reactionEmojiBg, borderColor: colors.reactionEmojiBorder, zIndex: 3 - i, marginLeft: i > 0 ? -6 : 0 }]}>
+                     <Text style={{ fontSize: 10 }}>{r.emoji}</Text>
+                   </View>
+                 );
+              }
+              return null;
+            }) : (
+              <View style={[styles.reactionCircle, { backgroundColor: colors.primary, borderColor: colors.card, zIndex: 3 }]}>
+                <Ionicons name="heart" size={10} color="#fff" />
+              </View>
+            )}
+          </View>
+          <Text style={[styles.likesText, { color: colors.textLight }]}>
+            {totalReactions > 0 ? `${totalReactions} ${t('home.reactions')}` : t('home.noReactions')}
+          </Text>
+        </View>
+
+        {/* Reaction Buttons */}
+        <View style={[styles.reactionsBar, { borderTopColor: colors.separatorColor }]}>
+          <View style={{ flex: 1, flexDirection: 'row', flexWrap: 'wrap' }}>
+            {REACTIONS_CONFIG.map((reaction) => {
+               const count = item[reaction.prop] || 0;
+               const isSelected = Array.isArray(item.user_reactions) && item.user_reactions.includes(reaction.key);
+               return (
+                 <AnimatedReactionButton
+                   key={reaction.key}
+                   reaction={reaction}
+                   count={count}
+                   isSelected={isSelected}
+                   onPress={() => handleToggleReaction(item.id, reaction.key)}
+                   colors={colors}
+                   btnStyles={styles}
+                 />
+               );
+            })}
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <TouchableOpacity
+              style={styles.similarBtn}
+              onPress={() => handleFindSimilar(item)}
+            >
+              <Ionicons name="shuffle" size={16} color={colors.primary} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.commentBtn}
+              onPress={() => navigation.navigate('Comments', { quoteId: item.id })}
+            >
+              <Ionicons name="chatbubble-outline" size={18} color={colors.textLight} />
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
-
-      <Text style={[styles.quoteTextContainer, { color: colors.textPrimary }]}>
-        {'\u201C'}{renderTextWithHashtags(item.text)}{'\u201D'}
-      </Text>
-      <Text style={[styles.quoteAuthor, { color: colors.textLight }]}>— {item.author}</Text>
-
-      <View style={[styles.reactionsBar, { borderTopColor: colors.separatorColor }]}>
-        <View style={[styles.reactionBtn, { backgroundColor: colors.reactionBg }]}>
-          <Ionicons name="heart" size={18} color={colors.primary} />
-          <Text style={[styles.reactionCount, { color: colors.primary }]}>{item.blue_heart_count || 0}</Text>
-        </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          {/* Feature H: Find similar quotes button */}
-          <TouchableOpacity
-            style={styles.similarBtn}
-            onPress={() => handleFindSimilar(item)}
-          >
-            <Ionicons name="shuffle" size={16} color={colors.primary} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.commentBtn}
-            onPress={() => navigation.navigate('Comments', { quoteId: item.id })}
-          >
-            <Ionicons name="chatbubble-outline" size={18} color={colors.textLight} />
-          </TouchableOpacity>
-        </View>
-      </View>
-    </View>
-  );
+    );
+  }, [colors, styles, navigation, handleToggleReaction, handleFindSimilar, t]);
 
   const renderHeader = () => {
     return (
@@ -217,15 +417,8 @@ export default function ExploreScreen() {
                 <Text style={styles.hofPostedBy}>
                   {t('explore.postedBy')} <Text style={{ fontWeight: 'bold' }}>@{quoteOfTheDay.username}</Text>
                 </Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <TouchableOpacity
-                    style={styles.zenModeBtn}
-                    onPress={() => navigation.navigate('ZenQuote', { quoteId: quoteOfTheDay.id })}
-                  >
-                    <Ionicons name="leaf" size={14} color="#fff" />
-                    <Text style={styles.zenModeBtnText}>{t('explore.zenMode')}</Text>
-                  </TouchableOpacity>
-                  <View style={styles.hofReactionBadge}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <View style={styles.hofReactionBadge}>
                     <Ionicons name="star" size={12} color="#FFD700" />
                     <Text style={styles.hofReactionText}>
                       {Number(quoteOfTheDay.total_reactions) || 0} {t('explore.reactions')}
@@ -499,6 +692,29 @@ const getStyles = (colors: ThemeColors) =>
       textAlign: 'right',
       marginBottom: 15,
     },
+    likesRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingTop: 10,
+      marginBottom: 10,
+      borderTopWidth: 1,
+    },
+    reactionsStack: {
+      flexDirection: 'row',
+      marginRight: 8,
+    },
+    reactionCircle: {
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      borderWidth: 2,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    likesText: {
+      fontSize: 13,
+      fontWeight: '500',
+    },
     reactionsBar: {
       flexDirection: 'row',
       justifyContent: 'space-between',
@@ -509,11 +725,15 @@ const getStyles = (colors: ThemeColors) =>
     reactionBtn: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingHorizontal: 10,
+      paddingHorizontal: 8,
       paddingVertical: 6,
-      borderRadius: 20,
+      borderRadius: 16,
+      borderWidth: 1,
+      marginRight: 6,
+      marginBottom: 4,
     },
-    reactionCount: { fontSize: 14, fontWeight: 'bold', marginLeft: 6 },
+    emojiText: { fontSize: 14 },
+    reactionCount: { fontSize: 12, fontWeight: 'bold', marginLeft: 4 },
     commentBtn: { padding: 5 },
     similarBtn: {
       width: 32,

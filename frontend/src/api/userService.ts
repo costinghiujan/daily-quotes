@@ -1,4 +1,6 @@
-import { apiClient } from './client';
+import { apiClient, BASE_URL } from './client';
+import { storage } from '../utils/storage';
+
 
 export interface Badge {
   id: number;
@@ -82,14 +84,30 @@ export const userService = {
         type: type,
       } as unknown as Blob);
 
-      const response = await apiClient.post('/users/avatar', formData);
+      const token = await storage.getToken();
+      const response = await fetch(`${BASE_URL}/users/avatar`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
 
-      return response.data;
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Upload failed with status ${response.status}`);
+      }
+
+      const result = await response.json();
+      return result;
+
     } catch (error) {
       console.error('[Eroare Frontend] Upload avatar:', error);
       throw error;
     }
   },
+
+
 
   updateProfile: async (data: { full_name?: string; bio?: string }): Promise<UserProfile> => {
     try {
@@ -125,14 +143,28 @@ export const userService = {
         type: type,
       } as unknown as Blob);
 
-      const response = await apiClient.post('/users/cover-photo', formData);
+      const token = await storage.getToken();
+      const response = await fetch(`${BASE_URL}/users/cover-photo`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
 
-      return response.data;
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Upload failed with status ${response.status}`);
+      }
+
+      return await response.json();
     } catch (error) {
       console.error('[Eroare Frontend] Upload copertă:', error);
       throw error;
     }
   },
+
+
 
   // Feature D: Daily Login Streak
   trackDailyLogin: async (): Promise<{ daily_streak: number; streak_bonus: number; xp_awarded: number }> => {

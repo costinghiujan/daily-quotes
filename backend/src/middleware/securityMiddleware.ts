@@ -7,8 +7,15 @@ import { generalLimiter } from './rateLimiter';
  */
 export const applySecurityMiddleware = (app: import('express').Application): void => {
   // Helmet for secure HTTP headers
-  app.use(helmet());
+  // Disable contentSecurityPolicy and crossOriginEmbedderPolicy to allow file uploads
+  app.use(
+    helmet({
+      contentSecurityPolicy: false,
+      crossOriginEmbedderPolicy: false,
+    }),
+  );
 
   // General rate limiting
   app.use(generalLimiter);
 };
+

@@ -12,8 +12,9 @@ console.log('[Axios] Instanța a fost inițializată cu BASE_URL:', BASE_URL);
 
 export const apiClient = axios.create({
   baseURL: BASE_URL,
-  timeout: 5000,
+  timeout: 30000,
 });
+
 
 apiClient.interceptors.request.use(
   async (config) => {
@@ -25,6 +26,12 @@ apiClient.interceptors.request.use(
         // Ensure no stale auth header bleeds through
         delete config.headers.Authorization;
       }
+
+      // If sending FormData, do NOT set Content-Type - let the native layer handle it
+      // with the proper multipart/form-data boundary
+      if (config.data instanceof FormData) {
+        delete config.headers['Content-Type'];
+      }
     } catch (error) {
       console.error('[Eroare Axios Interceptor] Nu s-a putut injecta token-ul:', error);
     }
@@ -34,3 +41,4 @@ apiClient.interceptors.request.use(
     return Promise.reject(error);
   },
 );
+
