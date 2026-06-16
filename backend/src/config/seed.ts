@@ -2,6 +2,7 @@ import bcrypt from 'bcrypt';
 import { pool, initDB } from './db';
 import { aiService } from '../services/aiService';
 
+// Funcție pentru prevenirea supraîncălzirii și eliberarea memoriei
 const thermalCooldown = (ms: number, reason: string): Promise<void> => {
   console.log(`      ⏳ Pauză sistem: ${reason} (${ms / 1000} secunde)...`);
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -9,64 +10,64 @@ const thermalCooldown = (ms: number, reason: string): Promise<void> => {
 
 // Exact 6 utilizatori pentru o rețea controlată
 const mainUsersData = [
-  { username: 'alex_stoicul', fullName: 'Alexandru M.', bio: 'Pasionat de filosofie și minimalism.' }, // Face parte din grup
-  { username: 'elena_p', fullName: 'Elena Popescu', bio: 'Iubesc arta și citatele motivaționale.' },    // Face parte din grup
-  { username: 'vlad_dev', fullName: 'Vlad Ionescu', bio: 'Programator și cititor pasionat.' },        // Face parte din grup
-  { username: 'ana_singuratica', fullName: 'Ana Maria', bio: 'Caut liniștea în singurătate.' },       // IZOLAT 1
-  { username: 'mihai_lupul', fullName: 'Mihai Vasile', bio: 'Lup singuratic. Fără prieteni.' },       // IZOLAT 2
-  { username: 'laura_d', fullName: 'Laura Dan', bio: 'Doar eu și gândurile mele de dimineață.' }      // Prieten doar cu Alex
+  { username: 'alex_stoicul', fullName: 'Alexandru M.', bio: 'Passionate about philosophy and minimalism.' }, 
+  { username: 'elena_p', fullName: 'Elena Popescu', bio: 'I love art and motivational quotes.' },    
+  { username: 'vlad_dev', fullName: 'Vlad Ionescu', bio: 'Software developer and avid reader.' },        
+  { username: 'ana_singuratica', fullName: 'Ana Maria', bio: 'Seeking peace in solitude.' },       
+  { username: 'mihai_lupul', fullName: 'Mihai Vasile', bio: 'Lone wolf. No friends.' },       
+  { username: 'laura_d', fullName: 'Laura Dan', bio: 'Just me and my morning thoughts.' }      
 ];
 
-// Câțiva utilizatori "fantomă" doar pentru a da reacții la postări (să nu fie feed-ul gol)
+// Câțiva utilizatori "fantomă" doar pentru a da reacții la postări
 const reactionUsersData = [
-  { username: 'cititor_1', fullName: 'Cititor Pasionat' },
-  { username: 'cititor_2', fullName: 'Omul cu Like-uri' },
-  { username: 'cititor_3', fullName: 'Vizitator Anonim' }
+  { username: 'cititor_1', fullName: 'Avid Reader' },
+  { username: 'cititor_2', fullName: 'The Liker' },
+  { username: 'cititor_3', fullName: 'Anonymous Visitor' }
 ];
 
-// Exact 30 de citate diverse
+// Exact 30 de citate diverse, traduse în engleză pentru acuratețe maximă la vectorizare
 const quotesData = [
   // Citate pentru Alex (Stoicism)
-  { text: "Nu evenimentele în sine ne tulbură, ci modul în care le interpretăm și judecăm.", author: "Epictet", category: "Stoicism" },
-  { text: "Ai putere asupra minții tale, nu asupra evenimentelor exterioare.", author: "Marcus Aurelius", category: "Stoicism" },
-  { text: "Suferim mai des în imaginație decât în realitate.", author: "Seneca", category: "Stoicism" },
-  { text: "Nu te lăsa copleșit de întregul vieții tale. Rămâi la prezent.", author: "Marcus Aurelius", category: "Stoicism" },
-  { text: "Ceea ce depinde de tine este voința ta; restul e dat sorții.", author: "Epictet", category: "Stoicism" },
+  { text: "Men are disturbed not by things, but by the view which they take of them.", author: "Epictetus", category: "Stoicism" },
+  { text: "You have power over your mind - not outside events. Realize this, and you will find strength.", author: "Marcus Aurelius", category: "Stoicism" },
+  { text: "We suffer more often in imagination than in reality.", author: "Seneca", category: "Stoicism" },
+  { text: "Do not let the panorama of your life oppress you. Stick to the present.", author: "Marcus Aurelius", category: "Stoicism" },
+  { text: "Some things are in our control and others not. Things in our control are opinion, pursuit, desire, aversion.", author: "Epictetus", category: "Stoicism" },
 
   // Citate pentru Elena (Motivație)
-  { text: "Singurul mod de a face lucruri grozave este să iubești ceea ce faci.", author: "Steve Jobs", category: "Motivație" },
-  { text: "Cea mai mare glorie nu stă în faptul că nu cădem niciodată, ci în faptul că ne ridicăm.", author: "Nelson Mandela", category: "Reziliență" },
-  { text: "Fii schimbarea pe care vrei să o vezi în lume.", author: "Mahatma Gandhi", category: "Schimbare" },
-  { text: "Nu contează cât de încet mergi, atâta timp cât nu te oprești.", author: "Confucius", category: "Motivație" },
-  { text: "În mijlocul dificultăților se află oportunitățile.", author: "Albert Einstein", category: "Motivație" },
+  { text: "The only way to do great work is to love what you do.", author: "Steve Jobs", category: "Motivation" },
+  { text: "The greatest glory in living lies not in never falling, but in rising every time we fall.", author: "Nelson Mandela", category: "Resilience" },
+  { text: "Be the change that you wish to see in the world.", author: "Mahatma Gandhi", category: "Change" },
+  { text: "It does not matter how slowly you go as long as you do not stop.", author: "Confucius", category: "Motivation" },
+  { text: "In the middle of difficulty lies opportunity.", author: "Albert Einstein", category: "Motivation" },
 
   // Citate pentru Vlad (Anxietate și Focus)
-  { text: "Frica ucide mintea. Frica este moartea măruntă.", author: "Frank Herbert", category: "Anxietate" },
-  { text: "Anxietatea este amețeala libertății.", author: "Søren Kierkegaard", category: "Anxietate" },
-  { text: "Nu îți face griji pentru lucrurile pe care nu le poți controla.", author: "Epictet", category: "Anxietate" },
-  { text: "Viața este ceea ce se întâmplă în timp ce îți faci alte planuri.", author: "John Lennon", category: "Viață" },
-  { text: "Cea mai mare greșeală este să te temi continuu că o vei face.", author: "Elbert Hubbard", category: "Anxietate" },
+  { text: "I must not fear. Fear is the mind-killer. Fear is the little-death that brings total obliteration.", author: "Frank Herbert", category: "Anxiety" },
+  { text: "Anxiety is the dizziness of freedom.", author: "Søren Kierkegaard", category: "Anxiety" },
+  { text: "There is only one way to happiness and that is to cease worrying about things which are beyond the power of our will.", author: "Epictetus", category: "Anxiety" },
+  { text: "Life is what happens when you're busy making other plans.", author: "John Lennon", category: "Life" },
+  { text: "The greatest mistake you can make in life is to be continually fearing you will make one.", author: "Elbert Hubbard", category: "Anxiety" },
 
   // Citate pentru Ana (Melancolie / Izolat 1)
-  { text: "Melancolia este fericirea de a fi trist.", author: "Victor Hugo", category: "Melancolie" },
-  { text: "Durerea este prețul pe care îl plătim pentru iubire.", author: "Regina Elisabeta a II-a", category: "Tristețe" },
-  { text: "Lacrimile sunt cuvintele pe care inima nu le poate rosti.", author: "Gerard Way", category: "Tristețe" },
-  { text: "Uneori trebuie să atingi fundul oceanului pentru a aprecia aerul.", author: "Sylvia Plath", category: "Melancolie" },
-  { text: "Sunt nopți în care lupii sunt tăcuți și doar luna urlă.", author: "George Carlin", category: "Tristețe" },
+  { text: "Melancholy is the happiness of being sad.", author: "Victor Hugo", category: "Melancholy" },
+  { text: "Grief is the price we pay for love.", author: "Queen Elizabeth II", category: "Sadness" },
+  { text: "Tears are words the heart can't express.", author: "Gerard Way", category: "Sadness" },
+  { text: "I think I must go down to the bottom of the sea to appreciate the beauty of the air.", author: "Sylvia Plath", category: "Melancholy" },
+  { text: "Those are the same stars, and that is the same moon, that look down upon your brothers and sisters.", author: "Sojourner Truth", category: "Sadness" },
 
   // Citate pentru Mihai (Singurătate / Izolat 2)
-  { text: "Singurătatea este soarta tuturor spiritelor excelente.", author: "Arthur Schopenhauer", category: "Singurătate" },
-  { text: "Nu mi-a fost niciodată frică de singurătate. Spațiul gol m-a hrănit.", author: "Charles Bukowski", category: "Singurătate" },
-  { text: "Să fii singur este un lucru frumos dacă știi cum să îți ții companie.", author: "Tanya Masse", category: "Singurătate" },
-  { text: "În singurătate, omul descoperă ceea ce mulțimea a ascuns.", author: "Anonim", category: "Introspecție" },
-  { text: "Cel mai puternic om din lume este cel care stă cel mai mult singur.", author: "Henrik Ibsen", category: "Singurătate" },
+  { text: "A man can be himself only so long as he is alone.", author: "Arthur Schopenhauer", category: "Loneliness" },
+  { text: "I've never been lonely. I've been in a room - I've felt suicidal. I've been depressed. But I never felt that nobody could cure my loneliness.", author: "Charles Bukowski", category: "Loneliness" },
+  { text: "To be alone is a beautiful thing if you know how to keep yourself company.", author: "Tanya Masse", category: "Loneliness" },
+  { text: "In solitude, the mind gains strength and learns to lean upon itself.", author: "Laurence Sterne", category: "Introspection" },
+  { text: "The strongest men are the most alone.", author: "Henrik Ibsen", category: "Loneliness" },
 
   // Citate pentru Laura (Dimineață)
-  { text: "Când te trezești dimineața, gândește-te ce privilegiu este să fii în viață.", author: "Marcus Aurelius", category: "Dimineață" },
-  { text: "Fiecare dimineață ne naștem din nou.", author: "Buddha", category: "Dimineață" },
-  { text: "Aerul dimineții are secrete pe care vrea să ți le spună. Nu adormi la loc.", author: "Rumi", category: "Dimineață" },
-  { text: "Zâmbește-i dimineții, chiar dacă ziua îți promite furtuni.", author: "Anonim", category: "Dimineață" },
-  { text: "Nimeni nu a sărăcit vreodată dăruind.", author: "Anne Frank", category: "Empatie" }
+  { text: "When you arise in the morning think of what a privilege it is to be alive, to think, to enjoy, to love.", author: "Marcus Aurelius", category: "Morning" },
+  { text: "Every morning we are born again. What we do today is what matters most.", author: "Buddha", category: "Morning" },
+  { text: "The morning breeze has secrets to tell you. Do not go back to sleep.", author: "Rumi", category: "Morning" },
+  { text: "Smile at the morning, even if the day promises storms.", author: "Anonymous", category: "Morning" },
+  { text: "No one has ever become poor by giving.", author: "Anne Frank", category: "Empathy" }
 ];
 
 const reactionTypes = ['like', 'love', 'insightful', 'bravo'];
@@ -107,7 +108,6 @@ const seedMassive = async () => {
       }
 
       console.log('🤝 Generare Prietenii conform cerințelor...');
-      // mainUserIds index: 0=Alex, 1=Elena, 2=Vlad, 3=Ana (Izolat), 4=Mihai (Izolat), 5=Laura
 
       const addFriend = async (id1: number, id2: number) => {
         await client.query(
@@ -116,24 +116,38 @@ const seedMassive = async () => {
         );
       };
 
-      // 1. Grupul de 3 prieteni (Alex, Elena, Vlad) sunt prieteni între ei
+      // 1. Grupul de 3 prieteni (Alex, Elena, Vlad)
       await addFriend(0, 1);
       await addFriend(1, 2);
       await addFriend(0, 2);
 
-      // 2. Ana (3) și Mihai (4) rămân IZOLAȚI. Nu rulăm niciun addFriend pentru ei.
+      // 2. Ana (3) și Mihai (4) rămân IZOLAȚI
 
       // 3. Laura (5) este prietenă doar cu Alex (0)
       await addFriend(0, 5);
       console.log('   -> Rețea creată: Grup de 3, 2 Izolați complet, 1 Conexiune unică.');
 
-      console.log(`\n🧠 START PROCESARE CITATE SECVENȚIAL (Câte 1 pe rând)`);
+      // Debug: Enable badges for Ana (ana_singuratica, index 3)
+      console.log('🏅 Activare badge-uri pentru Ana (debug)...');
+      const anaUserId = mainUserIds[3];
+      // Badge IDs: Săptămâna 1 (STREAK_MILESTONE 7), Influencer (QUOTE_LIKES 100), Vorbăreț (COMMENTS_COUNT 50)
+      const anaBadges = await client.query(
+        `SELECT id, name FROM badges WHERE name IN ('Săptămâna 1', 'Influencer', 'Vorbăreț')`
+      );
+      for (const badge of anaBadges.rows) {
+        await client.query(
+          `INSERT INTO user_badges (user_id, badge_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+          [anaUserId, badge.id]
+        );
+        console.log(`   ✅ Badge "${badge.name}" (ID ${badge.id}) acordat utilizatoarei ana_singuratica.`);
+      }
+
+      console.log(`\n🧠 START PROCESARE CITATE SECVENȚIAL (Cu protecție termică activă)`);
       
       for (let i = 0; i < quotesData.length; i++) {
         const q = quotesData[i];
         
-        // Alocăm exact 5 citate fiecărui utilizator:
-        // i de la 0 la 4 merg la user 0. i de la 5 la 9 merg la user 1, etc.
+        // Alocăm exact 5 citate fiecărui utilizator
         const ownerIndex = Math.floor(i / 5); 
         const ownerId = mainUserIds[ownerIndex];
         
@@ -143,36 +157,31 @@ const seedMassive = async () => {
         let embedding: number[] | null = null;
 
         try {
-          // Pas 1: Llama3 pentru Hashtag-uri
           console.log(`      -> Extragere hashtag-uri (Llama3)...`);
           tags = await aiService.generateTags(q.text);
           await thermalCooldown(4000, "Eliberare memorie Llama3");
 
-          // Pas 2: Nomic pentru Vectori
           console.log(`      -> Generare vectori (Nomic)...`);
           embedding = await aiService.getEmbedding(q.text);
           await thermalCooldown(2000, "Răcire procesor");
-        } catch (aiError) {
+        } catch {
           console.log(`      ⚠️ Eroare la AI, citatul va fi salvat fără vectori pentru a continua.`);
         }
 
-        // Pas 3: Salvare în baza de date
         const res = await client.query(
           `INSERT INTO quotes (text, author, category, user_id, hashtags, embedding, created_at) VALUES ($1, $2, $3, $4, $5, $6, NOW() - ($7 || ' hours')::interval) RETURNING id`,
           [q.text, q.author, q.category, ownerId, tags, embedding ? `[${embedding.join(',')}]` : null, i]
         );
         const quoteId = res.rows[0].id;
 
-        // Adăugăm 1-3 reacții aleatorii de la utilizatorii fantomă
         const numReactions = Math.floor(Math.random() * 3) + 1;
         for (let j = 0; j < numReactions; j++) {
           await client.query(`INSERT INTO quote_reactions (user_id, quote_id, reaction_type) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`, [reactionUserIds[j], quoteId, reactionTypes[Math.floor(Math.random() * reactionTypes.length)]]);
         }
 
-        // Dacă s-a terminat un utilizator (din 5 în 5 citate), luăm o pauză mare
         if ((i + 1) % 5 === 0 && (i + 1) !== quotesData.length) {
-          console.log(`\n   ✅ Utilizatorul ${mainUsersData[ownerIndex].username} și-a terminat postările.`);
-          await thermalCooldown(8000, "Pauză majoră între utilizatori");
+          console.log(`   ✅ Utilizatorul ${mainUsersData[ownerIndex].username} și-a terminat postările.`);
+          await thermalCooldown(10000, "Pauză majoră între utilizatori");
         }
       }
 
