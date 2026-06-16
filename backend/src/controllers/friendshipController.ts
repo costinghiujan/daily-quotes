@@ -117,13 +117,6 @@ export const acceptFriendRequest = async (req: AuthRequest, res: Response): Prom
 
     await sendNotification(requesterId, receiverId, 'FRIEND_ACCEPTED', friendshipId);
 
-    await query(
-      `UPDATE notifications 
-       SET type = 'FRIEND_REQUEST_ACCEPTED' 
-       WHERE recipient_id = $1 AND sender_id = $2 AND type = 'FRIEND_REQUEST' AND reference_id = $3`,
-      [receiverId, requesterId, friendshipId],
-    );
-
     try {
       const originalRequesterData = await query('SELECT expo_push_token FROM users WHERE id = $1', [
         requesterId,

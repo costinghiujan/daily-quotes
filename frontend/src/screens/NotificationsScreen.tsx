@@ -98,7 +98,7 @@ export default function NotificationsScreen() {
 
   const handleAccept = async (notificationId: number, friendshipId: number, username: string) => {
     setNotifications((prev) =>
-      prev.map((n) => (n.id === notificationId ? { ...n, type: 'FRIEND_REQUEST_ACCEPTED' as const } : n)),
+      prev.map((n) => (n.id === notificationId ? { ...n, type: 'FRIEND_ACCEPTED' as const } : n)),
     );
     try {
       await friendshipService.acceptRequest(friendshipId);
@@ -135,7 +135,7 @@ export default function NotificationsScreen() {
     } else if (item.type === 'REACTION_ADDED') {
       actionText = t('notifications.reacted');
       IconComponent = <Ionicons name="heart" size={14} color="#F02849" />;
-    } else if (item.type === 'FRIEND_ACCEPTED' || item.type === 'FRIEND_REQUEST_ACCEPTED') {
+    } else if (item.type === 'FRIEND_ACCEPTED') {
       actionText = t('notifications.friendAccepted');
       IconComponent = <Ionicons name="people" size={14} color="#45BD62" />;
     } else if (item.type === 'COMMENT_ADDED') {
