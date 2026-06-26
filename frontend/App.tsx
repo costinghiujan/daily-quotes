@@ -21,7 +21,6 @@ import CommentsScreen from './src/screens/CommentsScreen';
 import ConversationsScreen from './src/screens/ConversationsScreen';
 
 import ChatScreen from './src/screens/ChatScreen';
-import CallScreen from './src/screens/CallScreen';
 
 import { AuthProvider, AuthContext } from './src/context/AuthContext';
 import { ThemeProvider, ThemeContext } from './src/context/ThemeContext';
@@ -284,14 +283,6 @@ const RootNavigator = () => {
               name="ScheduledNotificationsScreen" 
               component={ScheduledNotificationsScreen} 
               options={{ headerShown: false }} 
-            />
-            <Stack.Screen 
-              name="CallScreen" 
-              component={CallScreen} 
-              options={{ 
-                headerShown: false,
-                animation: 'slide_from_bottom',
-              }} 
             />
             <Stack.Screen 
               name="ProfileScreen" 

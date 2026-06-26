@@ -115,7 +115,16 @@ export const acceptFriendRequest = async (req: AuthRequest, res: Response): Prom
 
     await query('UPDATE friendships SET status = $1 WHERE id = $2', ['accepted', friendshipId]);
 
+    // Mark the original FRIEND_REQUEST notification as read AND change its type to FRIEND_ACCEPTED
+    // for the receiver (the one who accepted) so it no longer shows accept/decline buttons
+    await query(
+      "UPDATE notifications SET is_read = TRUE, type = 'FRIEND_ACCEPTED' WHERE recipient_id = $1 AND sender_id = $2 AND type = $3 AND reference_id = $4",
+      [receiverId, requesterId, 'FRIEND_REQUEST', friendshipId],
+    );
+
+
     await sendNotification(requesterId, receiverId, 'FRIEND_ACCEPTED', friendshipId);
+
 
     try {
       const originalRequesterData = await query('SELECT expo_push_token FROM users WHERE id = $1', [
@@ -171,7 +180,16 @@ export const removeFriendOrRequest = async (req: AuthRequest, res: Response): Pr
       return;
     }
 
+    // Also delete the associated notification for the current user
+    const friendship = result.rows[0];
+    const otherUserId = friendship.requester_id === userId ? friendship.receiver_id : friendship.requester_id;
+    await query(
+      "DELETE FROM notifications WHERE recipient_id = $1 AND sender_id = $2 AND reference_id = $3",
+      [userId, otherUserId, friendshipId],
+    );
+
     res.status(200).json({ status: 'success', message: 'Cererea sau prietenia a fost ștearsă.' });
+
   } catch (error) {
     console.error('[Eroare Controller] Respingere cerere/prietenie:', error);
     res.status(500).json({ status: 'error', message: 'Eroare internă a serverului.' });

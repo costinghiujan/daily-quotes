@@ -584,7 +584,7 @@ export const getExploreFeed = async (req: AuthRequest, res: Response): Promise<v
     // Get user's history: quotes they posted OR any quote they reacted to (any reaction type)
     const userHistory = await query(
       `
-      SELECT DISTINCT q.embedding, q.hashtags, q.author
+      SELECT DISTINCT q.embedding, q.hashtags, q.author, q.created_at
       FROM quotes q
       LEFT JOIN quote_reactions qr ON q.id = qr.quote_id AND qr.user_id = $1
       WHERE (q.user_id = $1 OR qr.user_id IS NOT NULL) AND q.embedding IS NOT NULL
@@ -593,6 +593,7 @@ export const getExploreFeed = async (req: AuthRequest, res: Response): Promise<v
     `,
       [currentUserId],
     );
+
 
     const { avgEmbedding, topTags, topAuthors } = calculateUserSignature(userHistory.rows);
 
@@ -658,8 +659,10 @@ export const getExploreFeed = async (req: AuthRequest, res: Response): Promise<v
             +
             (
               CASE 
-                WHEN CARDINALITY($3::text[]) > 0 THEN 
-                  (CARDINALITY(ARRAY(SELECT UNNEST(q.hashtags) INTERSECT SELECT UNNEST($3::text[])))::float / CARDINALITY($3::text[])) * 0.4
+                WHEN array_length($3::text[], 1) > 0 THEN 
+                  (COALESCE(array_length(
+                    (SELECT ARRAY(SELECT UNNEST(q.hashtags) INTERSECT SELECT UNNEST($3::text[])))
+                  , 1), 0)::float / array_length($3::text[], 1)) * 0.4
                 ELSE 0 
               END
             )

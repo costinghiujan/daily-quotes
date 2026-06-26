@@ -1,0 +1,10 @@
+- [ ] Remove call signaling from backend/src/index.ts (lines 148-232)
+- [ ] Remove CallScreen import and route from frontend/App.tsx
+- [ ] Remove call buttons from frontend/src/screens/ChatScreen.tsx (header buttons + incoming call overlay)
+- [ ] Remove incoming call overlay from frontend/src/screens/ConversationsScreen.tsx
+- [ ] Remove call buttons from frontend/src/screens/FriendsScreen.tsx
+- [ ] Delete frontend/src/screens/CallScreen.tsx
+- [ ] Delete frontend/src/components/MuteButton.tsx
+- [ ] Remove "call" translations from frontend/src/i18n/locales/en.json
+- [ ] Remove "call" translations from frontend/src/i18n/locales/ro.json
+- [ ] Remove react-native-webrtc from frontend/package.json

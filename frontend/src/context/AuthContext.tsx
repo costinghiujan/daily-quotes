@@ -99,16 +99,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   logoutRef.current = logout;
 
   useEffect(() => {
+    let isLoggingOut = false;
     const interceptor = apiClient.interceptors.response.use(
       (response) => response,
       async (error) => {
         // Skip 401 handling for logout endpoint to prevent infinite loop
         const isLogoutEndpoint = error.config?.url?.includes('/auth/logout');
-        if (error.response && error.response.status === 401 && !isLogoutEndpoint) {
+        if (error.response && error.response.status === 401 && !isLogoutEndpoint && !isLoggingOut) {
+          isLoggingOut = true;
+          
+          // Immediately clear auth state without waiting for user confirmation
+          // to prevent cascading 401 errors from multiple requests
+          await storage.removeToken();
+          await AsyncStorage.removeItem('userData');
+          delete apiClient.defaults.headers.common['Authorization'];
+          
           // Use ref to avoid stale closure issues
           showAlertRef.current({
             title: 'Sesiune Inactivă',
-            message: 'Acest dispozitiv a fost deconectat de la distanță sau sesiunea a expirat.',
+            message: error.response.data?.message || 'Sesiunea a expirat. Te rugăm să te loghezi din nou.',
             confirmText: 'OK',
             hideCancel: true,
             onConfirm: async () => {
